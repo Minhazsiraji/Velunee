@@ -24,6 +24,8 @@
     "@velunee/observability": "workspace:*",
     "@velunee/shared": "workspace:*",
     "@velunee/validation": "workspace:*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "drizzle-orm": "0.45.2",
     "helmet": "^8.1.0",
     "reflect-metadata": "^0.2.2",
