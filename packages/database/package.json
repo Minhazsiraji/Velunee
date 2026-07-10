@@ -1,0 +1,33 @@
+{
+  "name": "@velunee/database",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./schema": {
+      "types": "./dist/src/schema.d.ts",
+      "default": "./dist/src/schema.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "typescript": "5.8.3"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts"
+}

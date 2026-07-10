@@ -1,0 +1,30 @@
+{
+  "name": "velunee",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Velunee \u2014 Personal AI Companion",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "dev:mobile": "pnpm --filter @velunee/mobile dev",
+    "dev:api": "pnpm --filter @velunee/api dev",
+    "dev:admin": "pnpm --filter @velunee/admin dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @velunee/database db:generate",
+    "db:migrate": "pnpm --filter @velunee/database db:migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "prettier": "^3.5.3",
+    "turbo": "2.9.5",
+    "typescript": "5.8.3"
+  }
+}

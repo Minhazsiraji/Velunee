@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+dist/
+build/
+.expo/
+.turbo/
+coverage/
+
+# native
+android/
+ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# local data
+*.db
+*.sqlite
+uploads/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# operating systems / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# misc
+*.tsbuildinfo
