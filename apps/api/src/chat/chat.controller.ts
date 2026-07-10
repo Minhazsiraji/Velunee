@@ -3,7 +3,6 @@ import {
   Controller,
   Post,
   Res,
-  UsePipes,
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
@@ -22,19 +21,19 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Post('messages')
-  @UsePipes(new ZodValidationPipe(sendChatMessageSchema))
   async sendMessage(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() input: SendChatMessageInput,
+    @Body(new ZodValidationPipe(sendChatMessageSchema))
+    input: SendChatMessageInput,
   ): Promise<ChatResponse> {
     return this.chatService.send(user.id, input);
   }
 
   @Post('stream')
-  @UsePipes(new ZodValidationPipe(sendChatMessageSchema))
   async streamMessage(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() input: SendChatMessageInput,
+    @Body(new ZodValidationPipe(sendChatMessageSchema))
+    input: SendChatMessageInput,
     @Res() response: Response,
   ): Promise<void> {
     response.status(200);
