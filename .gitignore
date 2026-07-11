@@ -45,3 +45,4 @@ Thumbs.db
 
 # misc
 *.tsbuildinfo
+apps/mobile/.env.local
