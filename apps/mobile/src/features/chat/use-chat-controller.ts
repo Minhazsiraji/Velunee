@@ -1,0 +1,220 @@
+import type { ChatMessage } from '@velunee/contracts';
+import {
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
+
+import { ApiError } from '@/lib/api';
+import { useChatStore } from '@/stores/chat-store';
+
+import { sendChatMessage } from './api';
+
+interface HistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface FailedRequest {
+  content: string;
+  history: HistoryItem[];
+}
+
+interface ChatController {
+  messages: ChatMessage[];
+  input: string;
+  errorMessage: string | null;
+  isSending: boolean;
+  canSend: boolean;
+  canRetry: boolean;
+  setInput: (value: string) => void;
+  send: () => Promise<void>;
+  retry: () => Promise<void>;
+  dismissError: () => void;
+  startNewConversation: () => void;
+}
+
+function createLocalUserMessage(
+  content: string,
+): ChatMessage {
+  return {
+    id: `local-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}`,
+    role: 'user',
+    content,
+    inputMode: 'text',
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function createHistory(
+  messages: ChatMessage[],
+): HistoryItem[] {
+  return messages
+    .filter(
+      (message) =>
+        message.id !== 'welcome' &&
+        (message.role === 'user' ||
+          message.role === 'assistant'),
+    )
+    .slice(-20)
+    .map((message) => ({
+      role: message.role as
+        | 'user'
+        | 'assistant',
+      content: message.content.slice(0, 4_000),
+    }));
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Velunee could not complete the request.';
+}
+
+function getLocalization(): {
+  locale: string;
+  timezone: string;
+} {
+  try {
+    const options =
+      Intl.DateTimeFormat().resolvedOptions();
+
+    return {
+      locale: options.locale || 'en',
+      timezone: options.timeZone || 'Asia/Dhaka',
+    };
+  } catch {
+    return {
+      locale: 'en',
+      timezone: 'Asia/Dhaka',
+    };
+  }
+}
+
+export function useChatController(): ChatController {
+  const {
+    conversationId,
+    messages,
+    setConversationId,
+    addMessage,
+    clearConversation,
+  } = useChatStore();
+
+  const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  const [failedRequest, setFailedRequest] =
+    useState<FailedRequest | null>(null);
+
+  const sendingRef = useRef(false);
+
+  const submit = useCallback(
+    async (
+      request: FailedRequest,
+      appendLocalMessage: boolean,
+    ): Promise<void> => {
+      if (sendingRef.current) return;
+
+      sendingRef.current = true;
+      setIsSending(true);
+      setErrorMessage(null);
+
+      if (appendLocalMessage) {
+        addMessage(
+          createLocalUserMessage(request.content),
+        );
+      }
+
+      try {
+        const localization = getLocalization();
+
+        const response = await sendChatMessage({
+          conversationId,
+          message: request.content,
+          inputMode: 'text',
+          locale: localization.locale,
+          timezone: localization.timezone,
+          history: request.history,
+        });
+
+        setConversationId(response.conversationId);
+        addMessage(response.message);
+        setFailedRequest(null);
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+        setFailedRequest(request);
+      } finally {
+        sendingRef.current = false;
+        setIsSending(false);
+      }
+    },
+    [
+      addMessage,
+      conversationId,
+      setConversationId,
+    ],
+  );
+
+  const send = useCallback(async (): Promise<void> => {
+    const content = input.trim();
+
+    if (!content || sendingRef.current) return;
+
+    const request: FailedRequest = {
+      content,
+      history: createHistory(messages),
+    };
+
+    setInput('');
+
+    await submit(request, true);
+  }, [input, messages, submit]);
+
+  const retry = useCallback(async (): Promise<void> => {
+    if (!failedRequest || sendingRef.current) return;
+
+    await submit(failedRequest, false);
+  }, [failedRequest, submit]);
+
+  const dismissError = useCallback((): void => {
+    setErrorMessage(null);
+    setFailedRequest(null);
+  }, []);
+
+  const startNewConversation =
+    useCallback((): void => {
+      if (sendingRef.current) return;
+
+      clearConversation();
+      setInput('');
+      setErrorMessage(null);
+      setFailedRequest(null);
+    }, [clearConversation]);
+
+  return {
+    messages,
+    input,
+    errorMessage,
+    isSending,
+    canSend:
+      input.trim().length > 0 && !isSending,
+    canRetry:
+      failedRequest !== null && !isSending,
+    setInput,
+    send,
+    retry,
+    dismissError,
+    startNewConversation,
+  };
+}

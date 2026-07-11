@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { getSupabaseClient } from '@/lib/supabase';
+import { useChatStore } from '@/stores/chat-store';
 
 type AuthStatus =
   | 'loading'
@@ -55,6 +56,7 @@ export function AuthProvider({
 
       if (currentUserIdRef.current !== nextUserId) {
         queryClient.clear();
+        useChatStore.getState().clearConversation();
       }
 
       currentUserIdRef.current = nextUserId;

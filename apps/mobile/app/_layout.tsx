@@ -1,11 +1,14 @@
 import { Stack } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppProviders } from '@/providers/app-providers';
 
 export default function RootLayout(): React.JSX.Element {
   return (
-    <AppProviders>
-      <Stack screenOptions={{ headerShown: false }} />
-    </AppProviders>
+    <SafeAreaProvider>
+      <AppProviders>
+        <Stack screenOptions={{ headerShown: false }} />
+      </AppProviders>
+    </SafeAreaProvider>
   );
 }

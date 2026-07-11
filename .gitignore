@@ -46,3 +46,4 @@ Thumbs.db
 # misc
 *.tsbuildinfo
 apps/mobile/.env.local
+apps/api/.env.before-supabase-auth
