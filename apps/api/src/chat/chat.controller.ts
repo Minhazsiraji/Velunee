@@ -1,19 +1,24 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Res,
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
+  renameConversationSchema,
   sendChatMessageSchema,
   type ChatHistoryResponse,
   type ChatResponse,
   type ConversationHistoryResponse,
   type ConversationListResponse,
+  type ConversationMutationResponse,
+  type RenameConversationInput,
   type SendChatMessageInput,
   type StreamChunk,
 } from '@velunee/contracts';
@@ -62,6 +67,55 @@ export class ChatController {
     }
 
     return history;
+  }
+
+  @Patch('conversations/:conversationId')
+  async renameConversation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId')
+    conversationId: string,
+    @Body(
+      new ZodValidationPipe(
+        renameConversationSchema,
+      ),
+    )
+    input: RenameConversationInput,
+  ): Promise<ConversationMutationResponse> {
+    const renamed =
+      await this.chatService.renameConversation(
+        user.id,
+        conversationId,
+        input.title,
+      );
+
+    if (!renamed) {
+      throw new NotFoundException(
+        'Conversation not found',
+      );
+    }
+
+    return { conversationId };
+  }
+
+  @Delete('conversations/:conversationId')
+  async deleteConversation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId')
+    conversationId: string,
+  ): Promise<ConversationMutationResponse> {
+    const deleted =
+      await this.chatService.deleteConversation(
+        user.id,
+        conversationId,
+      );
+
+    if (!deleted) {
+      throw new NotFoundException(
+        'Conversation not found',
+      );
+    }
+
+    return { conversationId };
   }
 
   @Post('messages')

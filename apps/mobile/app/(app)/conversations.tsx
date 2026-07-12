@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ConversationListItem } from '@velunee/contracts';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,9 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ConversationManagementModal } from '@/components/conversation-management-modal';
 import {
+  deleteConversation,
   loadConversation,
   loadConversations,
+  renameConversation,
 } from '@/features/chat/api';
 import { ApiError } from '@/lib/api';
 import { useChatStore } from '@/stores/chat-store';
@@ -45,6 +48,17 @@ function formatUpdatedAt(value: string): string {
         ? undefined
         : 'numeric',
   }).format(date);
+}
+
+function returnToChat(): void {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+
+  router.replace(
+    '/(app)/(tabs)/chat' as Href,
+  );
 }
 
 function getErrorMessage(error: unknown): string {
@@ -82,6 +96,16 @@ export default function ConversationsScreen(): React.JSX.Element {
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
+
+  const [selectedConversation, setSelectedConversation] =
+    useState<ConversationListItem | null>(null);
+
+  const [isManaging, setIsManaging] =
+    useState(false);
+
+  const activeConversationId = useChatStore(
+    (state) => state.conversationId,
+  );
 
   const fetchConversations = useCallback(
     async (refreshing = false): Promise<void> => {
@@ -135,7 +159,7 @@ export default function ConversationsScreen(): React.JSX.Element {
           history.messages,
         );
 
-        router.back();
+        returnToChat();
       } catch (error) {
         setErrorMessage(
           getErrorMessage(error),
@@ -150,8 +174,90 @@ export default function ConversationsScreen(): React.JSX.Element {
   const startNewConversation =
     useCallback((): void => {
       clearConversation();
-      router.back();
+      returnToChat();
     }, [clearConversation]);
+
+  const handleRename = useCallback(
+    async (title: string): Promise<void> => {
+      if (!selectedConversation) return;
+
+      setIsManaging(true);
+      setErrorMessage(null);
+
+      try {
+        await renameConversation(
+          selectedConversation.id,
+          title,
+        );
+
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.id ===
+            selectedConversation.id
+              ? {
+                  ...conversation,
+                  title,
+                  updatedAt:
+                    new Date().toISOString(),
+                }
+              : conversation,
+          ),
+        );
+
+        setSelectedConversation(null);
+      } catch (error) {
+        setErrorMessage(
+          getErrorMessage(error),
+        );
+      } finally {
+        setIsManaging(false);
+      }
+    },
+    [selectedConversation],
+  );
+
+  const handleDelete = useCallback(
+    async (): Promise<void> => {
+      if (!selectedConversation) return;
+
+      setIsManaging(true);
+      setErrorMessage(null);
+
+      try {
+        await deleteConversation(
+          selectedConversation.id,
+        );
+
+        setConversations((current) =>
+          current.filter(
+            (conversation) =>
+              conversation.id !==
+              selectedConversation.id,
+          ),
+        );
+
+        if (
+          activeConversationId ===
+          selectedConversation.id
+        ) {
+          clearConversation();
+        }
+
+        setSelectedConversation(null);
+      } catch (error) {
+        setErrorMessage(
+          getErrorMessage(error),
+        );
+      } finally {
+        setIsManaging(false);
+      }
+    },
+    [
+      activeConversationId,
+      clearConversation,
+      selectedConversation,
+    ],
+  );
 
   return (
     <SafeAreaView
@@ -257,74 +363,101 @@ export default function ConversationsScreen(): React.JSX.Element {
               openingId === item.id;
 
             return (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Open conversation: ${item.title}`}
-                disabled={openingId !== null}
-                onPress={() =>
-                  void openConversation(item)
-                }
-                style={({ pressed }) => [
-                  styles.conversationCard,
-                  pressed && styles.pressed,
-                  openingId !== null &&
-                    !isOpening &&
-                    styles.disabled,
-                ]}
-              >
-                <View style={styles.conversationIcon}>
-                  <Ionicons
-                    name="chatbubble-ellipses-outline"
-                    size={21}
-                    color={colors.primaryLight}
-                  />
-                </View>
+              <View style={styles.conversationCard}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open conversation: ${item.title}`}
+                  disabled={openingId !== null}
+                  onPress={() =>
+                    void openConversation(item)
+                  }
+                  style={({ pressed }) => [
+                    styles.conversationOpenArea,
+                    pressed && styles.pressed,
+                    openingId !== null &&
+                      !isOpening &&
+                      styles.disabled,
+                  ]}
+                >
+                  <View style={styles.conversationIcon}>
+                    <Ionicons
+                      name="chatbubble-ellipses-outline"
+                      size={21}
+                      color={colors.primaryLight}
+                    />
+                  </View>
 
-                <View style={styles.conversationContent}>
-                  <View style={styles.conversationTopRow}>
+                  <View style={styles.conversationContent}>
+                    <View style={styles.conversationTopRow}>
+                      <Text
+                        numberOfLines={1}
+                        style={styles.conversationTitle}
+                      >
+                        {item.title}
+                      </Text>
+
+                      <Text style={styles.time}>
+                        {formatUpdatedAt(
+                          item.updatedAt,
+                        )}
+                      </Text>
+                    </View>
+
                     <Text
-                      numberOfLines={1}
-                      style={styles.conversationTitle}
+                      numberOfLines={2}
+                      style={styles.preview}
                     >
-                      {item.title}
+                      {item.preview ||
+                        'No messages yet'}
                     </Text>
 
-                    <Text style={styles.time}>
-                      {formatUpdatedAt(
-                        item.updatedAt,
-                      )}
+                    <Text style={styles.messageCount}>
+                      {item.messageCount}{' '}
+                      {item.messageCount === 1
+                        ? 'message'
+                        : 'messages'}
                     </Text>
                   </View>
 
-                  <Text
-                    numberOfLines={2}
-                    style={styles.preview}
-                  >
-                    {item.preview ||
-                      'No messages yet'}
-                  </Text>
+                  {isOpening ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primaryMuted}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  )}
+                </Pressable>
 
-                  <Text style={styles.messageCount}>
-                    {item.messageCount}{' '}
-                    {item.messageCount === 1
-                      ? 'message'
-                      : 'messages'}
-                  </Text>
-                </View>
-
-                {isOpening ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.primaryMuted}
-                  />
-                ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Manage conversation: ${item.title}`}
+                  disabled={
+                    openingId !== null ||
+                    isManaging
+                  }
+                  onPress={() =>
+                    setSelectedConversation(item)
+                  }
+                  style={({ pressed }) => [
+                    styles.manageButton,
+                    pressed && styles.pressed,
+                    (openingId !== null ||
+                      isManaging) &&
+                      styles.disabled,
+                  ]}
+                >
                   <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={colors.textMuted}
+                    name="ellipsis-horizontal"
+                    size={21}
+                    color={colors.textSecondary}
                   />
-                )}
-              </Pressable>
+                </Pressable>
+              </View>
             );
           }}
           ListEmptyComponent={
@@ -367,6 +500,16 @@ export default function ConversationsScreen(): React.JSX.Element {
           }
         />
       )}
+
+      <ConversationManagementModal
+        conversation={selectedConversation}
+        isBusy={isManaging}
+        onClose={() =>
+          setSelectedConversation(null)
+        }
+        onRename={handleRename}
+        onDelete={handleDelete}
+      />
     </SafeAreaView>
   );
 }
@@ -453,13 +596,26 @@ const styles = StyleSheet.create({
   },
   conversationCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     marginBottom: 10,
-    padding: 14,
     borderWidth: 1,
     borderColor: colors.borderSoft,
     borderRadius: 16,
     backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  conversationOpenArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+  },
+  manageButton: {
+    width: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: colors.borderSoft,
   },
   conversationIcon: {
     width: 42,

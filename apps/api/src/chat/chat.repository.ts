@@ -432,6 +432,69 @@ export class ChatRepository {
     };
   }
 
+  async renameConversation(
+    userId: string,
+    conversationId: string,
+    title: string,
+  ): Promise<boolean> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return false;
+    }
+
+    const { db } = this.connection;
+
+    const updated = await db
+      .update(conversations)
+      .set({
+        title,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(conversations.id, conversationId),
+          eq(conversations.userId, userId),
+          isNull(conversations.deletedAt),
+        ),
+      )
+      .returning({ id: conversations.id });
+
+    return updated.length > 0;
+  }
+
+  async deleteConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<boolean> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return false;
+    }
+
+    const { db } = this.connection;
+
+    const deleted = await db
+      .update(conversations)
+      .set({
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(conversations.id, conversationId),
+          eq(conversations.userId, userId),
+          isNull(conversations.deletedAt),
+        ),
+      )
+      .returning({ id: conversations.id });
+
+    return deleted.length > 0;
+  }
+
   logPersistenceState(): void {
     if (!this.connection) {
       this.logger.warn(

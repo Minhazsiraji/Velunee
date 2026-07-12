@@ -60,6 +60,28 @@ export class ChatService implements OnModuleInit {
     );
   }
 
+  async renameConversation(
+    userId: string,
+    conversationId: string,
+    title: string,
+  ): Promise<boolean> {
+    return this.repository.renameConversation(
+      userId,
+      conversationId,
+      title,
+    );
+  }
+
+  async deleteConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<boolean> {
+    return this.repository.deleteConversation(
+      userId,
+      conversationId,
+    );
+  }
+
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {
     const conversationId = input.conversationId ?? randomUUID();
     const requestId = randomUUID();

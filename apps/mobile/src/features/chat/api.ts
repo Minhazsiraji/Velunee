@@ -3,10 +3,12 @@ import {
   chatResponseSchema,
   conversationHistoryResponseSchema,
   conversationListResponseSchema,
+  conversationMutationResponseSchema,
   type ChatHistoryResponse,
   type ChatResponse,
   type ConversationHistoryResponse,
   type ConversationListResponse,
+  type ConversationMutationResponse,
   type SendChatMessageInput,
 } from '@velunee/contracts';
 
@@ -38,6 +40,38 @@ export async function loadConversation(
   );
 
   return conversationHistoryResponseSchema.parse(
+    payload,
+  );
+}
+
+export async function renameConversation(
+  conversationId: string,
+  title: string,
+): Promise<ConversationMutationResponse> {
+  const payload = await apiRequest<unknown>(
+    `/chat/conversations/${conversationId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    },
+  );
+
+  return conversationMutationResponseSchema.parse(
+    payload,
+  );
+}
+
+export async function deleteConversation(
+  conversationId: string,
+): Promise<ConversationMutationResponse> {
+  const payload = await apiRequest<unknown>(
+    `/chat/conversations/${conversationId}`,
+    {
+      method: 'DELETE',
+    },
+  );
+
+  return conversationMutationResponseSchema.parse(
     payload,
   );
 }

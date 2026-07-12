@@ -33,6 +33,14 @@ export const conversationHistoryResponseSchema = z.object({
   messages: z.array(chatMessageSchema),
 });
 
+export const renameConversationSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+});
+
+export const conversationMutationResponseSchema = z.object({
+  conversationId: z.string().uuid(),
+});
+
 export const sendChatMessageSchema = z.object({
   conversationId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(12_000),
@@ -95,6 +103,12 @@ export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
 export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
 export type ConversationHistoryResponse = z.infer<
   typeof conversationHistoryResponseSchema
+>;
+export type RenameConversationInput = z.infer<
+  typeof renameConversationSchema
+>;
+export type ConversationMutationResponse = z.infer<
+  typeof conversationMutationResponseSchema
 >;
 export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
