@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ChatMessage } from '@velunee/contracts';
+import { router, type Href } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -71,31 +72,53 @@ export default function ChatScreen(): React.JSX.Element {
             </Text>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Start a new conversation"
-            accessibilityState={{
-              disabled:
-                isSending || isLoadingHistory,
-            }}
-            disabled={
-              isSending || isLoadingHistory
-            }
-            onPress={startNewConversation}
-            style={({ pressed }) => [
-              styles.newChatButton,
-              pressed && styles.pressed,
-              (isSending ||
-                isLoadingHistory) &&
-                styles.disabled,
-            ]}
-          >
-            <Ionicons
-              name="create-outline"
-              size={22}
-              color={colors.primaryLight}
-            />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View conversations"
+              disabled={isSending}
+              onPress={() =>
+                router.push('/(app)/conversations' as Href)
+              }
+              style={({ pressed }) => [
+                styles.headerActionButton,
+                pressed && styles.pressed,
+                isSending && styles.disabled,
+              ]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={22}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start a new conversation"
+              accessibilityState={{
+                disabled:
+                  isSending || isLoadingHistory,
+              }}
+              disabled={
+                isSending || isLoadingHistory
+              }
+              onPress={startNewConversation}
+              style={({ pressed }) => [
+                styles.headerActionButton,
+                pressed && styles.pressed,
+                (isSending ||
+                  isLoadingHistory) &&
+                  styles.disabled,
+              ]}
+            >
+              <Ionicons
+                name="create-outline"
+                size={22}
+                color={colors.primaryLight}
+              />
+            </Pressable>
+          </View>
         </View>
 
         {isLoadingHistory ? (
@@ -203,7 +226,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
   },
-  newChatButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerActionButton: {
     width: 42,
     height: 42,
     alignItems: 'center',

@@ -1,8 +1,12 @@
 import {
   chatHistoryResponseSchema,
   chatResponseSchema,
+  conversationHistoryResponseSchema,
+  conversationListResponseSchema,
   type ChatHistoryResponse,
   type ChatResponse,
+  type ConversationHistoryResponse,
+  type ConversationListResponse,
   type SendChatMessageInput,
 } from '@velunee/contracts';
 
@@ -14,6 +18,28 @@ export async function loadChatHistory(): Promise<ChatHistoryResponse> {
   );
 
   return chatHistoryResponseSchema.parse(payload);
+}
+
+export async function loadConversations(): Promise<ConversationListResponse> {
+  const payload = await apiRequest<unknown>(
+    '/chat/conversations',
+  );
+
+  return conversationListResponseSchema.parse(
+    payload,
+  );
+}
+
+export async function loadConversation(
+  conversationId: string,
+): Promise<ConversationHistoryResponse> {
+  const payload = await apiRequest<unknown>(
+    `/chat/conversations/${conversationId}`,
+  );
+
+  return conversationHistoryResponseSchema.parse(
+    payload,
+  );
 }
 
 export async function sendChatMessage(

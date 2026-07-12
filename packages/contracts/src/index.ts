@@ -15,6 +15,24 @@ export const chatHistoryResponseSchema = z.object({
   messages: z.array(chatMessageSchema),
 });
 
+export const conversationListItemSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  preview: z.string(),
+  messageCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const conversationListResponseSchema = z.object({
+  conversations: z.array(conversationListItemSchema),
+});
+
+export const conversationHistoryResponseSchema = z.object({
+  conversationId: z.string().uuid(),
+  messages: z.array(chatMessageSchema),
+});
+
 export const sendChatMessageSchema = z.object({
   conversationId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(12_000),
@@ -73,6 +91,11 @@ export const systemConfigSchema = z.object({
 
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type ChatHistoryResponse = z.infer<typeof chatHistoryResponseSchema>;
+export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
+export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
+export type ConversationHistoryResponse = z.infer<
+  typeof conversationHistoryResponseSchema
+>;
 export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
 export type StreamChunk = z.infer<typeof streamChunkSchema>;

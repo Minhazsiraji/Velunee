@@ -3,6 +3,8 @@ import type { AIProvider } from '@velunee/ai-core';
 import type {
   ChatHistoryResponse,
   ChatResponse,
+  ConversationHistoryResponse,
+  ConversationListResponse,
   SendChatMessageInput,
 } from '@velunee/contracts';
 import { randomUUID } from 'node:crypto';
@@ -38,6 +40,24 @@ export class ChatService implements OnModuleInit {
     userId: string,
   ): Promise<ChatHistoryResponse> {
     return this.repository.getLatestHistory(userId);
+  }
+
+  async listConversations(
+    userId: string,
+  ): Promise<ConversationListResponse> {
+    return this.repository.listConversations(
+      userId,
+    );
+  }
+
+  async getConversationHistory(
+    userId: string,
+    conversationId: string,
+  ): Promise<ConversationHistoryResponse | null> {
+    return this.repository.getConversationHistory(
+      userId,
+      conversationId,
+    );
   }
 
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {

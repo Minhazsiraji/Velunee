@@ -1,5 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { ChatMessage } from '@velunee/contracts';
+import type {
+  ChatMessage,
+  ConversationHistoryResponse,
+  ConversationListResponse,
+} from '@velunee/contracts';
 import {
   conversations,
   messages,
@@ -232,6 +236,198 @@ export class ChatRepository {
 
     return {
       conversationId: conversation.id,
+      messages: historyMessages,
+    };
+  }
+
+  async listConversations(
+    userId: string,
+  ): Promise<ConversationListResponse> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return { conversations: [] };
+    }
+
+    const { db } = this.connection;
+
+    const storedConversations = await db
+      .select({
+        id: conversations.id,
+        title: conversations.title,
+        createdAt: conversations.createdAt,
+        updatedAt: conversations.updatedAt,
+      })
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.userId, userId),
+          isNull(conversations.deletedAt),
+        ),
+      )
+      .orderBy(
+        desc(conversations.updatedAt),
+        desc(conversations.createdAt),
+      );
+
+    const items = await Promise.all(
+      storedConversations.map(
+        async (conversation) => {
+          const storedMessages = await db
+            .select({
+              contentEncrypted:
+                messages.contentEncrypted,
+              role: messages.role,
+            })
+            .from(messages)
+            .where(
+              and(
+                eq(
+                  messages.conversationId,
+                  conversation.id,
+                ),
+                eq(messages.userId, userId),
+                isNull(messages.deletedAt),
+              ),
+            )
+            .orderBy(asc(messages.createdAt));
+
+          const visibleMessages =
+            storedMessages.filter(
+              (message) =>
+                message.role !== 'tool',
+            );
+
+          const firstUserMessage =
+            visibleMessages.find(
+              (message) =>
+                message.role === 'user',
+            );
+
+          const lastMessage =
+            visibleMessages.at(-1);
+
+          const firstUserContent =
+            firstUserMessage
+              ? this.crypto.decrypt(
+                  firstUserMessage.contentEncrypted,
+                )
+              : '';
+
+          const lastContent = lastMessage
+            ? this.crypto.decrypt(
+                lastMessage.contentEncrypted,
+              )
+            : '';
+
+          const generatedTitle =
+            firstUserContent
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 60) ||
+            'New conversation';
+
+          const preview = lastContent
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 120);
+
+          return {
+            id: conversation.id,
+            title:
+              conversation.title?.trim() ||
+              generatedTitle,
+            preview,
+            messageCount:
+              visibleMessages.length,
+            createdAt:
+              conversation.createdAt.toISOString(),
+            updatedAt:
+              conversation.updatedAt.toISOString(),
+          };
+        },
+      ),
+    );
+
+    return { conversations: items };
+  }
+
+  async getConversationHistory(
+    userId: string,
+    conversationId: string,
+  ): Promise<ConversationHistoryResponse | null> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return null;
+    }
+
+    const { db } = this.connection;
+
+    const [conversation] = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.id, conversationId),
+          eq(conversations.userId, userId),
+          isNull(conversations.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!conversation) {
+      return null;
+    }
+
+    const storedMessages = await db
+      .select({
+        id: messages.id,
+        role: messages.role,
+        inputMode: messages.inputMode,
+        contentEncrypted:
+          messages.contentEncrypted,
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .where(
+        and(
+          eq(
+            messages.conversationId,
+            conversationId,
+          ),
+          eq(messages.userId, userId),
+          isNull(messages.deletedAt),
+        ),
+      )
+      .orderBy(asc(messages.createdAt));
+
+    const historyMessages =
+      storedMessages.flatMap<ChatMessage>(
+        (message) => {
+          if (message.role === 'tool') {
+            return [];
+          }
+
+          return [
+            {
+              id: message.id,
+              role: message.role,
+              content: this.crypto.decrypt(
+                message.contentEncrypted,
+              ),
+              inputMode: message.inputMode,
+              createdAt:
+                message.createdAt.toISOString(),
+            },
+          ];
+        },
+      );
+
+    return {
+      conversationId,
       messages: historyMessages,
     };
   }

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
+  Param,
   Post,
   Res,
 } from '@nestjs/common';
@@ -10,6 +12,8 @@ import {
   sendChatMessageSchema,
   type ChatHistoryResponse,
   type ChatResponse,
+  type ConversationHistoryResponse,
+  type ConversationListResponse,
   type SendChatMessageInput,
   type StreamChunk,
 } from '@velunee/contracts';
@@ -28,6 +32,36 @@ export class ChatController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ChatHistoryResponse> {
     return this.chatService.getLatestHistory(user.id);
+  }
+
+  @Get('conversations')
+  async listConversations(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ConversationListResponse> {
+    return this.chatService.listConversations(
+      user.id,
+    );
+  }
+
+  @Get('conversations/:conversationId')
+  async getConversationHistory(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('conversationId')
+    conversationId: string,
+  ): Promise<ConversationHistoryResponse> {
+    const history =
+      await this.chatService.getConversationHistory(
+        user.id,
+        conversationId,
+      );
+
+    if (!history) {
+      throw new NotFoundException(
+        'Conversation not found',
+      );
+    }
+
+    return history;
   }
 
   @Post('messages')
