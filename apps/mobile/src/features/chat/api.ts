@@ -2,6 +2,7 @@ import {
   chatHistoryResponseSchema,
   chatResponseSchema,
   conversationHistoryResponseSchema,
+  streamChunkSchema,
   conversationListResponseSchema,
   conversationMutationResponseSchema,
   type ChatHistoryResponse,
@@ -12,7 +13,11 @@ import {
   type SendChatMessageInput,
 } from '@velunee/contracts';
 
-import { apiRequest } from '@/lib/api';
+import {
+  ApiError,
+  apiEventStream,
+  apiRequest,
+} from '@/lib/api';
 
 export async function loadChatHistory(): Promise<ChatHistoryResponse> {
   const payload = await apiRequest<unknown>(
@@ -74,6 +79,79 @@ export async function deleteConversation(
   return conversationMutationResponseSchema.parse(
     payload,
   );
+}
+
+export interface ChatStreamHandlers {
+  onMeta(input: {
+    conversationId: string;
+    requestId: string;
+  }): void;
+  onDelta(delta: string): void;
+  onDone(input: {
+    messageId: string;
+    provider: string;
+    model: string;
+  }): void;
+}
+
+export async function streamChatMessage(
+  input: SendChatMessageInput,
+  handlers: ChatStreamHandlers,
+): Promise<void> {
+  let completed = false;
+
+  await apiEventStream(
+    '/chat/stream',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+    {
+      onData: (data) => {
+        let payload: unknown;
+
+        try {
+          payload = JSON.parse(data);
+        } catch {
+          throw new ApiError(
+            'Velunee received an invalid streamed response.',
+            502,
+          );
+        }
+
+        const event =
+          streamChunkSchema.parse(payload);
+
+        if (event.type === 'meta') {
+          handlers.onMeta(event);
+          return;
+        }
+
+        if (event.type === 'delta') {
+          handlers.onDelta(event.delta);
+          return;
+        }
+
+        if (event.type === 'done') {
+          completed = true;
+          handlers.onDone(event);
+          return;
+        }
+
+        throw new ApiError(
+          event.message,
+          502,
+        );
+      },
+    },
+  );
+
+  if (!completed) {
+    throw new ApiError(
+      'The streamed response ended before completion.',
+      502,
+    );
+  }
 }
 
 export async function sendChatMessage(

@@ -142,6 +142,152 @@ export async function apiRequest<T>(
       0,
     );
   } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+}
+
+
+interface EventStreamOptions {
+  onData(data: string): void;
+}
+
+export async function apiEventStream(
+  path: string,
+  init: RequestInit,
+  options: EventStreamOptions,
+): Promise<void> {
+  const headers = new Headers(init.headers);
+
+  headers.set('Accept', 'text/event-stream');
+
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const authHeaders = await authorizationHeaders();
+
+  Object.entries(authHeaders).forEach(
+    ([key, value]) => {
+      headers.set(key, value);
+    },
+  );
+
+  const controller = new AbortController();
+  let timeout:
+    | ReturnType<typeof setTimeout>
+    | null = null;
+
+  const resetTimeout = (): void => {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    timeout = setTimeout(() => {
+      controller.abort();
+    }, environment.apiTimeoutMs);
+  };
+
+  const processBlock = (block: string): void => {
+    const data = block
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).trimStart())
+      .join('\n');
+
+    if (data) {
+      options.onData(data);
+    }
+  };
+
+  const processBuffer = (
+    buffer: string,
+    flush = false,
+  ): string => {
+    const normalized = buffer.replace(/\r\n/g, '\n');
+    const blocks = normalized.split('\n\n');
+    const remainder = flush ? '' : blocks.pop() ?? '';
+
+    for (const block of blocks) {
+      processBlock(block);
+    }
+
+    if (flush && remainder) {
+      processBlock(remainder);
+    }
+
+    return remainder;
+  };
+
+  resetTimeout();
+
+  try {
+    const response = await fetch(
+      `${environment.apiUrl}${path}`,
+      {
+        ...init,
+        headers,
+        signal: controller.signal,
+      },
+    );
+
+    if (!response.ok) {
+      const payload = (await response
+        .json()
+        .catch(() => null)) as unknown;
+
+      throw new ApiError(
+        readErrorMessage(payload, response.status),
+        response.status,
+      );
+    }
+
+    if (!response.body) {
+      const body = await response.text();
+      processBuffer(body, true);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const result = await reader.read();
+
+      if (result.done) break;
+
+      resetTimeout();
+      buffer += decoder.decode(
+        result.value,
+        { stream: true },
+      );
+      buffer = processBuffer(buffer);
+    }
+
+    buffer += decoder.decode();
+    processBuffer(buffer, true);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    if (
+      error instanceof Error &&
+      error.name === 'AbortError'
+    ) {
+      throw new ApiError(
+        'The streamed response took too long. Please try again.',
+        408,
+      );
+    }
+
+    throw new ApiError(
+      'Unable to stream the Velunee response. Check your connection and try again.',
+      0,
+    );
+  } finally {
     clearTimeout(timeout);
   }
 }

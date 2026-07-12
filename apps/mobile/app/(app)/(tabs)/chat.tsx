@@ -28,6 +28,7 @@ export default function ChatScreen(): React.JSX.Element {
     input,
     errorMessage,
     isSending,
+    isWaitingForResponse,
     isLoadingHistory,
     canSend,
     canRetry,
@@ -151,7 +152,9 @@ export default function ChatScreen(): React.JSX.Element {
             });
           }}
           ListFooterComponent={
-            isSending ? <TypingIndicator /> : null
+            isWaitingForResponse
+              ? <TypingIndicator />
+              : null
           }
         />
 

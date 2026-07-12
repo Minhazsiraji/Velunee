@@ -11,7 +11,7 @@ import { useChatStore } from '@/stores/chat-store';
 
 import {
   loadChatHistory,
-  sendChatMessage,
+  streamChatMessage,
 } from './api';
 
 interface HistoryItem {
@@ -29,6 +29,7 @@ interface ChatController {
   input: string;
   errorMessage: string | null;
   isSending: boolean;
+  isWaitingForResponse: boolean;
   isLoadingHistory: boolean;
   canSend: boolean;
   canRetry: boolean;
@@ -39,14 +40,31 @@ interface ChatController {
   startNewConversation: () => void;
 }
 
+function createLocalId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
+
 function createLocalUserMessage(
   content: string,
 ): ChatMessage {
   return {
-    id: `local-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 10)}`,
+    id: createLocalId('local-user'),
     role: 'user',
+    content,
+    inputMode: 'text',
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function createStreamingMessage(
+  id: string,
+  content: string,
+): ChatMessage {
+  return {
+    id,
+    role: 'assistant',
     content,
     inputMode: 'text',
     createdAt: new Date().toISOString(),
@@ -112,12 +130,20 @@ export function useChatController(): ChatController {
     setConversationId,
     setConversationHistory,
     addMessage,
+    updateMessage,
+    removeMessage,
     clearConversation,
   } = useChatStore();
 
   const [input, setInput] = useState('');
   const [isSending, setIsSending] =
     useState(false);
+
+  const [
+    isWaitingForResponse,
+    setIsWaitingForResponse,
+  ] = useState(false);
+
   const [isLoadingHistory, setIsLoadingHistory] =
     useState(true);
 
@@ -179,8 +205,15 @@ export function useChatController(): ChatController {
         return;
       }
 
+      const temporaryMessageId =
+        createLocalId('stream-assistant');
+
+      let streamedText = '';
+      let streamingMessageAdded = false;
+
       sendingRef.current = true;
       setIsSending(true);
+      setIsWaitingForResponse(true);
       setErrorMessage(null);
 
       if (appendLocalMessage) {
@@ -195,8 +228,8 @@ export function useChatController(): ChatController {
         const localization =
           getLocalization();
 
-        const response =
-          await sendChatMessage({
+        await streamChatMessage(
+          {
             conversationId,
             message: request.content,
             inputMode: 'text',
@@ -204,14 +237,68 @@ export function useChatController(): ChatController {
             timezone:
               localization.timezone,
             history: request.history,
-          });
+          },
+          {
+            onMeta: (event) => {
+              setConversationId(
+                event.conversationId,
+              );
+            },
 
-        setConversationId(
-          response.conversationId,
+            onDelta: (delta) => {
+              streamedText += delta;
+
+              if (!streamingMessageAdded) {
+                streamingMessageAdded = true;
+                setIsWaitingForResponse(false);
+
+                addMessage(
+                  createStreamingMessage(
+                    temporaryMessageId,
+                    streamedText,
+                  ),
+                );
+
+                return;
+              }
+
+              updateMessage(
+                temporaryMessageId,
+                {
+                  content: streamedText,
+                },
+              );
+            },
+
+            onDone: (event) => {
+              if (streamingMessageAdded) {
+                updateMessage(
+                  temporaryMessageId,
+                  {
+                    id: event.messageId,
+                    content: streamedText,
+                  },
+                );
+              }
+            },
+          },
         );
-        addMessage(response.message);
+
+        if (!streamedText.trim()) {
+          throw new ApiError(
+            'Velunee returned an empty response. Please try again.',
+            502,
+          );
+        }
+
         setFailedRequest(null);
       } catch (error) {
+        if (streamingMessageAdded) {
+          removeMessage(
+            temporaryMessageId,
+          );
+        }
+
         setErrorMessage(
           getErrorMessage(error),
         );
@@ -219,13 +306,16 @@ export function useChatController(): ChatController {
       } finally {
         sendingRef.current = false;
         setIsSending(false);
+        setIsWaitingForResponse(false);
       }
     },
     [
       addMessage,
       conversationId,
       isLoadingHistory,
+      removeMessage,
       setConversationId,
+      updateMessage,
     ],
   );
 
@@ -305,6 +395,7 @@ export function useChatController(): ChatController {
     input,
     errorMessage,
     isSending,
+    isWaitingForResponse,
     isLoadingHistory,
     canSend:
       input.trim().length > 0 &&
