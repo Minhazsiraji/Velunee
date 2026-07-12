@@ -1,9 +1,5 @@
 import type { ChatMessage } from '@velunee/contracts';
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -13,49 +9,24 @@ interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
 
-export function ChatMessageBubble({
-  message,
-}: ChatMessageBubbleProps): React.JSX.Element {
+export function ChatMessageBubble({ message }: ChatMessageBubbleProps): React.JSX.Element {
   const isUser = message.role === 'user';
 
   return (
-    <View
-      style={[
-        styles.row,
-        isUser
-          ? styles.userRow
-          : styles.assistantRow,
-      ]}
-    >
+    <View style={[styles.row, isUser ? styles.userRow : styles.assistantRow]}>
       {!isUser ? (
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>V</Text>
         </View>
       ) : null}
 
-      <View
-        style={[
-          styles.bubble,
-          isUser
-            ? styles.userBubble
-            : styles.assistantBubble,
-        ]}
-      >
+      <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
         {isUser ? (
-          <Text
-            style={[
-              styles.message,
-              styles.userMessage,
-            ]}
-          >
-            {message.content}
-          </Text>
+          <Text style={[styles.message, styles.userMessage]}>{message.content}</Text>
         ) : (
           <MarkdownMessage
             content={message.content}
-            isStreaming={message.id.startsWith(
-              'stream-assistant-',
-            )}
+            isStreaming={message.id.startsWith('stream-assistant-')}
           />
         )}
       </View>

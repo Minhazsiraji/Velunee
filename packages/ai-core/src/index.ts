@@ -96,7 +96,9 @@ interface InteractionStreamEvent {
 }
 
 interface InteractionClient {
-  create(input: Record<string, unknown>): Promise<InteractionResult | AsyncIterable<InteractionStreamEvent>>;
+  create(
+    input: Record<string, unknown>,
+  ): Promise<InteractionResult | AsyncIterable<InteractionStreamEvent>>;
 }
 
 export interface GeminiAIProviderOptions {
@@ -151,8 +153,7 @@ export class GeminiAIProvider implements AIProvider {
     }
 
     for await (const event of result as AsyncIterable<InteractionStreamEvent>) {
-      const deltaText =
-        typeof event.delta === 'string' ? event.delta : event.delta?.text;
+      const deltaText = typeof event.delta === 'string' ? event.delta : event.delta?.text;
       const text = deltaText ?? event.text ?? event.output_text;
       if (typeof text === 'string' && text.length > 0) {
         yield { text };

@@ -4,19 +4,8 @@ import type {
   ConversationHistoryResponse,
   ConversationListResponse,
 } from '@velunee/contracts';
-import {
-  conversations,
-  messages,
-  users,
-  type DatabaseConnection,
-} from '@velunee/database';
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  isNull,
-} from 'drizzle-orm';
+import { conversations, messages, users, type DatabaseConnection } from '@velunee/database';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { CryptoService } from '../crypto/crypto.service';
 import { DATABASE_CONNECTION } from '../database/database.constants';
 
@@ -39,23 +28,16 @@ export interface PersistedChatHistory {
 
 @Injectable()
 export class ChatRepository {
-  private readonly logger = new Logger(
-    ChatRepository.name,
-  );
+  private readonly logger = new Logger(ChatRepository.name);
 
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly connection:
-      | DatabaseConnection
-      | null,
+    private readonly connection: DatabaseConnection | null,
     private readonly crypto: CryptoService,
   ) {}
 
   get persistenceEnabled(): boolean {
-    return (
-      this.connection !== null &&
-      this.crypto.enabled
-    );
+    return this.connection !== null && this.crypto.enabled;
   }
 
   async ensureConversation(input: {
@@ -63,10 +45,7 @@ export class ChatRepository {
     userId: string;
     locale?: string;
   }): Promise<void> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+    if (!this.persistenceEnabled || !this.connection) {
       return;
     }
 
@@ -84,16 +63,7 @@ export class ChatRepository {
       .select({ id: conversations.id })
       .from(conversations)
       .where(
-        and(
-          eq(
-            conversations.id,
-            input.conversationId,
-          ),
-          eq(
-            conversations.userId,
-            input.userId,
-          ),
-        ),
+        and(eq(conversations.id, input.conversationId), eq(conversations.userId, input.userId)),
       )
       .limit(1);
 
@@ -106,13 +76,8 @@ export class ChatRepository {
     }
   }
 
-  async saveMessage(
-    input: PersistedMessageInput,
-  ): Promise<void> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+  async saveMessage(input: PersistedMessageInput): Promise<void> {
+    if (!this.persistenceEnabled || !this.connection) {
       return;
     }
 
@@ -124,9 +89,7 @@ export class ChatRepository {
       userId: input.userId,
       role: input.role,
       inputMode: input.inputMode,
-      contentEncrypted: this.crypto.encrypt(
-        input.content,
-      ),
+      contentEncrypted: this.crypto.encrypt(input.content),
       provider: input.provider,
       model: input.model,
       requestId: input.requestId,
@@ -138,26 +101,12 @@ export class ChatRepository {
         updatedAt: new Date(),
       })
       .where(
-        and(
-          eq(
-            conversations.id,
-            input.conversationId,
-          ),
-          eq(
-            conversations.userId,
-            input.userId,
-          ),
-        ),
+        and(eq(conversations.id, input.conversationId), eq(conversations.userId, input.userId)),
       );
   }
 
-  async getLatestHistory(
-    userId: string,
-  ): Promise<PersistedChatHistory> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+  async getLatestHistory(userId: string): Promise<PersistedChatHistory> {
+    if (!this.persistenceEnabled || !this.connection) {
       return {
         conversationId: null,
         messages: [],
@@ -171,16 +120,8 @@ export class ChatRepository {
         id: conversations.id,
       })
       .from(conversations)
-      .where(
-        and(
-          eq(conversations.userId, userId),
-          isNull(conversations.deletedAt),
-        ),
-      )
-      .orderBy(
-        desc(conversations.updatedAt),
-        desc(conversations.createdAt),
-      )
+      .where(and(eq(conversations.userId, userId), isNull(conversations.deletedAt)))
+      .orderBy(desc(conversations.updatedAt), desc(conversations.createdAt))
       .limit(1);
 
     if (!conversation) {
@@ -195,44 +136,34 @@ export class ChatRepository {
         id: messages.id,
         role: messages.role,
         inputMode: messages.inputMode,
-        contentEncrypted:
-          messages.contentEncrypted,
+        contentEncrypted: messages.contentEncrypted,
         createdAt: messages.createdAt,
       })
       .from(messages)
       .where(
         and(
-          eq(
-            messages.conversationId,
-            conversation.id,
-          ),
+          eq(messages.conversationId, conversation.id),
           eq(messages.userId, userId),
           isNull(messages.deletedAt),
         ),
       )
       .orderBy(asc(messages.createdAt));
 
-    const historyMessages =
-      storedMessages.flatMap<ChatMessage>(
-        (message) => {
-          if (message.role === 'tool') {
-            return [];
-          }
+    const historyMessages = storedMessages.flatMap<ChatMessage>((message) => {
+      if (message.role === 'tool') {
+        return [];
+      }
 
-          return [
-            {
-              id: message.id,
-              role: message.role,
-              content: this.crypto.decrypt(
-                message.contentEncrypted,
-              ),
-              inputMode: message.inputMode,
-              createdAt:
-                message.createdAt.toISOString(),
-            },
-          ];
+      return [
+        {
+          id: message.id,
+          role: message.role,
+          content: this.crypto.decrypt(message.contentEncrypted),
+          inputMode: message.inputMode,
+          createdAt: message.createdAt.toISOString(),
         },
-      );
+      ];
+    });
 
     return {
       conversationId: conversation.id,
@@ -240,13 +171,8 @@ export class ChatRepository {
     };
   }
 
-  async listConversations(
-    userId: string,
-  ): Promise<ConversationListResponse> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+  async listConversations(userId: string): Promise<ConversationListResponse> {
+    if (!this.persistenceEnabled || !this.connection) {
       return { conversations: [] };
     }
 
@@ -260,94 +186,52 @@ export class ChatRepository {
         updatedAt: conversations.updatedAt,
       })
       .from(conversations)
-      .where(
-        and(
-          eq(conversations.userId, userId),
-          isNull(conversations.deletedAt),
-        ),
-      )
-      .orderBy(
-        desc(conversations.updatedAt),
-        desc(conversations.createdAt),
-      );
+      .where(and(eq(conversations.userId, userId), isNull(conversations.deletedAt)))
+      .orderBy(desc(conversations.updatedAt), desc(conversations.createdAt));
 
     const items = await Promise.all(
-      storedConversations.map(
-        async (conversation) => {
-          const storedMessages = await db
-            .select({
-              contentEncrypted:
-                messages.contentEncrypted,
-              role: messages.role,
-            })
-            .from(messages)
-            .where(
-              and(
-                eq(
-                  messages.conversationId,
-                  conversation.id,
-                ),
-                eq(messages.userId, userId),
-                isNull(messages.deletedAt),
-              ),
-            )
-            .orderBy(asc(messages.createdAt));
+      storedConversations.map(async (conversation) => {
+        const storedMessages = await db
+          .select({
+            contentEncrypted: messages.contentEncrypted,
+            role: messages.role,
+          })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, conversation.id),
+              eq(messages.userId, userId),
+              isNull(messages.deletedAt),
+            ),
+          )
+          .orderBy(asc(messages.createdAt));
 
-          const visibleMessages =
-            storedMessages.filter(
-              (message) =>
-                message.role !== 'tool',
-            );
+        const visibleMessages = storedMessages.filter((message) => message.role !== 'tool');
 
-          const firstUserMessage =
-            visibleMessages.find(
-              (message) =>
-                message.role === 'user',
-            );
+        const firstUserMessage = visibleMessages.find((message) => message.role === 'user');
 
-          const lastMessage =
-            visibleMessages.at(-1);
+        const lastMessage = visibleMessages.at(-1);
 
-          const firstUserContent =
-            firstUserMessage
-              ? this.crypto.decrypt(
-                  firstUserMessage.contentEncrypted,
-                )
-              : '';
+        const firstUserContent = firstUserMessage
+          ? this.crypto.decrypt(firstUserMessage.contentEncrypted)
+          : '';
 
-          const lastContent = lastMessage
-            ? this.crypto.decrypt(
-                lastMessage.contentEncrypted,
-              )
-            : '';
+        const lastContent = lastMessage ? this.crypto.decrypt(lastMessage.contentEncrypted) : '';
 
-          const generatedTitle =
-            firstUserContent
-              .replace(/\s+/g, ' ')
-              .trim()
-              .slice(0, 60) ||
-            'New conversation';
+        const generatedTitle =
+          firstUserContent.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New conversation';
 
-          const preview = lastContent
-            .replace(/\s+/g, ' ')
-            .trim()
-            .slice(0, 120);
+        const preview = lastContent.replace(/\s+/g, ' ').trim().slice(0, 120);
 
-          return {
-            id: conversation.id,
-            title:
-              conversation.title?.trim() ||
-              generatedTitle,
-            preview,
-            messageCount:
-              visibleMessages.length,
-            createdAt:
-              conversation.createdAt.toISOString(),
-            updatedAt:
-              conversation.updatedAt.toISOString(),
-          };
-        },
-      ),
+        return {
+          id: conversation.id,
+          title: conversation.title?.trim() || generatedTitle,
+          preview,
+          messageCount: visibleMessages.length,
+          createdAt: conversation.createdAt.toISOString(),
+          updatedAt: conversation.updatedAt.toISOString(),
+        };
+      }),
     );
 
     return { conversations: items };
@@ -357,10 +241,7 @@ export class ChatRepository {
     userId: string,
     conversationId: string,
   ): Promise<ConversationHistoryResponse | null> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+    if (!this.persistenceEnabled || !this.connection) {
       return null;
     }
 
@@ -387,44 +268,34 @@ export class ChatRepository {
         id: messages.id,
         role: messages.role,
         inputMode: messages.inputMode,
-        contentEncrypted:
-          messages.contentEncrypted,
+        contentEncrypted: messages.contentEncrypted,
         createdAt: messages.createdAt,
       })
       .from(messages)
       .where(
         and(
-          eq(
-            messages.conversationId,
-            conversationId,
-          ),
+          eq(messages.conversationId, conversationId),
           eq(messages.userId, userId),
           isNull(messages.deletedAt),
         ),
       )
       .orderBy(asc(messages.createdAt));
 
-    const historyMessages =
-      storedMessages.flatMap<ChatMessage>(
-        (message) => {
-          if (message.role === 'tool') {
-            return [];
-          }
+    const historyMessages = storedMessages.flatMap<ChatMessage>((message) => {
+      if (message.role === 'tool') {
+        return [];
+      }
 
-          return [
-            {
-              id: message.id,
-              role: message.role,
-              content: this.crypto.decrypt(
-                message.contentEncrypted,
-              ),
-              inputMode: message.inputMode,
-              createdAt:
-                message.createdAt.toISOString(),
-            },
-          ];
+      return [
+        {
+          id: message.id,
+          role: message.role,
+          content: this.crypto.decrypt(message.contentEncrypted),
+          inputMode: message.inputMode,
+          createdAt: message.createdAt.toISOString(),
         },
-      );
+      ];
+    });
 
     return {
       conversationId,
@@ -437,10 +308,7 @@ export class ChatRepository {
     conversationId: string,
     title: string,
   ): Promise<boolean> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+    if (!this.persistenceEnabled || !this.connection) {
       return false;
     }
 
@@ -464,14 +332,8 @@ export class ChatRepository {
     return updated.length > 0;
   }
 
-  async deleteConversation(
-    userId: string,
-    conversationId: string,
-  ): Promise<boolean> {
-    if (
-      !this.persistenceEnabled ||
-      !this.connection
-    ) {
+  async deleteConversation(userId: string, conversationId: string): Promise<boolean> {
+    if (!this.persistenceEnabled || !this.connection) {
       return false;
     }
 
@@ -497,9 +359,7 @@ export class ChatRepository {
 
   logPersistenceState(): void {
     if (!this.connection) {
-      this.logger.warn(
-        'Chat persistence is disabled because DATABASE_URL is not configured',
-      );
+      this.logger.warn('Chat persistence is disabled because DATABASE_URL is not configured');
     } else if (!this.crypto.enabled) {
       this.logger.warn(
         'Chat persistence is disabled because FIELD_ENCRYPTION_KEY is not configured',

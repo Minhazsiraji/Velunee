@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Patch,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Patch } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   updatePreferencesSchema,
@@ -24,9 +17,7 @@ export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Get()
-  async getOverview(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<AccountOverviewResponse> {
+  async getOverview(@CurrentUser() user: AuthenticatedUser): Promise<AccountOverviewResponse> {
     return this.accountService.getOverview(user);
   }
 
@@ -52,9 +43,7 @@ export class AccountController {
 
   @Delete()
   @HttpCode(200)
-  async deleteAccount(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<DeleteAccountResponse> {
+  async deleteAccount(@CurrentUser() user: AuthenticatedUser): Promise<DeleteAccountResponse> {
     await this.accountService.deleteAccount(user.id);
     return { deleted: true };
   }

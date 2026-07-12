@@ -1,13 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FormField } from '@/components/form-field';
@@ -29,12 +22,8 @@ export default function SignUpScreen(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(
-    null,
-  );
-  const [confirmationError, setConfirmationError] = useState<
-    string | null
-  >(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -44,21 +33,14 @@ export default function SignUpScreen(): React.JSX.Element {
 
     const nextEmailError = validateEmail(email);
     const nextPasswordError = validatePassword(password);
-    const nextConfirmationError = validatePasswordConfirmation(
-      password,
-      confirmation,
-    );
+    const nextConfirmationError = validatePasswordConfirmation(password, confirmation);
 
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
     setConfirmationError(nextConfirmationError);
     setFormError(null);
 
-    if (
-      nextEmailError ||
-      nextPasswordError ||
-      nextConfirmationError
-    ) {
+    if (nextEmailError || nextPasswordError || nextConfirmationError) {
       return;
     }
 
@@ -83,8 +65,7 @@ export default function SignUpScreen(): React.JSX.Element {
         <View style={styles.confirmContainer}>
           <Text style={styles.confirmTitle}>Check your email</Text>
           <Text style={styles.confirmBody}>
-            We sent a confirmation link to{' '}
-            <Text style={styles.confirmEmail}>{email.trim()}</Text>.
+            We sent a confirmation link to <Text style={styles.confirmEmail}>{email.trim()}</Text>.
             Tap it to activate your account, then sign in.
           </Text>
           <PrimaryButton
@@ -103,10 +84,7 @@ export default function SignUpScreen(): React.JSX.Element {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>
             Save your conversations and personalize Velunee to you.
@@ -149,9 +127,7 @@ export default function SignUpScreen(): React.JSX.Element {
             onSubmitEditing={() => void handleSignUp()}
           />
 
-          {formError ? (
-            <Text style={styles.formError}>{formError}</Text>
-          ) : null}
+          {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
           <PrimaryButton
             label="Create Account"
@@ -161,9 +137,7 @@ export default function SignUpScreen(): React.JSX.Element {
           />
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Already have an account?{' '}
-            </Text>
+            <Text style={styles.footerText}>Already have an account? </Text>
             <Link href="/(auth)/sign-in" style={styles.footerLink}>
               Sign in
             </Link>

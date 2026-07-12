@@ -46,23 +46,12 @@ export class AccountRepository {
     if (!this.connection) return;
     const { db } = this.connection;
 
-    await db
-      .insert(users)
-      .values({ id: userId, authProviderId: userId })
-      .onConflictDoNothing();
-    await db
-      .insert(profilesTable)
-      .values({ userId })
-      .onConflictDoNothing();
-    await db
-      .insert(preferencesTable)
-      .values({ userId })
-      .onConflictDoNothing();
+    await db.insert(users).values({ id: userId, authProviderId: userId }).onConflictDoNothing();
+    await db.insert(profilesTable).values({ userId }).onConflictDoNothing();
+    await db.insert(preferencesTable).values({ userId }).onConflictDoNothing();
   }
 
-  async getProfile(
-    userId: string,
-  ): Promise<Omit<AccountProfile, 'email' | 'isAnonymous'>> {
+  async getProfile(userId: string): Promise<Omit<AccountProfile, 'email' | 'isAnonymous'>> {
     if (!this.connection) return { ...DEFAULT_PROFILE };
     const { db } = this.connection;
 
@@ -87,9 +76,7 @@ export class AccountRepository {
     };
   }
 
-  async getPreferences(
-    userId: string,
-  ): Promise<AccountPreferences> {
+  async getPreferences(userId: string): Promise<AccountPreferences> {
     if (!this.connection) return { ...DEFAULT_PREFERENCES };
     const { db } = this.connection;
 
@@ -121,20 +108,12 @@ export class AccountRepository {
     const [row] = await db
       .select({ value: count() })
       .from(conversations)
-      .where(
-        and(
-          eq(conversations.userId, userId),
-          isNull(conversations.deletedAt),
-        ),
-      );
+      .where(and(eq(conversations.userId, userId), isNull(conversations.deletedAt)));
 
     return row?.value ?? 0;
   }
 
-  async updateProfile(
-    userId: string,
-    input: UpdateProfileInput,
-  ): Promise<void> {
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<void> {
     if (!this.connection) return;
     await this.ensureRows(userId);
     const { db } = this.connection;
@@ -153,16 +132,10 @@ export class AccountRepository {
       patch.companionStyle = input.companionStyle;
     }
 
-    await db
-      .update(profilesTable)
-      .set(patch)
-      .where(eq(profilesTable.userId, userId));
+    await db.update(profilesTable).set(patch).where(eq(profilesTable.userId, userId));
   }
 
-  async updatePreferences(
-    userId: string,
-    input: UpdatePreferencesInput,
-  ): Promise<void> {
+  async updatePreferences(userId: string, input: UpdatePreferencesInput): Promise<void> {
     if (!this.connection) return;
     await this.ensureRows(userId);
     const { db } = this.connection;
@@ -181,10 +154,7 @@ export class AccountRepository {
       patch.analyticsEnabled = input.analyticsEnabled;
     }
 
-    await db
-      .update(preferencesTable)
-      .set(patch)
-      .where(eq(preferencesTable.userId, userId));
+    await db.update(preferencesTable).set(patch).where(eq(preferencesTable.userId, userId));
   }
 
   /**

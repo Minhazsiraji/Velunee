@@ -1,10 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CommunityPost } from '@velunee/contracts';
 
 import { colors } from '@/theme/colors';
@@ -37,18 +32,14 @@ export function CommunityPostCard({
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {initial.toUpperCase()}
-          </Text>
+          <Text style={styles.avatarText}>{initial.toUpperCase()}</Text>
         </View>
         <View style={styles.headerText}>
           <Text style={styles.author} numberOfLines={1}>
             {post.authorName}
             {post.isOwnPost ? ' · You' : ''}
           </Text>
-          <Text style={styles.time}>
-            {relativeTime(post.createdAt)}
-          </Text>
+          <Text style={styles.time}>{relativeTime(post.createdAt)}</Text>
         </View>
       </View>
 
@@ -57,9 +48,7 @@ export function CommunityPostCard({
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            post.viewerHasReacted ? 'Remove heart' : 'Add heart'
-          }
+          accessibilityLabel={post.viewerHasReacted ? 'Remove heart' : 'Add heart'}
           accessibilityState={{ selected: post.viewerHasReacted }}
           hitSlop={8}
           onPress={() => onToggleReaction(post)}
@@ -68,18 +57,12 @@ export function CommunityPostCard({
           <Ionicons
             name={post.viewerHasReacted ? 'heart' : 'heart-outline'}
             size={22}
-            color={
-              post.viewerHasReacted
-                ? colors.danger
-                : colors.textSecondary
-            }
+            color={post.viewerHasReacted ? colors.danger : colors.textSecondary}
           />
           <Text
             style={[
               styles.reactionCount,
-              post.viewerHasReacted
-                ? styles.reactionCountActive
-                : null,
+              post.viewerHasReacted ? styles.reactionCountActive : null,
             ]}
           >
             {post.reactionCount}
@@ -87,14 +70,8 @@ export function CommunityPostCard({
         </Pressable>
 
         <View style={styles.reaction}>
-          <Ionicons
-            name="chatbubble-outline"
-            size={20}
-            color={colors.textSecondary}
-          />
-          <Text style={styles.reactionCount}>
-            {post.commentCount}
-          </Text>
+          <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
+          <Text style={styles.reactionCount}>{post.commentCount}</Text>
         </View>
       </View>
     </View>

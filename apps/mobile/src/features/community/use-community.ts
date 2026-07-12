@@ -4,17 +4,9 @@ import {
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
-import type {
-  CommunityFeedResponse,
-  CommunityPost,
-} from '@velunee/contracts';
+import type { CommunityFeedResponse, CommunityPost } from '@velunee/contracts';
 
-import {
-  addReaction,
-  createPost,
-  loadFeed,
-  removeReaction,
-} from './api';
+import { addReaction, createPost, loadFeed, removeReaction } from './api';
 
 const feedQueryKey = ['community', 'feed'] as const;
 
@@ -23,8 +15,7 @@ type FeedData = InfiniteData<CommunityFeedResponse>;
 export function useCommunityFeed() {
   return useInfiniteQuery({
     queryKey: feedQueryKey,
-    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
-      loadFeed(pageParam),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) => loadFeed(pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
@@ -40,9 +31,7 @@ function mapPosts(
     ...data,
     pages: data.pages.map((page) => ({
       ...page,
-      posts: page.posts.map((post) =>
-        post.id === postId ? update(post) : post,
-      ),
+      posts: page.posts.map((post) => (post.id === postId ? update(post) : post)),
     })),
   };
 }
@@ -62,13 +51,10 @@ export function useToggleReaction() {
 
   return useMutation({
     mutationFn: (post: CommunityPost) =>
-      post.viewerHasReacted
-        ? removeReaction(post.id)
-        : addReaction(post.id),
+      post.viewerHasReacted ? removeReaction(post.id) : addReaction(post.id),
     onMutate: async (post: CommunityPost) => {
       await queryClient.cancelQueries({ queryKey: feedQueryKey });
-      const previous =
-        queryClient.getQueryData<FeedData>(feedQueryKey);
+      const previous = queryClient.getQueryData<FeedData>(feedQueryKey);
 
       queryClient.setQueryData<FeedData>(feedQueryKey, (data) =>
         mapPosts(data, post.id, (current) => ({

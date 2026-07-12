@@ -51,8 +51,7 @@ export default function SettingsScreen(): React.JSX.Element {
     useState<(typeof COMPANION_STYLES)[number]['value']>('warm');
   const [profileSaved, setProfileSaved] = useState(false);
 
-  const [deleteModalVisible, setDeleteModalVisible] =
-    useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -93,9 +92,7 @@ export default function SettingsScreen(): React.JSX.Element {
       router.replace('/(auth)/welcome');
     } catch (error) {
       setDeleteError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to delete your account. Please try again.',
+        error instanceof Error ? error.message : 'Unable to delete your account. Please try again.',
       );
     } finally {
       setIsDeleting(false);
@@ -116,12 +113,8 @@ export default function SettingsScreen(): React.JSX.Element {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <Text style={styles.errorTitle}>
-            Couldn&apos;t load settings
-          </Text>
-          <Text style={styles.errorBody}>
-            Check your connection and try again.
-          </Text>
+          <Text style={styles.errorTitle}>Couldn&apos;t load settings</Text>
+          <Text style={styles.errorBody}>Check your connection and try again.</Text>
           <PrimaryButton
             label="Retry"
             variant="outline"
@@ -142,20 +135,13 @@ export default function SettingsScreen(): React.JSX.Element {
           hitSlop={12}
           onPress={() => router.back()}
         >
-          <Ionicons
-            name="chevron-back"
-            size={26}
-            color={colors.text}
-          />
+          <Ionicons name="chevron-back" size={26} color={colors.text} />
         </Pressable>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.sectionTitle}>Profile</Text>
         <View style={styles.card}>
           <FormField
@@ -183,14 +169,10 @@ export default function SettingsScreen(): React.JSX.Element {
           </View>
 
           {updateProfile.isError ? (
-            <Text style={styles.inlineError}>
-              Couldn&apos;t save your profile. Try again.
-            </Text>
+            <Text style={styles.inlineError}>Couldn&apos;t save your profile. Try again.</Text>
           ) : null}
 
-          {profileSaved ? (
-            <Text style={styles.inlineSuccess}>Saved.</Text>
-          ) : null}
+          {profileSaved ? <Text style={styles.inlineSuccess}>Saved.</Text> : null}
 
           <PrimaryButton
             label="Save Profile"
@@ -208,9 +190,7 @@ export default function SettingsScreen(): React.JSX.Element {
                 label="ANSWER LENGTH"
                 options={[...ANSWER_LENGTHS]}
                 value={preferences.answerLength}
-                onChange={(value) =>
-                  updatePreferences.mutate({ answerLength: value })
-                }
+                onChange={(value) => updatePreferences.mutate({ answerLength: value })}
                 disabled={updatePreferences.isPending}
               />
 
@@ -220,17 +200,13 @@ export default function SettingsScreen(): React.JSX.Element {
                 label="Voice replies"
                 description="Let Velunee speak responses aloud."
                 value={preferences.voiceEnabled}
-                onValueChange={(value) =>
-                  updatePreferences.mutate({ voiceEnabled: value })
-                }
+                onValueChange={(value) => updatePreferences.mutate({ voiceEnabled: value })}
               />
               <ToggleRow
                 label="Personal memory"
                 description="Remember helpful details across chats."
                 value={preferences.memoryEnabled}
-                onValueChange={(value) =>
-                  updatePreferences.mutate({ memoryEnabled: value })
-                }
+                onValueChange={(value) => updatePreferences.mutate({ memoryEnabled: value })}
               />
               <ToggleRow
                 label="Usage analytics"
@@ -253,11 +229,7 @@ export default function SettingsScreen(): React.JSX.Element {
             onPress={() => setDeleteModalVisible(true)}
             style={styles.dangerRow}
           >
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color={colors.danger}
-            />
+            <Ionicons name="trash-outline" size={20} color={colors.danger} />
             <View style={styles.dangerText}>
               <Text style={styles.dangerLabel}>Delete account</Text>
               <Text style={styles.dangerDescription}>
@@ -278,12 +250,10 @@ export default function SettingsScreen(): React.JSX.Element {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Delete account?</Text>
             <Text style={styles.modalBody}>
-              This permanently deletes your profile, conversations,
-              memories, and community activity. This cannot be undone.
+              This permanently deletes your profile, conversations, memories, and community
+              activity. This cannot be undone.
             </Text>
-            <Text style={styles.modalPrompt}>
-              Type DELETE to confirm.
-            </Text>
+            <Text style={styles.modalPrompt}>Type DELETE to confirm.</Text>
 
             <FormField
               label=""

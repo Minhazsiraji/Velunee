@@ -12,9 +12,9 @@ implemented in the repository.
 - [ ] **[you]** Set the API environment (never commit these):
   - `AUTH_MODE=required`
   - `SUPABASE_URL=...`
-  - `SUPABASE_SERVICE_ROLE_KEY=...`  ← enables in-app account deletion
+  - `SUPABASE_SERVICE_ROLE_KEY=...` ← enables in-app account deletion
   - `DATABASE_URL=...`
-  - `FIELD_ENCRYPTION_KEY=...`  (`openssl rand -base64 32`)
+  - `FIELD_ENCRYPTION_KEY=...` (`openssl rand -base64 32`)
   - `AI_PROVIDER=gemini` and `GEMINI_API_KEY=...`
   - `CORS_ORIGINS=` your production origins
 - [ ] Regenerate and apply migrations. The schema now includes the community
@@ -32,7 +32,7 @@ implemented in the repository.
 - [ ] **[you]** Set mobile env (`apps/mobile/.env`):
   - `EXPO_PUBLIC_API_URL=https://<your-api>/api/v1`
   - `EXPO_PUBLIC_SUPABASE_URL=...`
-  - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...`  (anon key is public by design)
+  - `EXPO_PUBLIC_SUPABASE_ANON_KEY=...` (anon key is public by design)
   - Do **not** set `EXPO_PUBLIC_ALLOW_DEV_USER_FALLBACK` in production.
 - [ ] **[you]** Add the deep link `velunee://reset-password` to Supabase Auth
       redirect allow-list (for password reset).

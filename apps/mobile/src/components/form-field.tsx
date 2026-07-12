@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type TextInputProps,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors } from '@/theme/colors';
@@ -25,25 +18,16 @@ export function FormField({
   style,
   ...inputProps
 }: FormFieldProps): React.JSX.Element {
-  const [isHidden, setIsHidden] = useState(
-    secureToggle ? true : Boolean(secureTextEntry),
-  );
+  const [isHidden, setIsHidden] = useState(secureToggle ? true : Boolean(secureTextEntry));
 
   const showToggle = secureToggle;
-  const effectiveSecure = secureToggle
-    ? isHidden
-    : secureTextEntry;
+  const effectiveSecure = secureToggle ? isHidden : secureTextEntry;
 
   return (
     <View style={styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <View
-        style={[
-          styles.inputRow,
-          errorText ? styles.inputRowError : null,
-        ]}
-      >
+      <View style={[styles.inputRow, errorText ? styles.inputRowError : null]}>
         <TextInput
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.primaryLight}
@@ -55,9 +39,7 @@ export function FormField({
         {showToggle ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={
-              isHidden ? 'Show password' : 'Hide password'
-            }
+            accessibilityLabel={isHidden ? 'Show password' : 'Hide password'}
             hitSlop={10}
             onPress={() => setIsHidden((value) => !value)}
             style={styles.toggle}
@@ -71,9 +53,7 @@ export function FormField({
         ) : null}
       </View>
 
-      {errorText ? (
-        <Text style={styles.error}>{errorText}</Text>
-      ) : null}
+      {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
     </View>
   );
 }

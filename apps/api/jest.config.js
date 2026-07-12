@@ -13,10 +13,7 @@ module.exports = {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
-    '^.+\\.ts$': [
-      'ts-jest',
-      { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true },
-    ],
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true }],
   },
   transformIgnorePatterns: ['/node_modules/(?!(jose)/)'],
 };

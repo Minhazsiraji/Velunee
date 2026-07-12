@@ -1,11 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -43,50 +37,29 @@ export function ChatComposer({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            isSending
-              ? 'Stop generating'
-              : 'Send message'
-          }
+          accessibilityLabel={isSending ? 'Stop generating' : 'Send message'}
           accessibilityState={{
-            disabled:
-              !isSending && !canSend,
+            disabled: !isSending && !canSend,
             busy: isSending,
           }}
-          disabled={
-            !isSending && !canSend
-          }
-          onPress={
-            isSending ? onStop : onSend
-          }
+          disabled={!isSending && !canSend}
+          onPress={isSending ? onStop : onSend}
           style={({ pressed }) => [
             styles.sendButton,
             isSending && styles.stopButton,
-            !isSending &&
-              !canSend &&
-              styles.disabled,
+            !isSending && !canSend && styles.disabled,
             pressed && styles.pressed,
           ]}
         >
           <Ionicons
-            name={
-              isSending
-                ? 'stop'
-                : 'arrow-up'
-            }
+            name={isSending ? 'stop' : 'arrow-up'}
             size={isSending ? 19 : 22}
-            color={
-              !isSending && !canSend
-                ? colors.primaryLight
-                : colors.white
-            }
+            color={!isSending && !canSend ? colors.primaryLight : colors.white}
           />
         </Pressable>
       </View>
 
-      <Text style={styles.disclaimer}>
-        Velunee can make mistakes. Check important information.
-      </Text>
+      <Text style={styles.disclaimer}>Velunee can make mistakes. Check important information.</Text>
     </View>
   );
 }

@@ -7,7 +7,5 @@
     "module": "CommonJS",
     "moduleResolution": "Node"
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

@@ -1,17 +1,10 @@
 import { Redirect, Stack } from 'expo-router';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/providers/auth-provider';
 
 export default function AppLayout(): React.JSX.Element {
-  const {
-    isLoading,
-    isAuthenticated,
-  } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
     return (

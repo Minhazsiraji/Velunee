@@ -1,21 +1,11 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FormField } from '@/components/form-field';
 import { PrimaryButton } from '@/components/primary-button';
-import {
-  friendlyAuthError,
-  validateEmail,
-} from '@/features/auth/validation';
+import { friendlyAuthError, validateEmail } from '@/features/auth/validation';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
@@ -26,9 +16,7 @@ export default function SignInScreen(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(
-    null,
-  );
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,9 +24,7 @@ export default function SignInScreen(): React.JSX.Element {
     if (isSubmitting) return;
 
     const nextEmailError = validateEmail(email);
-    const nextPasswordError = password
-      ? null
-      : 'Enter your password.';
+    const nextPasswordError = password ? null : 'Enter your password.';
 
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
@@ -63,14 +49,9 @@ export default function SignInScreen(): React.JSX.Element {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>
-            Sign in to continue your Velunee journey.
-          </Text>
+          <Text style={styles.subtitle}>Sign in to continue your Velunee journey.</Text>
 
           <FormField
             label="EMAIL"
@@ -103,9 +84,7 @@ export default function SignInScreen(): React.JSX.Element {
             Forgot password?
           </Link>
 
-          {formError ? (
-            <Text style={styles.formError}>{formError}</Text>
-          ) : null}
+          {formError ? <Text style={styles.formError}>{formError}</Text> : null}
 
           <PrimaryButton
             label="Sign In"
@@ -115,9 +94,7 @@ export default function SignInScreen(): React.JSX.Element {
           />
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              New to Velunee?{' '}
-            </Text>
+            <Text style={styles.footerText}>New to Velunee? </Text>
             <Link href="/(auth)/sign-up" style={styles.footerLink}>
               Create an account
             </Link>

@@ -1,18 +1,11 @@
-import {
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import type { CommunityRepository } from './community.repository';
 
-function buildRepository(
-  overrides: Partial<CommunityRepository> = {},
-): CommunityRepository {
+function buildRepository(overrides: Partial<CommunityRepository> = {}): CommunityRepository {
   return {
     enabled: true,
-    getFeed: jest
-      .fn()
-      .mockResolvedValue({ posts: [], nextCursor: null }),
+    getFeed: jest.fn().mockResolvedValue({ posts: [], nextCursor: null }),
     createPost: jest.fn(),
     postExists: jest.fn().mockResolvedValue(true),
     addReaction: jest.fn().mockResolvedValue({
@@ -38,11 +31,7 @@ describe('CommunityService', () => {
 
     expect(state.viewerHasReacted).toBe(true);
     expect(state.reactionCount).toBe(1);
-    expect(repository.addReaction).toHaveBeenCalledWith(
-      'user-1',
-      'post-1',
-      'heart',
-    );
+    expect(repository.addReaction).toHaveBeenCalledWith('user-1', 'post-1', 'heart');
   });
 
   it('rejects reactions on a missing post', async () => {
@@ -51,17 +40,17 @@ describe('CommunityService', () => {
     });
     const service = new CommunityService(repository);
 
-    await expect(
-      service.react('user-1', 'missing', 'heart'),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.react('user-1', 'missing', 'heart')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('refuses to create a post when persistence is disabled', async () => {
     const repository = buildRepository({ enabled: false });
     const service = new CommunityService(repository);
 
-    await expect(
-      service.createPost('user-1', 'hello'),
-    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    await expect(service.createPost('user-1', 'hello')).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
   });
 });

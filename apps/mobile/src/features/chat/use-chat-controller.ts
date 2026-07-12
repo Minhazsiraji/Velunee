@@ -1,18 +1,10 @@
 import type { ChatMessage } from '@velunee/contracts';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '@/lib/api';
 import { useChatStore } from '@/stores/chat-store';
 
-import {
-  loadChatHistory,
-  streamChatMessage,
-} from './api';
+import { loadChatHistory, streamChatMessage } from './api';
 
 interface HistoryItem {
   role: 'user' | 'assistant';
@@ -42,14 +34,10 @@ interface ChatController {
 }
 
 function createLocalId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createLocalUserMessage(
-  content: string,
-): ChatMessage {
+function createLocalUserMessage(content: string): ChatMessage {
   return {
     id: createLocalId('local-user'),
     role: 'user',
@@ -59,10 +47,7 @@ function createLocalUserMessage(
   };
 }
 
-function createStreamingMessage(
-  id: string,
-  content: string,
-): ChatMessage {
+function createStreamingMessage(id: string, content: string): ChatMessage {
   return {
     id,
     role: 'assistant',
@@ -72,21 +57,15 @@ function createStreamingMessage(
   };
 }
 
-function createHistory(
-  messages: ChatMessage[],
-): HistoryItem[] {
+function createHistory(messages: ChatMessage[]): HistoryItem[] {
   return messages
     .filter(
       (message) =>
-        message.id !== 'welcome' &&
-        (message.role === 'user' ||
-          message.role === 'assistant'),
+        message.id !== 'welcome' && (message.role === 'user' || message.role === 'assistant'),
     )
     .slice(-20)
     .map((message) => ({
-      role: message.role as
-        | 'user'
-        | 'assistant',
+      role: message.role as 'user' | 'assistant',
       content: message.content.slice(0, 4_000),
     }));
 }
@@ -108,13 +87,11 @@ function getLocalization(): {
   timezone: string;
 } {
   try {
-    const options =
-      Intl.DateTimeFormat().resolvedOptions();
+    const options = Intl.DateTimeFormat().resolvedOptions();
 
     return {
       locale: options.locale || 'en',
-      timezone:
-        options.timeZone || 'Asia/Dhaka',
+      timezone: options.timeZone || 'Asia/Dhaka',
     };
   } catch {
     return {
@@ -137,27 +114,19 @@ export function useChatController(): ChatController {
   } = useChatStore();
 
   const [input, setInput] = useState('');
-  const [isSending, setIsSending] =
-    useState(false);
+  const [isSending, setIsSending] = useState(false);
 
-  const [
-    isWaitingForResponse,
-    setIsWaitingForResponse,
-  ] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
-  const [isLoadingHistory, setIsLoadingHistory] =
-    useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [failedRequest, setFailedRequest] =
-    useState<FailedRequest | null>(null);
+  const [failedRequest, setFailedRequest] = useState<FailedRequest | null>(null);
 
   const sendingRef = useRef(false);
 
-  const streamControllerRef =
-    useRef<AbortController | null>(null);
+  const streamControllerRef = useRef<AbortController | null>(null);
 
   const historyLoadedRef = useRef(false);
 
@@ -169,20 +138,14 @@ export function useChatController(): ChatController {
 
     const load = async (): Promise<void> => {
       try {
-        const history =
-          await loadChatHistory();
+        const history = await loadChatHistory();
 
         if (!cancelled) {
-          setConversationHistory(
-            history.conversationId,
-            history.messages,
-          );
+          setConversationHistory(history.conversationId, history.messages);
         }
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(
-            getErrorMessage(error),
-          );
+          setErrorMessage(getErrorMessage(error));
         }
       } finally {
         if (!cancelled) {
@@ -206,25 +169,16 @@ export function useChatController(): ChatController {
   );
 
   const submit = useCallback(
-    async (
-      request: FailedRequest,
-      appendLocalMessage: boolean,
-    ): Promise<void> => {
-      if (
-        sendingRef.current ||
-        isLoadingHistory
-      ) {
+    async (request: FailedRequest, appendLocalMessage: boolean): Promise<void> => {
+      if (sendingRef.current || isLoadingHistory) {
         return;
       }
 
-      const temporaryMessageId =
-        createLocalId('stream-assistant');
+      const temporaryMessageId = createLocalId('stream-assistant');
 
-      const streamController =
-        new AbortController();
+      const streamController = new AbortController();
 
-      streamControllerRef.current =
-        streamController;
+      streamControllerRef.current = streamController;
 
       let streamedText = '';
       let streamingMessageAdded = false;
@@ -235,16 +189,11 @@ export function useChatController(): ChatController {
       setErrorMessage(null);
 
       if (appendLocalMessage) {
-        addMessage(
-          createLocalUserMessage(
-            request.content,
-          ),
-        );
+        addMessage(createLocalUserMessage(request.content));
       }
 
       try {
-        const localization =
-          getLocalization();
+        const localization = getLocalization();
 
         await streamChatMessage(
           {
@@ -252,15 +201,12 @@ export function useChatController(): ChatController {
             message: request.content,
             inputMode: 'text',
             locale: localization.locale,
-            timezone:
-              localization.timezone,
+            timezone: localization.timezone,
             history: request.history,
           },
           {
             onMeta: (event) => {
-              setConversationId(
-                event.conversationId,
-              );
+              setConversationId(event.conversationId);
             },
 
             onDelta: (delta) => {
@@ -270,33 +216,22 @@ export function useChatController(): ChatController {
                 streamingMessageAdded = true;
                 setIsWaitingForResponse(false);
 
-                addMessage(
-                  createStreamingMessage(
-                    temporaryMessageId,
-                    streamedText,
-                  ),
-                );
+                addMessage(createStreamingMessage(temporaryMessageId, streamedText));
 
                 return;
               }
 
-              updateMessage(
-                temporaryMessageId,
-                {
-                  content: streamedText,
-                },
-              );
+              updateMessage(temporaryMessageId, {
+                content: streamedText,
+              });
             },
 
             onDone: (event) => {
               if (streamingMessageAdded) {
-                updateMessage(
-                  temporaryMessageId,
-                  {
-                    id: event.messageId,
-                    content: streamedText,
-                  },
-                );
+                updateMessage(temporaryMessageId, {
+                  id: event.messageId,
+                  content: streamedText,
+                });
               }
             },
           },
@@ -304,10 +239,7 @@ export function useChatController(): ChatController {
         );
 
         if (!streamedText.trim()) {
-          throw new ApiError(
-            'Velunee returned an empty response. Please try again.',
-            502,
-          );
+          throw new ApiError('Velunee returned an empty response. Please try again.', 502);
         }
 
         setFailedRequest(null);
@@ -317,21 +249,14 @@ export function useChatController(): ChatController {
           setErrorMessage(null);
         } else {
           if (streamingMessageAdded) {
-            removeMessage(
-              temporaryMessageId,
-            );
+            removeMessage(temporaryMessageId);
           }
 
-          setErrorMessage(
-            getErrorMessage(error),
-          );
+          setErrorMessage(getErrorMessage(error));
           setFailedRequest(request);
         }
       } finally {
-        if (
-          streamControllerRef.current ===
-          streamController
-        ) {
+        if (streamControllerRef.current === streamController) {
           streamControllerRef.current = null;
         }
 
@@ -340,91 +265,53 @@ export function useChatController(): ChatController {
         setIsWaitingForResponse(false);
       }
     },
-    [
-      addMessage,
-      conversationId,
-      isLoadingHistory,
-      removeMessage,
-      setConversationId,
-      updateMessage,
-    ],
+    [addMessage, conversationId, isLoadingHistory, removeMessage, setConversationId, updateMessage],
   );
 
-  const send =
-    useCallback(async (): Promise<void> => {
-      const content = input.trim();
+  const send = useCallback(async (): Promise<void> => {
+    const content = input.trim();
 
-      if (
-        !content ||
-        sendingRef.current ||
-        isLoadingHistory
-      ) {
-        return;
-      }
+    if (!content || sendingRef.current || isLoadingHistory) {
+      return;
+    }
 
-      const request: FailedRequest = {
-        content,
-        history: createHistory(messages),
-      };
+    const request: FailedRequest = {
+      content,
+      history: createHistory(messages),
+    };
 
-      setInput('');
+    setInput('');
 
-      await submit(request, true);
-    }, [
-      input,
-      isLoadingHistory,
-      messages,
-      submit,
-    ]);
+    await submit(request, true);
+  }, [input, isLoadingHistory, messages, submit]);
 
-  const retry =
-    useCallback(async (): Promise<void> => {
-      if (
-        !failedRequest ||
-        sendingRef.current ||
-        isLoadingHistory
-      ) {
-        return;
-      }
+  const retry = useCallback(async (): Promise<void> => {
+    if (!failedRequest || sendingRef.current || isLoadingHistory) {
+      return;
+    }
 
-      await submit(
-        failedRequest,
-        false,
-      );
-    }, [
-      failedRequest,
-      isLoadingHistory,
-      submit,
-    ]);
+    await submit(failedRequest, false);
+  }, [failedRequest, isLoadingHistory, submit]);
 
-  const stopGenerating =
-    useCallback((): void => {
-      streamControllerRef.current?.abort();
-    }, []);
+  const stopGenerating = useCallback((): void => {
+    streamControllerRef.current?.abort();
+  }, []);
 
-  const dismissError =
-    useCallback((): void => {
-      setErrorMessage(null);
-      setFailedRequest(null);
-    }, []);
+  const dismissError = useCallback((): void => {
+    setErrorMessage(null);
+    setFailedRequest(null);
+  }, []);
 
-  const startNewConversation =
-    useCallback((): void => {
-      if (
-        sendingRef.current ||
-        isLoadingHistory
-      ) {
-        return;
-      }
+  const startNewConversation = useCallback((): void => {
+    if (sendingRef.current || isLoadingHistory) {
+      return;
+    }
 
-      clearConversation();
-      setInput('');
-      setErrorMessage(null);
-      setFailedRequest(null);
-    }, [
-      clearConversation,
-      isLoadingHistory,
-    ]);
+    clearConversation();
+    setInput('');
+    setErrorMessage(null);
+    setFailedRequest(null);
+  }, [clearConversation, isLoadingHistory]);
 
   return {
     messages,
@@ -433,14 +320,8 @@ export function useChatController(): ChatController {
     isSending,
     isWaitingForResponse,
     isLoadingHistory,
-    canSend:
-      input.trim().length > 0 &&
-      !isSending &&
-      !isLoadingHistory,
-    canRetry:
-      failedRequest !== null &&
-      !isSending &&
-      !isLoadingHistory,
+    canSend: input.trim().length > 0 && !isSending && !isLoadingHistory,
+    canRetry: failedRequest !== null && !isSending && !isLoadingHistory,
     setInput,
     send,
     retry,

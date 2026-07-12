@@ -13,9 +13,7 @@ export async function loadAccountOverview(): Promise<AccountOverviewResponse> {
   return accountOverviewResponseSchema.parse(payload);
 }
 
-export async function updateProfile(
-  input: UpdateProfileInput,
-): Promise<AccountOverviewResponse> {
+export async function updateProfile(input: UpdateProfileInput): Promise<AccountOverviewResponse> {
   const payload = await apiRequest<unknown>('/account/profile', {
     method: 'PATCH',
     body: JSON.stringify(input),

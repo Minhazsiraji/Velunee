@@ -1,19 +1,10 @@
 import { Redirect } from 'expo-router';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/providers/auth-provider';
 
 export default function IndexScreen(): React.JSX.Element {
-  const {
-    isLoading,
-    isAuthenticated,
-    isConfigured,
-  } = useAuth();
+  const { isLoading, isAuthenticated, isConfigured } = useAuth();
 
   if (isLoading) {
     return (
@@ -29,8 +20,7 @@ export default function IndexScreen(): React.JSX.Element {
       <View style={styles.container}>
         <Text style={styles.title}>Supabase is not configured</Text>
         <Text style={styles.message}>
-          Check the Supabase URL and anonymous key in the mobile
-          environment configuration.
+          Check the Supabase URL and anonymous key in the mobile environment configuration.
         </Text>
       </View>
     );

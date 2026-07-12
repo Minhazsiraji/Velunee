@@ -1,19 +1,11 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AccountOverviewResponse,
   UpdatePreferencesInput,
   UpdateProfileInput,
 } from '@velunee/contracts';
 
-import {
-  loadAccountOverview,
-  updatePreferences,
-  updateProfile,
-} from './api';
+import { loadAccountOverview, updatePreferences, updateProfile } from './api';
 
 export const accountQueryKey = ['account', 'overview'] as const;
 
@@ -39,23 +31,16 @@ export function useUpdatePreferences() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: UpdatePreferencesInput) =>
-      updatePreferences(input),
+    mutationFn: (input: UpdatePreferencesInput) => updatePreferences(input),
     onMutate: async (input: UpdatePreferencesInput) => {
       await queryClient.cancelQueries({ queryKey: accountQueryKey });
-      const previous =
-        queryClient.getQueryData<AccountOverviewResponse>(
-          accountQueryKey,
-        );
+      const previous = queryClient.getQueryData<AccountOverviewResponse>(accountQueryKey);
 
       if (previous) {
-        queryClient.setQueryData<AccountOverviewResponse>(
-          accountQueryKey,
-          {
-            ...previous,
-            preferences: { ...previous.preferences, ...input },
-          },
-        );
+        queryClient.setQueryData<AccountOverviewResponse>(accountQueryKey, {
+          ...previous,
+          preferences: { ...previous.preferences, ...input },
+        });
       }
 
       return { previous };

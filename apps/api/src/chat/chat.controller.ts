@@ -31,11 +31,8 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-
   @Get('history')
-  async getHistory(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ChatHistoryResponse> {
+  async getHistory(@CurrentUser() user: AuthenticatedUser): Promise<ChatHistoryResponse> {
     return this.chatService.getLatestHistory(user.id);
   }
 
@@ -43,9 +40,7 @@ export class ChatController {
   async listConversations(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ConversationListResponse> {
-    return this.chatService.listConversations(
-      user.id,
-    );
+    return this.chatService.listConversations(user.id);
   }
 
   @Get('conversations/:conversationId')
@@ -54,16 +49,10 @@ export class ChatController {
     @Param('conversationId')
     conversationId: string,
   ): Promise<ConversationHistoryResponse> {
-    const history =
-      await this.chatService.getConversationHistory(
-        user.id,
-        conversationId,
-      );
+    const history = await this.chatService.getConversationHistory(user.id, conversationId);
 
     if (!history) {
-      throw new NotFoundException(
-        'Conversation not found',
-      );
+      throw new NotFoundException('Conversation not found');
     }
 
     return history;
@@ -74,24 +63,13 @@ export class ChatController {
     @CurrentUser() user: AuthenticatedUser,
     @Param('conversationId')
     conversationId: string,
-    @Body(
-      new ZodValidationPipe(
-        renameConversationSchema,
-      ),
-    )
+    @Body(new ZodValidationPipe(renameConversationSchema))
     input: RenameConversationInput,
   ): Promise<ConversationMutationResponse> {
-    const renamed =
-      await this.chatService.renameConversation(
-        user.id,
-        conversationId,
-        input.title,
-      );
+    const renamed = await this.chatService.renameConversation(user.id, conversationId, input.title);
 
     if (!renamed) {
-      throw new NotFoundException(
-        'Conversation not found',
-      );
+      throw new NotFoundException('Conversation not found');
     }
 
     return { conversationId };
@@ -103,16 +81,10 @@ export class ChatController {
     @Param('conversationId')
     conversationId: string,
   ): Promise<ConversationMutationResponse> {
-    const deleted =
-      await this.chatService.deleteConversation(
-        user.id,
-        conversationId,
-      );
+    const deleted = await this.chatService.deleteConversation(user.id, conversationId);
 
     if (!deleted) {
-      throw new NotFoundException(
-        'Conversation not found',
-      );
+      throw new NotFoundException('Conversation not found');
     }
 
     return { conversationId };

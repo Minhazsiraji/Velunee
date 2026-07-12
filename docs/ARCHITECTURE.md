@@ -2,7 +2,7 @@
 
 **Product:** Velunee  
 **Positioning:** Personal AI Companion  
-**Tagline:** *Ask. Decide. Shine.*  
+**Tagline:** _Ask. Decide. Shine._  
 **Target market:** Worldwide  
 **Platforms:** Android first, then iOS and web  
 **Core experience:** Text, voice and image-based personal AI assistance with an optional moderated community
@@ -158,23 +158,23 @@ This prevents premature complexity while preserving a clear scaling route.
 
 # 3. Requirements Coverage Audit
 
-| Requirement | Architecture solution | Status |
-|---|---|---|
-| Worldwide application | Localization, regional settings, global API deployment | Covered |
-| Text input and output | Core Conversation module | Covered |
-| Voice input and output | Voice Experience module | Covered |
-| Automatic language detection | Device locale plus backend message detection | Covered |
-| Automatic weather detection | Permission-based location plus Weather Adapter | Covered |
+| Requirement                   | Architecture solution                                     | Status  |
+| ----------------------------- | --------------------------------------------------------- | ------- |
+| Worldwide application         | Localization, regional settings, global API deployment    | Covered |
+| Text input and output         | Core Conversation module                                  | Covered |
+| Voice input and output        | Voice Experience module                                   | Covered |
+| Automatic language detection  | Device locale plus backend message detection              | Covered |
+| Automatic weather detection   | Permission-based location plus Weather Adapter            | Covered |
 | Users can ask broad questions | AI Orchestrator plus tools and current-information search | Covered |
-| Personalized assistant | Profile, preference and memory modules | Covered |
-| Image advice | Private image analysis workflow | Covered |
-| Community image sharing | Community module after AI advice | Covered |
-| Privacy and security | Dedicated security, consent, retention and audit layers | Covered |
-| Free initial stack | Expo, Supabase, Cloud Run, R2 and limited AI tiers | Covered |
-| Premium migration | Provider adapters and portable PostgreSQL | Covered |
-| Large-demand scalability | Cache, queue, replicas, service extraction and CDN | Covered |
-| Admin management | Separate admin and moderation portal | Covered |
-| Monetization | Entitlement and subscription module | Covered |
+| Personalized assistant        | Profile, preference and memory modules                    | Covered |
+| Image advice                  | Private image analysis workflow                           | Covered |
+| Community image sharing       | Community module after AI advice                          | Covered |
+| Privacy and security          | Dedicated security, consent, retention and audit layers   | Covered |
+| Free initial stack            | Expo, Supabase, Cloud Run, R2 and limited AI tiers        | Covered |
+| Premium migration             | Provider adapters and portable PostgreSQL                 | Covered |
+| Large-demand scalability      | Cache, queue, replicas, service extraction and CDN        | Covered |
+| Admin management              | Separate admin and moderation portal                      | Covered |
+| Monetization                  | Entitlement and subscription module                       | Covered |
 
 ---
 
@@ -839,14 +839,14 @@ Rejected → Inform user and allow appeal
 
 ### Privacy classification
 
-| Classification | Examples | Treatment |
-|---|---|---|
-| Public | Published community post | Public only after moderation |
-| Private | Profile preferences | User-only access |
-| Sensitive | Memories, private images | Encrypted, limited retention |
-| Highly sensitive | Credentials, payment data | Do not store directly |
-| Operational | Usage and latency | Minimized and pseudonymized |
-| Audit | Admin and security actions | Restricted and tamper-resistant |
+| Classification   | Examples                   | Treatment                       |
+| ---------------- | -------------------------- | ------------------------------- |
+| Public           | Published community post   | Public only after moderation    |
+| Private          | Profile preferences        | User-only access                |
+| Sensitive        | Memories, private images   | Encrypted, limited retention    |
+| Highly sensitive | Credentials, payment data  | Do not store directly           |
+| Operational      | Usage and latency          | Minimized and pseudonymized     |
+| Audit            | Admin and security actions | Restricted and tamper-resistant |
 
 ### Non-negotiable rules
 
@@ -938,30 +938,30 @@ Full conversation content should not be copied into general analytics systems.
 
 # 5. Final Technology Stack
 
-| Layer | Initial free/low-cost choice | Premium or high-scale path |
-|---|---|---|
-| Mobile | Expo + React Native + TypeScript | Same stack with paid EAS |
-| Navigation | Expo Router | Same |
-| UI | NativeWind and reusable design system | Internal Velunee UI package |
-| Server state | TanStack Query | Same |
-| Local state | Zustand | Same |
-| Forms | React Hook Form + Zod | Same |
-| Admin portal | Next.js + TypeScript | CDN and enterprise hosting |
-| Backend | NestJS modular monolith | Multiple NestJS services |
-| API streaming | SSE | WebSocket/live service where required |
-| API hosting | Google Cloud Run | Multiple regions, GKE or equivalent |
-| Database | Supabase PostgreSQL | Supabase Pro, RDS, Aurora, Cloud SQL or self-hosted |
-| ORM | Drizzle ORM | Same with managed migrations |
-| Vector search | pgvector | Dedicated vector service only if required |
-| Authentication | Supabase Auth | Cognito, Auth0 or self-hosted adapter |
-| File storage | Cloudflare R2 | Larger R2 deployment or another S3 provider |
-| Cache/rate limit | Upstash Redis | Fixed Redis, ElastiCache or Memorystore |
-| Initial jobs | PostgreSQL outbox and scheduled worker | Redis queue, RabbitMQ, NATS or Kafka |
-| AI | Gemini through AI Gateway | Multi-provider model routing |
-| Weather | WeatherAPI adapter | Premium weather provider or self-hosted source |
-| Notifications | Expo Push with FCM/APNs | Direct regional push infrastructure |
-| Monitoring | Structured logs and open-source monitoring | Managed observability platform |
-| Repository | GitHub + pnpm + Turborepo | Same with enterprise CI/CD |
+| Layer            | Initial free/low-cost choice               | Premium or high-scale path                          |
+| ---------------- | ------------------------------------------ | --------------------------------------------------- |
+| Mobile           | Expo + React Native + TypeScript           | Same stack with paid EAS                            |
+| Navigation       | Expo Router                                | Same                                                |
+| UI               | NativeWind and reusable design system      | Internal Velunee UI package                         |
+| Server state     | TanStack Query                             | Same                                                |
+| Local state      | Zustand                                    | Same                                                |
+| Forms            | React Hook Form + Zod                      | Same                                                |
+| Admin portal     | Next.js + TypeScript                       | CDN and enterprise hosting                          |
+| Backend          | NestJS modular monolith                    | Multiple NestJS services                            |
+| API streaming    | SSE                                        | WebSocket/live service where required               |
+| API hosting      | Google Cloud Run                           | Multiple regions, GKE or equivalent                 |
+| Database         | Supabase PostgreSQL                        | Supabase Pro, RDS, Aurora, Cloud SQL or self-hosted |
+| ORM              | Drizzle ORM                                | Same with managed migrations                        |
+| Vector search    | pgvector                                   | Dedicated vector service only if required           |
+| Authentication   | Supabase Auth                              | Cognito, Auth0 or self-hosted adapter               |
+| File storage     | Cloudflare R2                              | Larger R2 deployment or another S3 provider         |
+| Cache/rate limit | Upstash Redis                              | Fixed Redis, ElastiCache or Memorystore             |
+| Initial jobs     | PostgreSQL outbox and scheduled worker     | Redis queue, RabbitMQ, NATS or Kafka                |
+| AI               | Gemini through AI Gateway                  | Multi-provider model routing                        |
+| Weather          | WeatherAPI adapter                         | Premium weather provider or self-hosted source      |
+| Notifications    | Expo Push with FCM/APNs                    | Direct regional push infrastructure                 |
+| Monitoring       | Structured logs and open-source monitoring | Managed observability platform                      |
+| Repository       | GitHub + pnpm + Turborepo                  | Same with enterprise CI/CD                          |
 
 ---
 

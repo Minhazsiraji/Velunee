@@ -32,8 +32,7 @@ export default function CommunityScreen(): React.JSX.Element {
   const [composerVisible, setComposerVisible] = useState(false);
   const [caption, setCaption] = useState('');
 
-  const posts =
-    feed.data?.pages.flatMap((page) => page.posts) ?? [];
+  const posts = feed.data?.pages.flatMap((page) => page.posts) ?? [];
 
   async function handlePublish(): Promise<void> {
     const trimmed = caption.trim();
@@ -51,10 +50,7 @@ export default function CommunityScreen(): React.JSX.Element {
     if (feed.isLoading) {
       return (
         <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primaryLight}
-          />
+          <ActivityIndicator size="large" color={colors.primaryLight} />
         </View>
       );
     }
@@ -62,17 +58,9 @@ export default function CommunityScreen(): React.JSX.Element {
     if (feed.isError) {
       return (
         <View style={styles.center}>
-          <Ionicons
-            name="cloud-offline-outline"
-            size={44}
-            color={colors.textMuted}
-          />
-          <Text style={styles.stateTitle}>
-            Couldn&apos;t load the community
-          </Text>
-          <Text style={styles.stateBody}>
-            Check your connection and try again.
-          </Text>
+          <Ionicons name="cloud-offline-outline" size={44} color={colors.textMuted} />
+          <Text style={styles.stateTitle}>Couldn&apos;t load the community</Text>
+          <Text style={styles.stateBody}>Check your connection and try again.</Text>
           <PrimaryButton
             label="Retry"
             variant="outline"
@@ -88,10 +76,7 @@ export default function CommunityScreen(): React.JSX.Element {
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }: { item: CommunityPost }) => (
-          <CommunityPostCard
-            post={item}
-            onToggleReaction={(post) => toggleReaction.mutate(post)}
-          />
+          <CommunityPostCard post={item} onToggleReaction={(post) => toggleReaction.mutate(post)} />
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -105,26 +90,16 @@ export default function CommunityScreen(): React.JSX.Element {
         }}
         ListEmptyComponent={
           <View style={styles.center}>
-            <Ionicons
-              name="people-outline"
-              size={44}
-              color={colors.textMuted}
-            />
-            <Text style={styles.stateTitle}>
-              Be the first to share
-            </Text>
+            <Ionicons name="people-outline" size={44} color={colors.textMuted} />
+            <Text style={styles.stateTitle}>Be the first to share</Text>
             <Text style={styles.stateBody}>
-              Post a thought, question, or a bit of inspiration for
-              the Velunee community.
+              Post a thought, question, or a bit of inspiration for the Velunee community.
             </Text>
           </View>
         }
         ListFooterComponent={
           feed.isFetchingNextPage ? (
-            <ActivityIndicator
-              color={colors.primaryLight}
-              style={styles.footerLoader}
-            />
+            <ActivityIndicator color={colors.primaryLight} style={styles.footerLoader} />
           ) : null
         }
       />
@@ -167,11 +142,7 @@ export default function CommunityScreen(): React.JSX.Element {
                 hitSlop={10}
                 onPress={() => setComposerVisible(false)}
               >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={colors.textSecondary}
-                />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </Pressable>
             </View>
 

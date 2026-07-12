@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import type {
   CommunityFeedResponse,
   CommunityPost,
@@ -17,32 +13,20 @@ export class CommunityService {
 
   private assertEnabled(): void {
     if (!this.repository.enabled) {
-      throw new ServiceUnavailableException(
-        'The community is not available right now.',
-      );
+      throw new ServiceUnavailableException('The community is not available right now.');
     }
   }
 
-  async getFeed(
-    userId: string,
-    cursor?: string,
-  ): Promise<CommunityFeedResponse> {
+  async getFeed(userId: string, cursor?: string): Promise<CommunityFeedResponse> {
     return this.repository.getFeed(userId, cursor);
   }
 
-  async createPost(
-    userId: string,
-    caption: string,
-  ): Promise<CommunityPost> {
+  async createPost(userId: string, caption: string): Promise<CommunityPost> {
     this.assertEnabled();
     return this.repository.createPost(userId, caption);
   }
 
-  async react(
-    userId: string,
-    postId: string,
-    type: ReactionKind,
-  ): Promise<ReactionState> {
+  async react(userId: string, postId: string, type: ReactionKind): Promise<ReactionState> {
     this.assertEnabled();
     if (!(await this.repository.postExists(postId))) {
       throw new NotFoundException('Post not found');
@@ -50,11 +34,7 @@ export class CommunityService {
     return this.repository.addReaction(userId, postId, type);
   }
 
-  async removeReaction(
-    userId: string,
-    postId: string,
-    type: ReactionKind,
-  ): Promise<ReactionState> {
+  async removeReaction(userId: string, postId: string, type: ReactionKind): Promise<ReactionState> {
     this.assertEnabled();
     if (!(await this.repository.postExists(postId))) {
       throw new NotFoundException('Post not found');

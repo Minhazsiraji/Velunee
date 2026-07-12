@@ -1,9 +1,4 @@
-import {
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -26,9 +21,7 @@ export function ToggleRow({
     <View style={styles.row}>
       <View style={styles.rowText}>
         <Text style={styles.label}>{label}</Text>
-        {description ? (
-          <Text style={styles.description}>{description}</Text>
-        ) : null}
+        {description ? <Text style={styles.description}>{description}</Text> : null}
       </View>
 
       <Switch

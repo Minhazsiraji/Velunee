@@ -10,9 +10,13 @@ export interface AppLogger {
 export class JsonConsoleLogger implements AppLogger {
   private write(level: string, message: string, metadata: LogMetadata = {}): void {
     const safeMetadata = Object.fromEntries(
-      Object.entries(metadata).filter(([key]) => !/token|secret|password|content|message/i.test(key)),
+      Object.entries(metadata).filter(
+        ([key]) => !/token|secret|password|content|message/i.test(key),
+      ),
     );
-    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, message, ...safeMetadata }));
+    console.log(
+      JSON.stringify({ timestamp: new Date().toISOString(), level, message, ...safeMetadata }),
+    );
   }
 
   debug(message: string, metadata?: LogMetadata): void {

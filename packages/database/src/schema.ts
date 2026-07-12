@@ -148,7 +148,9 @@ export const memories = assistant.table(
     importance: integer('importance').notNull().default(1),
     sensitivity: varchar('sensitivity', { length: 30 }).notNull().default('private'),
     consentStatus: varchar('consent_status', { length: 30 }).notNull().default('pending'),
-    sourceMessageId: uuid('source_message_id').references(() => messages.id, { onDelete: 'set null' }),
+    sourceMessageId: uuid('source_message_id').references(() => messages.id, {
+      onDelete: 'set null',
+    }),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -234,11 +236,7 @@ export const reactions = community.table(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('reactions_post_user_type_uidx').on(
-      table.postId,
-      table.userId,
-      table.type,
-    ),
+    uniqueIndex('reactions_post_user_type_uidx').on(table.postId, table.userId, table.type),
     index('reactions_post_idx').on(table.postId),
   ],
 );
@@ -308,7 +306,9 @@ export const usageEvents = billing.table(
     units: integer('units').notNull().default(1),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('usage_events_user_feature_idx').on(table.userId, table.feature, table.occurredAt)],
+  (table) => [
+    index('usage_events_user_feature_idx').on(table.userId, table.feature, table.occurredAt),
+  ],
 );
 
 export const featureFlags = operations.table('feature_flags', {

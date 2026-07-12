@@ -35,29 +35,19 @@ export class ChatService implements OnModuleInit {
     this.repository.logPersistenceState();
   }
 
-
-  async getLatestHistory(
-    userId: string,
-  ): Promise<ChatHistoryResponse> {
+  async getLatestHistory(userId: string): Promise<ChatHistoryResponse> {
     return this.repository.getLatestHistory(userId);
   }
 
-  async listConversations(
-    userId: string,
-  ): Promise<ConversationListResponse> {
-    return this.repository.listConversations(
-      userId,
-    );
+  async listConversations(userId: string): Promise<ConversationListResponse> {
+    return this.repository.listConversations(userId);
   }
 
   async getConversationHistory(
     userId: string,
     conversationId: string,
   ): Promise<ConversationHistoryResponse | null> {
-    return this.repository.getConversationHistory(
-      userId,
-      conversationId,
-    );
+    return this.repository.getConversationHistory(userId, conversationId);
   }
 
   async renameConversation(
@@ -65,21 +55,11 @@ export class ChatService implements OnModuleInit {
     conversationId: string,
     title: string,
   ): Promise<boolean> {
-    return this.repository.renameConversation(
-      userId,
-      conversationId,
-      title,
-    );
+    return this.repository.renameConversation(userId, conversationId, title);
   }
 
-  async deleteConversation(
-    userId: string,
-    conversationId: string,
-  ): Promise<boolean> {
-    return this.repository.deleteConversation(
-      userId,
-      conversationId,
-    );
+  async deleteConversation(userId: string, conversationId: string): Promise<boolean> {
+    return this.repository.deleteConversation(userId, conversationId);
   }
 
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {
@@ -109,10 +89,7 @@ export class ChatService implements OnModuleInit {
       requestId,
       locale: input.locale,
       timezone: input.timezone,
-      messages: [
-        ...(input.history ?? []),
-        { role: 'user' as const, content: input.message },
-      ],
+      messages: [...(input.history ?? []), { role: 'user' as const, content: input.message }],
     });
 
     await this.repository.saveMessage({
@@ -146,10 +123,7 @@ export class ChatService implements OnModuleInit {
     };
   }
 
-  async createStream(
-    userId: string,
-    input: SendChatMessageInput,
-  ): Promise<ChatStreamSession> {
+  async createStream(userId: string, input: SendChatMessageInput): Promise<ChatStreamSession> {
     const conversationId = input.conversationId ?? randomUUID();
     const requestId = randomUUID();
     const userMessageId = randomUUID();
@@ -171,10 +145,7 @@ export class ChatService implements OnModuleInit {
       requestId,
       locale: input.locale,
       timezone: input.timezone,
-      messages: [
-        ...(input.history ?? []),
-        { role: 'user' as const, content: input.message },
-      ],
+      messages: [...(input.history ?? []), { role: 'user' as const, content: input.message }],
     });
 
     return {

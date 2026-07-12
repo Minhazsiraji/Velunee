@@ -7,7 +7,9 @@ export const metadata: Metadata = {
   description: 'Operations, moderation, AI quality, and support portal for Velunee.',
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>): React.JSX.Element {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>): React.JSX.Element {
   return (
     <html lang="en">
       <body>{children}</body>

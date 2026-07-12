@@ -39,10 +39,7 @@ export class CommunityRepository {
       .onConflictDoNothing();
   }
 
-  async createPost(
-    userId: string,
-    caption: string,
-  ): Promise<CommunityPost> {
+  async createPost(userId: string, caption: string): Promise<CommunityPost> {
     if (!this.connection) {
       throw new Error('Community persistence is not configured');
     }
@@ -100,25 +97,18 @@ export class CommunityRepository {
 
     const authorHandle = handleRow?.handle ?? null;
     const authorName =
-      nameRow?.displayName?.trim() ||
-      (authorHandle ? `@${authorHandle}` : 'Velunee member');
+      nameRow?.displayName?.trim() || (authorHandle ? `@${authorHandle}` : 'Velunee member');
 
     return { authorName, authorHandle };
   }
 
-  async getFeed(
-    userId: string,
-    cursor?: string,
-  ): Promise<CommunityFeedResponse> {
+  async getFeed(userId: string, cursor?: string): Promise<CommunityFeedResponse> {
     if (!this.connection) {
       return { posts: [], nextCursor: null };
     }
     const { db } = this.connection;
 
-    const conditions = [
-      eq(posts.moderationStatus, 'approved'),
-      isNull(posts.deletedAt),
-    ];
+    const conditions = [eq(posts.moderationStatus, 'approved'), isNull(posts.deletedAt)];
     if (cursor) {
       conditions.push(lt(posts.createdAt, new Date(cursor)));
     }
@@ -140,13 +130,12 @@ export class CommunityRepository {
 
     const feedPosts = await Promise.all(
       pageRows.map(async (row) => {
-        const [author, reactionCount, commentCount, viewer] =
-          await Promise.all([
-            this.getAuthor(row.userId),
-            this.countReactions(row.id),
-            this.countComments(row.id),
-            this.viewerReacted(row.id, userId),
-          ]);
+        const [author, reactionCount, commentCount, viewer] = await Promise.all([
+          this.getAuthor(row.userId),
+          this.countReactions(row.id),
+          this.countComments(row.id),
+          this.viewerReacted(row.id, userId),
+        ]);
 
         return {
           id: row.id,
@@ -184,26 +173,16 @@ export class CommunityRepository {
     const [row] = await this.connection.db
       .select({ value: count() })
       .from(comments)
-      .where(
-        and(eq(comments.postId, postId), isNull(comments.deletedAt)),
-      );
+      .where(and(eq(comments.postId, postId), isNull(comments.deletedAt)));
     return row?.value ?? 0;
   }
 
-  private async viewerReacted(
-    postId: string,
-    userId: string,
-  ): Promise<boolean> {
+  private async viewerReacted(postId: string, userId: string): Promise<boolean> {
     if (!this.connection) return false;
     const [row] = await this.connection.db
       .select({ id: reactions.id })
       .from(reactions)
-      .where(
-        and(
-          eq(reactions.postId, postId),
-          eq(reactions.userId, userId),
-        ),
-      )
+      .where(and(eq(reactions.postId, postId), eq(reactions.userId, userId)))
       .limit(1);
     return Boolean(row);
   }
@@ -218,11 +197,7 @@ export class CommunityRepository {
     return Boolean(row);
   }
 
-  async addReaction(
-    userId: string,
-    postId: string,
-    type: ReactionKind,
-  ): Promise<ReactionState> {
+  async addReaction(userId: string, postId: string, type: ReactionKind): Promise<ReactionState> {
     if (!this.connection) {
       throw new Error('Community persistence is not configured');
     }
@@ -236,11 +211,7 @@ export class CommunityRepository {
     return this.reactionState(postId, userId);
   }
 
-  async removeReaction(
-    userId: string,
-    postId: string,
-    type: ReactionKind,
-  ): Promise<ReactionState> {
+  async removeReaction(userId: string, postId: string, type: ReactionKind): Promise<ReactionState> {
     if (!this.connection) {
       throw new Error('Community persistence is not configured');
     }
@@ -248,20 +219,13 @@ export class CommunityRepository {
     await this.connection.db
       .delete(reactions)
       .where(
-        and(
-          eq(reactions.postId, postId),
-          eq(reactions.userId, userId),
-          eq(reactions.type, type),
-        ),
+        and(eq(reactions.postId, postId), eq(reactions.userId, userId), eq(reactions.type, type)),
       );
 
     return this.reactionState(postId, userId);
   }
 
-  private async reactionState(
-    postId: string,
-    userId: string,
-  ): Promise<ReactionState> {
+  private async reactionState(postId: string, userId: string): Promise<ReactionState> {
     const [reactionCount, viewerHasReacted] = await Promise.all([
       this.countReactions(postId),
       this.viewerReacted(postId, userId),

@@ -1,14 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
@@ -22,13 +15,10 @@ export default function ProfileScreen(): React.JSX.Element {
   const overview = useAccountOverview();
 
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    null,
-  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const profile = overview.data?.profile;
-  const conversationCount =
-    overview.data?.stats.conversationCount ?? 0;
+  const conversationCount = overview.data?.stats.conversationCount ?? 0;
 
   const heading =
     profile?.displayName?.trim() ||
@@ -43,11 +33,7 @@ export default function ProfileScreen(): React.JSX.Element {
     try {
       await signOutCurrentDevice();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to sign out.',
-      );
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to sign out.');
     } finally {
       setIsSigningOut(false);
     }
@@ -65,8 +51,8 @@ export default function ProfileScreen(): React.JSX.Element {
         {isAnonymous ? (
           <View style={styles.guestBanner}>
             <Text style={styles.guestText}>
-              You&apos;re using a guest account. Create an account to
-              keep your conversations safe across devices.
+              You&apos;re using a guest account. Create an account to keep your conversations safe
+              across devices.
             </Text>
             <PrimaryButton
               label="Create Account"
@@ -75,9 +61,7 @@ export default function ProfileScreen(): React.JSX.Element {
             />
           </View>
         ) : (
-          <Text style={styles.subtitle}>
-            {profile?.email ?? user?.email ?? 'Signed in'}
-          </Text>
+          <Text style={styles.subtitle}>{profile?.email ?? user?.email ?? 'Signed in'}</Text>
         )}
 
         <View style={styles.statsRow}>
@@ -85,17 +69,14 @@ export default function ProfileScreen(): React.JSX.Element {
             {overview.isLoading ? (
               <ActivityIndicator color={colors.primaryLight} />
             ) : (
-              <Text style={styles.statValue}>
-                {conversationCount}
-              </Text>
+              <Text style={styles.statValue}>{conversationCount}</Text>
             )}
             <Text style={styles.statLabel}>Conversations</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>
               {profile?.companionStyle
-                ? profile.companionStyle.charAt(0).toUpperCase() +
-                  profile.companionStyle.slice(1)
+                ? profile.companionStyle.charAt(0).toUpperCase() + profile.companionStyle.slice(1)
                 : '—'}
             </Text>
             <Text style={styles.statLabel}>Companion style</Text>
@@ -105,27 +86,14 @@ export default function ProfileScreen(): React.JSX.Element {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/(app)/settings')}
-          style={({ pressed }) => [
-            styles.menuRow,
-            pressed && styles.menuRowPressed,
-          ]}
+          style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
         >
-          <Ionicons
-            name="settings-outline"
-            size={22}
-            color={colors.text}
-          />
+          <Ionicons name="settings-outline" size={22} color={colors.text} />
           <Text style={styles.menuLabel}>Settings</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={colors.textMuted}
-          />
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </Pressable>
 
-        {errorMessage ? (
-          <Text style={styles.error}>{errorMessage}</Text>
-        ) : null}
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
         <PrimaryButton
           label="Sign Out"

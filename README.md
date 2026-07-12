@@ -1,6 +1,6 @@
 # Velunee
 
-**Personal AI Companion** — *Ask. Decide. Shine.*
+**Personal AI Companion** — _Ask. Decide. Shine._
 
 Velunee is a worldwide, AI-first personal companion for text, voice, image advice, planning, memory, and an optional moderated community.
 

@@ -6,7 +6,11 @@ interface SectionTitleProps {
   description?: string;
 }
 
-export function SectionTitle({ eyebrow, title, description }: SectionTitleProps): React.JSX.Element {
+export function SectionTitle({
+  eyebrow,
+  title,
+  description,
+}: SectionTitleProps): React.JSX.Element {
   return (
     <View className="mb-5">
       {eyebrow ? (
@@ -15,7 +19,9 @@ export function SectionTitle({ eyebrow, title, description }: SectionTitleProps)
         </Text>
       ) : null}
       <Text className="text-3xl font-black leading-9 text-ink">{title}</Text>
-      {description ? <Text className="mt-2 text-base leading-6 text-muted">{description}</Text> : null}
+      {description ? (
+        <Text className="mt-2 text-base leading-6 text-muted">{description}</Text>
+      ) : null}
     </View>
   );
 }

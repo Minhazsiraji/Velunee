@@ -54,28 +54,21 @@ export class SupabaseAuthProvider implements AuthProvider, AuthAdmin {
 
   async deleteAuthUser(userId: string): Promise<void> {
     if (!this.serviceRoleKey) {
-      throw new Error(
-        'Supabase service-role key is not configured; cannot delete auth users',
-      );
+      throw new Error('Supabase service-role key is not configured; cannot delete auth users');
     }
 
-    const response = await fetch(
-      `${this.issuer}/admin/users/${encodeURIComponent(userId)}`,
-      {
-        method: 'DELETE',
-        headers: {
-          apikey: this.serviceRoleKey,
-          Authorization: `Bearer ${this.serviceRoleKey}`,
-        },
+    const response = await fetch(`${this.issuer}/admin/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: this.serviceRoleKey,
+        Authorization: `Bearer ${this.serviceRoleKey}`,
       },
-    );
+    });
 
     // Treat an already-removed user as success so deletion is idempotent.
     if (!response.ok && response.status !== 404) {
       const detail = await response.text().catch(() => '');
-      throw new Error(
-        `Failed to delete auth user (${response.status}): ${detail}`,
-      );
+      throw new Error(`Failed to delete auth user (${response.status}): ${detail}`);
     }
   }
 

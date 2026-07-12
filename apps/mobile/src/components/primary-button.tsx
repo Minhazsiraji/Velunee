@@ -33,14 +33,9 @@ export function PrimaryButton({
   const isDisabled = disabled || isLoading;
 
   const containerStyle =
-    variant === 'outline'
-      ? styles.outline
-      : variant === 'danger'
-        ? styles.danger
-        : styles.solid;
+    variant === 'outline' ? styles.outline : variant === 'danger' ? styles.danger : styles.solid;
 
-  const labelColor =
-    variant === 'outline' ? colors.text : colors.white;
+  const labelColor = variant === 'outline' ? colors.text : colors.white;
 
   return (
     <Pressable
@@ -63,17 +58,8 @@ export function PrimaryButton({
         <ActivityIndicator color={labelColor} />
       ) : (
         <View style={styles.content}>
-          {icon ? (
-            <Ionicons
-              name={icon}
-              size={19}
-              color={labelColor}
-              style={styles.icon}
-            />
-          ) : null}
-          <Text style={[styles.label, { color: labelColor }]}>
-            {label}
-          </Text>
+          {icon ? <Ionicons name={icon} size={19} color={labelColor} style={styles.icon} /> : null}
+          <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
         </View>
       )}
     </Pressable>

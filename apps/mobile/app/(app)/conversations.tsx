@@ -43,10 +43,7 @@ function formatUpdatedAt(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     month: 'short',
     day: 'numeric',
-    year:
-      date.getFullYear() === now.getFullYear()
-        ? undefined
-        : 'numeric',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
   }).format(date);
 }
 
@@ -56,9 +53,7 @@ function returnToChat(): void {
     return;
   }
 
-  router.replace(
-    '/(app)/(tabs)/chat' as Href,
-  );
+  router.replace('/(app)/(tabs)/chat' as Href);
 }
 
 function getErrorMessage(error: unknown): string {
@@ -74,96 +69,68 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function ConversationsScreen(): React.JSX.Element {
-  const setConversationHistory = useChatStore(
-    (state) => state.setConversationHistory,
+  const setConversationHistory = useChatStore((state) => state.setConversationHistory);
+
+  const clearConversation = useChatStore((state) => state.clearConversation);
+
+  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [selectedConversation, setSelectedConversation] = useState<ConversationListItem | null>(
+    null,
   );
 
-  const clearConversation = useChatStore(
-    (state) => state.clearConversation,
-  );
+  const [isManaging, setIsManaging] = useState(false);
 
-  const [conversations, setConversations] =
-    useState<ConversationListItem[]>([]);
+  const activeConversationId = useChatStore((state) => state.conversationId);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const fetchConversations = useCallback(async (refreshing = false): Promise<void> => {
+    if (refreshing) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
-  const [isRefreshing, setIsRefreshing] =
-    useState(false);
+    setErrorMessage(null);
 
-  const [openingId, setOpeningId] =
-    useState<string | null>(null);
+    try {
+      const response = await loadConversations();
 
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null);
-
-  const [selectedConversation, setSelectedConversation] =
-    useState<ConversationListItem | null>(null);
-
-  const [isManaging, setIsManaging] =
-    useState(false);
-
-  const activeConversationId = useChatStore(
-    (state) => state.conversationId,
-  );
-
-  const fetchConversations = useCallback(
-    async (refreshing = false): Promise<void> => {
-      if (refreshing) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-
-      setErrorMessage(null);
-
-      try {
-        const response =
-          await loadConversations();
-
-        setConversations(
-          response.conversations,
-        );
-      } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error),
-        );
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    [],
-  );
+      setConversations(response.conversations);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     void fetchConversations();
   }, [fetchConversations]);
 
   const openConversation = useCallback(
-    async (
-      conversation: ConversationListItem,
-    ): Promise<void> => {
+    async (conversation: ConversationListItem): Promise<void> => {
       if (openingId) return;
 
       setOpeningId(conversation.id);
       setErrorMessage(null);
 
       try {
-        const history = await loadConversation(
-          conversation.id,
-        );
+        const history = await loadConversation(conversation.id);
 
-        setConversationHistory(
-          history.conversationId,
-          history.messages,
-        );
+        setConversationHistory(history.conversationId, history.messages);
 
         returnToChat();
       } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error),
-        );
+        setErrorMessage(getErrorMessage(error));
       } finally {
         setOpeningId(null);
       }
@@ -171,11 +138,10 @@ export default function ConversationsScreen(): React.JSX.Element {
     [openingId, setConversationHistory],
   );
 
-  const startNewConversation =
-    useCallback((): void => {
-      clearConversation();
-      returnToChat();
-    }, [clearConversation]);
+  const startNewConversation = useCallback((): void => {
+    clearConversation();
+    returnToChat();
+  }, [clearConversation]);
 
   const handleRename = useCallback(
     async (title: string): Promise<void> => {
@@ -185,20 +151,15 @@ export default function ConversationsScreen(): React.JSX.Element {
       setErrorMessage(null);
 
       try {
-        await renameConversation(
-          selectedConversation.id,
-          title,
-        );
+        await renameConversation(selectedConversation.id, title);
 
         setConversations((current) =>
           current.map((conversation) =>
-            conversation.id ===
-            selectedConversation.id
+            conversation.id === selectedConversation.id
               ? {
                   ...conversation,
                   title,
-                  updatedAt:
-                    new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
                 }
               : conversation,
           ),
@@ -206,9 +167,7 @@ export default function ConversationsScreen(): React.JSX.Element {
 
         setSelectedConversation(null);
       } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error),
-        );
+        setErrorMessage(getErrorMessage(error));
       } finally {
         setIsManaging(false);
       }
@@ -216,79 +175,47 @@ export default function ConversationsScreen(): React.JSX.Element {
     [selectedConversation],
   );
 
-  const handleDelete = useCallback(
-    async (): Promise<void> => {
-      if (!selectedConversation) return;
+  const handleDelete = useCallback(async (): Promise<void> => {
+    if (!selectedConversation) return;
 
-      setIsManaging(true);
-      setErrorMessage(null);
+    setIsManaging(true);
+    setErrorMessage(null);
 
-      try {
-        await deleteConversation(
-          selectedConversation.id,
-        );
+    try {
+      await deleteConversation(selectedConversation.id);
 
-        setConversations((current) =>
-          current.filter(
-            (conversation) =>
-              conversation.id !==
-              selectedConversation.id,
-          ),
-        );
+      setConversations((current) =>
+        current.filter((conversation) => conversation.id !== selectedConversation.id),
+      );
 
-        if (
-          activeConversationId ===
-          selectedConversation.id
-        ) {
-          clearConversation();
-        }
-
-        setSelectedConversation(null);
-      } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error),
-        );
-      } finally {
-        setIsManaging(false);
+      if (activeConversationId === selectedConversation.id) {
+        clearConversation();
       }
-    },
-    [
-      activeConversationId,
-      clearConversation,
-      selectedConversation,
-    ],
-  );
+
+      setSelectedConversation(null);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsManaging(false);
+    }
+  }, [activeConversationId, clearConversation, selectedConversation]);
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={['top', 'bottom']}
-    >
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.headerButton,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
         >
-          <Ionicons
-            name="arrow-back"
-            size={23}
-            color={colors.text}
-          />
+          <Ionicons name="arrow-back" size={23} color={colors.text} />
         </Pressable>
 
         <View style={styles.headerText}>
-          <Text style={styles.title}>
-            Conversations
-          </Text>
+          <Text style={styles.title}>Conversations</Text>
 
-          <Text style={styles.subtitle}>
-            Continue where you left off
-          </Text>
+          <Text style={styles.subtitle}>Continue where you left off</Text>
         </View>
 
         <Pressable
@@ -301,66 +228,41 @@ export default function ConversationsScreen(): React.JSX.Element {
             pressed && styles.pressed,
           ]}
         >
-          <Ionicons
-            name="create-outline"
-            size={22}
-            color={colors.primaryLight}
-          />
+          <Ionicons name="create-outline" size={22} color={colors.primaryLight} />
         </Pressable>
       </View>
 
       {errorMessage ? (
         <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>
-            {errorMessage}
-          </Text>
+          <Text style={styles.errorText}>{errorMessage}</Text>
 
-          <Pressable
-            accessibilityRole="button"
-            onPress={() =>
-              void fetchConversations()
-            }
-          >
-            <Text style={styles.retryText}>
-              Retry
-            </Text>
+          <Pressable accessibilityRole="button" onPress={() => void fetchConversations()}>
+            <Text style={styles.retryText}>Retry</Text>
           </Pressable>
         </View>
       ) : null}
 
       {isLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color={colors.primaryMuted}
-          />
+          <ActivityIndicator size="large" color={colors.primaryMuted} />
 
-          <Text style={styles.loadingText}>
-            Loading conversations...
-          </Text>
+          <Text style={styles.loadingText}>Loading conversations...</Text>
         </View>
       ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.list,
-            conversations.length === 0 &&
-              styles.emptyList,
-          ]}
+          contentContainerStyle={[styles.list, conversations.length === 0 && styles.emptyList]}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() =>
-                void fetchConversations(true)
-              }
+              onRefresh={() => void fetchConversations(true)}
               tintColor={colors.primaryMuted}
               colors={[colors.primaryMuted]}
             />
           }
           renderItem={({ item }) => {
-            const isOpening =
-              openingId === item.id;
+            const isOpening = openingId === item.id;
 
             return (
               <View style={styles.conversationCard}>
@@ -368,15 +270,11 @@ export default function ConversationsScreen(): React.JSX.Element {
                   accessibilityRole="button"
                   accessibilityLabel={`Open conversation: ${item.title}`}
                   disabled={openingId !== null}
-                  onPress={() =>
-                    void openConversation(item)
-                  }
+                  onPress={() => void openConversation(item)}
                   style={({ pressed }) => [
                     styles.conversationOpenArea,
                     pressed && styles.pressed,
-                    openingId !== null &&
-                      !isOpening &&
-                      styles.disabled,
+                    openingId !== null && !isOpening && styles.disabled,
                   ]}
                 >
                   <View style={styles.conversationIcon}>
@@ -389,73 +287,41 @@ export default function ConversationsScreen(): React.JSX.Element {
 
                   <View style={styles.conversationContent}>
                     <View style={styles.conversationTopRow}>
-                      <Text
-                        numberOfLines={1}
-                        style={styles.conversationTitle}
-                      >
+                      <Text numberOfLines={1} style={styles.conversationTitle}>
                         {item.title}
                       </Text>
 
-                      <Text style={styles.time}>
-                        {formatUpdatedAt(
-                          item.updatedAt,
-                        )}
-                      </Text>
+                      <Text style={styles.time}>{formatUpdatedAt(item.updatedAt)}</Text>
                     </View>
 
-                    <Text
-                      numberOfLines={2}
-                      style={styles.preview}
-                    >
-                      {item.preview ||
-                        'No messages yet'}
+                    <Text numberOfLines={2} style={styles.preview}>
+                      {item.preview || 'No messages yet'}
                     </Text>
 
                     <Text style={styles.messageCount}>
-                      {item.messageCount}{' '}
-                      {item.messageCount === 1
-                        ? 'message'
-                        : 'messages'}
+                      {item.messageCount} {item.messageCount === 1 ? 'message' : 'messages'}
                     </Text>
                   </View>
 
                   {isOpening ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.primaryMuted}
-                    />
+                    <ActivityIndicator size="small" color={colors.primaryMuted} />
                   ) : (
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color={colors.textMuted}
-                    />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                   )}
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Manage conversation: ${item.title}`}
-                  disabled={
-                    openingId !== null ||
-                    isManaging
-                  }
-                  onPress={() =>
-                    setSelectedConversation(item)
-                  }
+                  disabled={openingId !== null || isManaging}
+                  onPress={() => setSelectedConversation(item)}
                   style={({ pressed }) => [
                     styles.manageButton,
                     pressed && styles.pressed,
-                    (openingId !== null ||
-                      isManaging) &&
-                      styles.disabled,
+                    (openingId !== null || isManaging) && styles.disabled,
                   ]}
                 >
-                  <Ionicons
-                    name="ellipsis-horizontal"
-                    size={21}
-                    color={colors.textSecondary}
-                  />
+                  <Ionicons name="ellipsis-horizontal" size={21} color={colors.textSecondary} />
                 </Pressable>
               </View>
             );
@@ -463,16 +329,10 @@ export default function ConversationsScreen(): React.JSX.Element {
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyIcon}>
-                <Ionicons
-                  name="chatbubbles-outline"
-                  size={38}
-                  color={colors.primaryLight}
-                />
+                <Ionicons name="chatbubbles-outline" size={38} color={colors.primaryLight} />
               </View>
 
-              <Text style={styles.emptyTitle}>
-                No conversations yet
-              </Text>
+              <Text style={styles.emptyTitle}>No conversations yet</Text>
 
               <Text style={styles.emptyText}>
                 Start chatting with Velunee and your conversations will appear here.
@@ -481,20 +341,11 @@ export default function ConversationsScreen(): React.JSX.Element {
               <Pressable
                 accessibilityRole="button"
                 onPress={startNewConversation}
-                style={({ pressed }) => [
-                  styles.startButton,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}
               >
-                <Ionicons
-                  name="add"
-                  size={20}
-                  color={colors.white}
-                />
+                <Ionicons name="add" size={20} color={colors.white} />
 
-                <Text style={styles.startButtonText}>
-                  Start a conversation
-                </Text>
+                <Text style={styles.startButtonText}>Start a conversation</Text>
               </Pressable>
             </View>
           }
@@ -504,9 +355,7 @@ export default function ConversationsScreen(): React.JSX.Element {
       <ConversationManagementModal
         conversation={selectedConversation}
         isBusy={isManaging}
-        onClose={() =>
-          setSelectedConversation(null)
-        }
+        onClose={() => setSelectedConversation(null)}
         onRename={handleRename}
         onDelete={handleDelete}
       />

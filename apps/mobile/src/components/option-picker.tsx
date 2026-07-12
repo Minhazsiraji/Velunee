@@ -1,9 +1,4 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -41,17 +36,9 @@ export function OptionPicker<T extends string>({
               accessibilityState={{ selected, disabled }}
               disabled={disabled}
               onPress={() => onChange(option.value)}
-              style={[
-                styles.chip,
-                selected ? styles.chipSelected : null,
-              ]}
+              style={[styles.chip, selected ? styles.chipSelected : null]}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  selected ? styles.chipTextSelected : null,
-                ]}
-              >
+              <Text style={[styles.chipText, selected ? styles.chipTextSelected : null]}>
                 {option.label}
               </Text>
             </Pressable>

@@ -35,8 +35,7 @@ export function validatePasswordConfirmation(
  * messages. Map the common ones to friendlier copy for end users.
  */
 export function friendlyAuthError(error: unknown): string {
-  const message =
-    error instanceof Error ? error.message : String(error ?? '');
+  const message = error instanceof Error ? error.message : String(error ?? '');
   const normalized = message.toLowerCase();
 
   if (normalized.includes('invalid login credentials')) {
@@ -55,10 +54,7 @@ export function friendlyAuthError(error: unknown): string {
   if (normalized.includes('rate limit')) {
     return 'Too many attempts. Please wait a moment and try again.';
   }
-  if (
-    normalized.includes('network') ||
-    normalized.includes('fetch')
-  ) {
+  if (normalized.includes('network') || normalized.includes('fetch')) {
     return 'Network problem. Check your connection and try again.';
   }
 

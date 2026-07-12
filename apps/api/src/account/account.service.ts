@@ -1,13 +1,5 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import {
-  supportsAdmin,
-  type AuthenticatedUser,
-  type AuthProvider,
-} from '@velunee/auth-core';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { supportsAdmin, type AuthenticatedUser, type AuthProvider } from '@velunee/auth-core';
 import type {
   AccountOverviewResponse,
   AccountProfile,
@@ -27,15 +19,12 @@ export class AccountService {
     private readonly authProvider: AuthProvider | null,
   ) {}
 
-  async getOverview(
-    user: AuthenticatedUser,
-  ): Promise<AccountOverviewResponse> {
-    const [profile, preferences, conversationCount] =
-      await Promise.all([
-        this.repository.getProfile(user.id),
-        this.repository.getPreferences(user.id),
-        this.repository.getConversationCount(user.id),
-      ]);
+  async getOverview(user: AuthenticatedUser): Promise<AccountOverviewResponse> {
+    const [profile, preferences, conversationCount] = await Promise.all([
+      this.repository.getProfile(user.id),
+      this.repository.getPreferences(user.id),
+      this.repository.getConversationCount(user.id),
+    ]);
 
     const isAnonymous = user.claims?.is_anonymous === true;
 
@@ -52,17 +41,11 @@ export class AccountService {
     };
   }
 
-  async updateProfile(
-    userId: string,
-    input: UpdateProfileInput,
-  ): Promise<void> {
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<void> {
     await this.repository.updateProfile(userId, input);
   }
 
-  async updatePreferences(
-    userId: string,
-    input: UpdatePreferencesInput,
-  ): Promise<void> {
+  async updatePreferences(userId: string, input: UpdatePreferencesInput): Promise<void> {
     await this.repository.updatePreferences(userId, input);
   }
 

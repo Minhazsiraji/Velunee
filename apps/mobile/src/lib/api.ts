@@ -1,7 +1,4 @@
-import {
-  DEVELOPMENT_USER_ID,
-  environment,
-} from './environment';
+import { DEVELOPMENT_USER_ID, environment } from './environment';
 import { getSupabaseClient } from './supabase';
 
 export class ApiError extends Error {
@@ -14,20 +11,14 @@ export class ApiError extends Error {
   }
 }
 
-async function authorizationHeaders(): Promise<
-  Record<string, string>
-> {
+async function authorizationHeaders(): Promise<Record<string, string>> {
   const supabase = getSupabaseClient();
 
   if (supabase) {
-    const { data, error } =
-      await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
 
     if (error) {
-      throw new ApiError(
-        `Unable to read your session: ${error.message}`,
-        401,
-      );
+      throw new ApiError(`Unable to read your session: ${error.message}`, 401);
     }
 
     const accessToken = data.session?.access_token;
@@ -51,18 +42,9 @@ async function authorizationHeaders(): Promise<
   );
 }
 
-function readErrorMessage(
-  payload: unknown,
-  status: number,
-): string {
-  if (
-    payload &&
-    typeof payload === 'object' &&
-    'message' in payload
-  ) {
-    const message = (
-      payload as { message: unknown }
-    ).message;
+function readErrorMessage(payload: unknown, status: number): string {
+  if (payload && typeof payload === 'object' && 'message' in payload) {
+    const message = (payload as { message: unknown }).message;
 
     if (Array.isArray(message)) {
       return message.map(String).join('\n');
@@ -74,10 +56,7 @@ function readErrorMessage(
   return `Request failed with status ${status}.`;
 }
 
-export async function apiRequest<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
 
   headers.set('Accept', 'application/json');
@@ -88,11 +67,9 @@ export async function apiRequest<T>(
 
   const authHeaders = await authorizationHeaders();
 
-  Object.entries(authHeaders).forEach(
-    ([key, value]) => {
-      headers.set(key, value);
-    },
-  );
+  Object.entries(authHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
 
   const controller = new AbortController();
 
@@ -101,24 +78,16 @@ export async function apiRequest<T>(
   }, environment.apiTimeoutMs);
 
   try {
-    const response = await fetch(
-      `${environment.apiUrl}${path}`,
-      {
-        ...init,
-        headers,
-        signal: controller.signal,
-      },
-    );
+    const response = await fetch(`${environment.apiUrl}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
 
-    const payload = (await response
-      .json()
-      .catch(() => null)) as unknown;
+    const payload = (await response.json().catch(() => null)) as unknown;
 
     if (!response.ok) {
-      throw new ApiError(
-        readErrorMessage(payload, response.status),
-        response.status,
-      );
+      throw new ApiError(readErrorMessage(payload, response.status), response.status);
     }
 
     return payload as T;
@@ -127,14 +96,8 @@ export async function apiRequest<T>(
       throw error;
     }
 
-    if (
-      error instanceof Error &&
-      error.name === 'AbortError'
-    ) {
-      throw new ApiError(
-        'The server took too long to respond. Please try again.',
-        408,
-      );
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError('The server took too long to respond. Please try again.', 408);
     }
 
     throw new ApiError(
@@ -147,7 +110,6 @@ export async function apiRequest<T>(
     }
   }
 }
-
 
 interface EventStreamOptions {
   onData(data: string): void;
@@ -168,11 +130,9 @@ export async function apiEventStream(
 
   const authHeaders = await authorizationHeaders();
 
-  Object.entries(authHeaders).forEach(
-    ([key, value]) => {
-      headers.set(key, value);
-    },
-  );
+  Object.entries(authHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
 
   const controller = new AbortController();
   const externalSignal = init.signal;
@@ -184,16 +144,10 @@ export async function apiEventStream(
   if (externalSignal?.aborted) {
     controller.abort();
   } else {
-    externalSignal?.addEventListener(
-      'abort',
-      cancelFromExternal,
-      { once: true },
-    );
+    externalSignal?.addEventListener('abort', cancelFromExternal, { once: true });
   }
 
-  let timeout:
-    | ReturnType<typeof setTimeout>
-    | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   const resetTimeout = (): void => {
     if (timeout) {
@@ -217,13 +171,10 @@ export async function apiEventStream(
     }
   };
 
-  const processBuffer = (
-    buffer: string,
-    flush = false,
-  ): string => {
+  const processBuffer = (buffer: string, flush = false): string => {
     const normalized = buffer.replace(/\r\n/g, '\n');
     const blocks = normalized.split('\n\n');
-    const remainder = flush ? '' : blocks.pop() ?? '';
+    const remainder = flush ? '' : (blocks.pop() ?? '');
 
     for (const block of blocks) {
       processBlock(block);
@@ -239,24 +190,16 @@ export async function apiEventStream(
   resetTimeout();
 
   try {
-    const response = await fetch(
-      `${environment.apiUrl}${path}`,
-      {
-        ...init,
-        headers,
-        signal: controller.signal,
-      },
-    );
+    const response = await fetch(`${environment.apiUrl}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
 
     if (!response.ok) {
-      const payload = (await response
-        .json()
-        .catch(() => null)) as unknown;
+      const payload = (await response.json().catch(() => null)) as unknown;
 
-      throw new ApiError(
-        readErrorMessage(payload, response.status),
-        response.status,
-      );
+      throw new ApiError(readErrorMessage(payload, response.status), response.status);
     }
 
     if (!response.body) {
@@ -275,10 +218,7 @@ export async function apiEventStream(
       if (result.done) break;
 
       resetTimeout();
-      buffer += decoder.decode(
-        result.value,
-        { stream: true },
-      );
+      buffer += decoder.decode(result.value, { stream: true });
       buffer = processBuffer(buffer);
     }
 
@@ -289,14 +229,8 @@ export async function apiEventStream(
       throw error;
     }
 
-    if (
-      error instanceof Error &&
-      error.name === 'AbortError'
-    ) {
-      throw new ApiError(
-        'The streamed response took too long. Please try again.',
-        408,
-      );
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError('The streamed response took too long. Please try again.', 408);
     }
 
     throw new ApiError(
@@ -308,9 +242,6 @@ export async function apiEventStream(
       clearTimeout(timeout);
     }
 
-    externalSignal?.removeEventListener(
-      'abort',
-      cancelFromExternal,
-    );
+    externalSignal?.removeEventListener('abort', cancelFromExternal);
   }
 }

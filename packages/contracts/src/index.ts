@@ -82,18 +82,9 @@ export const streamChunkSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('error'), message: z.string() }),
 ]);
 
-export const companionStyleSchema = z.enum([
-  'warm',
-  'concise',
-  'playful',
-  'professional',
-]);
+export const companionStyleSchema = z.enum(['warm', 'concise', 'playful', 'professional']);
 
-export const answerLengthSchema = z.enum([
-  'short',
-  'balanced',
-  'detailed',
-]);
+export const answerLengthSchema = z.enum(['short', 'balanced', 'detailed']);
 
 export const accountProfileSchema = z.object({
   displayName: z.string().max(120).nullable(),
@@ -126,10 +117,9 @@ export const updateProfileSchema = z
     timezone: z.string().trim().min(1).max(100).optional(),
     companionStyle: companionStyleSchema.optional(),
   })
-  .refine(
-    (value) => Object.values(value).some((v) => v !== undefined),
-    { message: 'Provide at least one field to update' },
-  );
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
 
 export const updatePreferencesSchema = z
   .object({
@@ -138,10 +128,9 @@ export const updatePreferencesSchema = z
     memoryEnabled: z.boolean().optional(),
     analyticsEnabled: z.boolean().optional(),
   })
-  .refine(
-    (value) => Object.values(value).some((v) => v !== undefined),
-    { message: 'Provide at least one field to update' },
-  );
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
 
 export const deleteAccountResponseSchema = z.object({
   deleted: z.literal(true),
@@ -195,40 +184,24 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 export type ChatHistoryResponse = z.infer<typeof chatHistoryResponseSchema>;
 export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
 export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
-export type ConversationHistoryResponse = z.infer<
-  typeof conversationHistoryResponseSchema
->;
-export type RenameConversationInput = z.infer<
-  typeof renameConversationSchema
->;
-export type ConversationMutationResponse = z.infer<
-  typeof conversationMutationResponseSchema
->;
+export type ConversationHistoryResponse = z.infer<typeof conversationHistoryResponseSchema>;
+export type RenameConversationInput = z.infer<typeof renameConversationSchema>;
+export type ConversationMutationResponse = z.infer<typeof conversationMutationResponseSchema>;
 export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
 export type StreamChunk = z.infer<typeof streamChunkSchema>;
 export type CompanionStyle = z.infer<typeof companionStyleSchema>;
 export type AnswerLength = z.infer<typeof answerLengthSchema>;
 export type AccountProfile = z.infer<typeof accountProfileSchema>;
-export type AccountPreferences = z.infer<
-  typeof accountPreferencesSchema
->;
-export type AccountOverviewResponse = z.infer<
-  typeof accountOverviewResponseSchema
->;
+export type AccountPreferences = z.infer<typeof accountPreferencesSchema>;
+export type AccountOverviewResponse = z.infer<typeof accountOverviewResponseSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
-export type UpdatePreferencesInput = z.infer<
-  typeof updatePreferencesSchema
->;
-export type DeleteAccountResponse = z.infer<
-  typeof deleteAccountResponseSchema
->;
+export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
+export type DeleteAccountResponse = z.infer<typeof deleteAccountResponseSchema>;
 
 export type ReactionKind = z.infer<typeof reactionKindSchema>;
 export type CommunityPost = z.infer<typeof communityPostSchema>;
-export type CommunityFeedResponse = z.infer<
-  typeof communityFeedResponseSchema
->;
+export type CommunityFeedResponse = z.infer<typeof communityFeedResponseSchema>;
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type ReactionState = z.infer<typeof reactionStateSchema>;
 

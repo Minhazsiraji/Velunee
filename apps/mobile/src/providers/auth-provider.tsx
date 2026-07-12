@@ -14,11 +14,7 @@ import {
 import { getSupabaseClient } from '@/lib/supabase';
 import { useChatStore } from '@/stores/chat-store';
 
-type AuthStatus =
-  | 'loading'
-  | 'authenticated'
-  | 'unauthenticated'
-  | 'unconfigured';
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unconfigured';
 
 type VeluneeUser = User & {
   is_anonymous?: boolean;
@@ -37,14 +33,8 @@ interface AuthContextValue {
   isAnonymous: boolean;
   isConfigured: boolean;
   signInAsGuest: (captchaToken?: string) => Promise<void>;
-  signUpWithEmail: (
-    email: string,
-    password: string,
-  ) => Promise<EmailSignUpResult>;
-  signInWithEmail: (
-    email: string,
-    password: string,
-  ) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<EmailSignUpResult>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   signOutCurrentDevice: () => Promise<void>;
   signOutEverywhere: () => Promise<void>;
@@ -52,9 +42,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({
-  children,
-}: PropsWithChildren): React.JSX.Element {
+export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element {
   const supabase = useMemo(() => getSupabaseClient(), []);
   const queryClient = useQueryClient();
 
@@ -75,9 +63,7 @@ export function AuthProvider({
       currentUserIdRef.current = nextUserId;
       setSession(nextSession);
 
-      setStatus(
-        nextSession ? 'authenticated' : 'unauthenticated',
-      );
+      setStatus(nextSession ? 'authenticated' : 'unauthenticated');
     },
     [queryClient],
   );
@@ -104,10 +90,7 @@ export function AuthProvider({
       if (!isMounted || authEventReceived) return;
 
       if (error) {
-        console.warn(
-          'Unable to restore Supabase session:',
-          error.message,
-        );
+        console.warn('Unable to restore Supabase session:', error.message);
 
         applySession(null);
         return;
@@ -123,8 +106,7 @@ export function AuthProvider({
   }, [applySession, supabase]);
 
   const value = useMemo<AuthContextValue>(() => {
-    const user =
-      (session?.user as VeluneeUser | undefined) ?? null;
+    const user = (session?.user as VeluneeUser | undefined) ?? null;
 
     return {
       session,
@@ -137,33 +119,25 @@ export function AuthProvider({
 
       signInAsGuest: async (captchaToken?: string) => {
         if (!supabase) {
-          throw new Error(
-            'Supabase authentication is not configured.',
-          );
+          throw new Error('Supabase authentication is not configured.');
         }
 
-        const { error } =
-          await supabase.auth.signInAnonymously(
-            captchaToken
-              ? {
-                  options: {
-                    captchaToken,
-                  },
-                }
-              : {},
-          );
+        const { error } = await supabase.auth.signInAnonymously(
+          captchaToken
+            ? {
+                options: {
+                  captchaToken,
+                },
+              }
+            : {},
+        );
 
         if (error) throw error;
       },
 
-      signUpWithEmail: async (
-        email: string,
-        password: string,
-      ): Promise<EmailSignUpResult> => {
+      signUpWithEmail: async (email: string, password: string): Promise<EmailSignUpResult> => {
         if (!supabase) {
-          throw new Error(
-            'Supabase authentication is not configured.',
-          );
+          throw new Error('Supabase authentication is not configured.');
         }
 
         const normalizedEmail = email.trim().toLowerCase();
@@ -171,11 +145,10 @@ export function AuthProvider({
 
         // Upgrade an anonymous guest in place so their chats carry over.
         if (currentUser?.is_anonymous) {
-          const { error: updateError } =
-            await supabase.auth.updateUser({
-              email: normalizedEmail,
-              password,
-            });
+          const { error: updateError } = await supabase.auth.updateUser({
+            email: normalizedEmail,
+            password,
+          });
 
           if (updateError) throw updateError;
           return { needsEmailConfirmation: true };
@@ -195,37 +168,27 @@ export function AuthProvider({
         };
       },
 
-      signInWithEmail: async (
-        email: string,
-        password: string,
-      ) => {
+      signInWithEmail: async (email: string, password: string) => {
         if (!supabase) {
-          throw new Error(
-            'Supabase authentication is not configured.',
-          );
+          throw new Error('Supabase authentication is not configured.');
         }
 
-        const { error } =
-          await supabase.auth.signInWithPassword({
-            email: email.trim().toLowerCase(),
-            password,
-          });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
 
         if (error) throw error;
       },
 
       sendPasswordReset: async (email: string) => {
         if (!supabase) {
-          throw new Error(
-            'Supabase authentication is not configured.',
-          );
+          throw new Error('Supabase authentication is not configured.');
         }
 
-        const { error } =
-          await supabase.auth.resetPasswordForEmail(
-            email.trim().toLowerCase(),
-            { redirectTo: 'velunee://reset-password' },
-          );
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+          redirectTo: 'velunee://reset-password',
+        });
 
         if (error) throw error;
       },
@@ -252,20 +215,14 @@ export function AuthProvider({
     };
   }, [session, status, supabase]);
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext);
 
   if (!value) {
-    throw new Error(
-      'useAuth must be used inside AuthProvider.',
-    );
+    throw new Error('useAuth must be used inside AuthProvider.');
   }
 
   return value;

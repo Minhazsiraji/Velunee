@@ -10,12 +10,12 @@ export const veluneeTheme = {
     textMuted: '#BEB5CD',
     success: '#73D9A6',
     danger: '#FF7A8A',
-    border: '#392B5A'
+    border: '#392B5A',
   },
   radius: {
     small: 10,
     medium: 16,
     large: 24,
-    pill: 999
-  }
+    pill: 999,
+  },
 } as const;

@@ -1,11 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/primary-button';
@@ -18,9 +13,7 @@ export default function WelcomeScreen(): React.JSX.Element {
   const { signInAsGuest } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    null,
-  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleGuestSignIn(): Promise<void> {
     if (isSubmitting) return;
@@ -48,21 +41,15 @@ export default function WelcomeScreen(): React.JSX.Element {
 
           <Text style={styles.brand}>Velunee</Text>
 
-          <Text style={styles.title}>
-            Your personal AI companion
-          </Text>
+          <Text style={styles.title}>Your personal AI companion</Text>
 
           <Text style={styles.subtitle}>
-            Ask questions, make decisions, and move forward with
-            confidence.
+            Ask questions, make decisions, and move forward with confidence.
           </Text>
         </View>
 
         <View style={styles.actions}>
-          <PrimaryButton
-            label="Create Account"
-            onPress={() => router.push('/(auth)/sign-up')}
-          />
+          <PrimaryButton label="Create Account" onPress={() => router.push('/(auth)/sign-up')} />
 
           <PrimaryButton
             label="Sign In"
@@ -78,15 +65,11 @@ export default function WelcomeScreen(): React.JSX.Element {
             style={styles.guest}
           >
             <Text style={styles.guestText}>
-              {isSubmitting
-                ? 'Please wait…'
-                : 'Continue as Guest'}
+              {isSubmitting ? 'Please wait…' : 'Continue as Guest'}
             </Text>
           </Pressable>
 
-          {errorMessage ? (
-            <Text style={styles.error}>{errorMessage}</Text>
-          ) : null}
+          {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
           <Text style={styles.tagline}>Ask. Decide. Shine.</Text>
         </View>

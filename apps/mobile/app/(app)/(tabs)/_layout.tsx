@@ -38,28 +38,15 @@ export default function TabsLayout(): React.JSX.Element {
           fontWeight: '600',
         },
         tabBarIcon: ({ color, size }) => (
-          <Ionicons
-            name={tabIcons[route.name] ?? 'ellipse'}
-            color={color}
-            size={size}
-          />
+          <Ionicons name={tabIcons[route.name] ?? 'ellipse'} color={color} size={size} />
         ),
       })}
     >
-      <Tabs.Screen
-        name="chat"
-        options={{ title: 'Chat' }}
-      />
+      <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
 
-      <Tabs.Screen
-        name="community"
-        options={{ title: 'Community' }}
-      />
+      <Tabs.Screen name="community" options={{ title: 'Community' }} />
 
-      <Tabs.Screen
-        name="profile"
-        options={{ title: 'Profile' }}
-      />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

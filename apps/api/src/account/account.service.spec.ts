@@ -1,3 +1,8 @@
+jest.mock('@velunee/auth-core', () => ({
+  supportsAdmin: (provider: unknown): boolean =>
+    provider != null &&
+    typeof (provider as { deleteAuthUser?: unknown }).deleteAuthUser === 'function',
+}));
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import { AccountService } from './account.service';
 import type { AccountRepository } from './account.repository';
@@ -43,10 +48,7 @@ const baseUser: AuthenticatedUser = {
 describe('AccountService', () => {
   it('builds an overview and flags a registered email user', async () => {
     const repository = buildRepository();
-    const service = new AccountService(
-      repository as unknown as AccountRepository,
-      null,
-    );
+    const service = new AccountService(repository as unknown as AccountRepository, null);
 
     const overview = await service.getOverview(baseUser);
 
@@ -57,10 +59,7 @@ describe('AccountService', () => {
 
   it('detects an anonymous guest from the JWT claim', async () => {
     const repository = buildRepository();
-    const service = new AccountService(
-      repository as unknown as AccountRepository,
-      null,
-    );
+    const service = new AccountService(repository as unknown as AccountRepository, null);
 
     const overview = await service.getOverview({
       ...baseUser,
@@ -93,9 +92,7 @@ describe('AccountService', () => {
       { verifyAccessToken: jest.fn() } as never,
     );
 
-    await expect(
-      service.deleteAccount('user-1'),
-    ).resolves.toBeUndefined();
+    await expect(service.deleteAccount('user-1')).resolves.toBeUndefined();
     expect(repository.deleteUserData).toHaveBeenCalledWith('user-1');
   });
 });

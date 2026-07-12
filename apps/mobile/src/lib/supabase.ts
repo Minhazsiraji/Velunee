@@ -1,9 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createClient,
-  processLock,
-  type SupabaseClient,
-} from '@supabase/supabase-js';
+import { createClient, processLock, type SupabaseClient } from '@supabase/supabase-js';
 import {
   AppState,
   Platform,
@@ -18,19 +14,12 @@ import { secureAuthStorage } from './secure-auth-storage';
 let client: SupabaseClient | null = null;
 let authLifecycleSubscription: NativeEventSubscription | null = null;
 
-function registerAuthLifecycle(
-  supabaseClient: SupabaseClient,
-): void {
-  if (
-    Platform.OS === 'web' ||
-    authLifecycleSubscription
-  ) {
+function registerAuthLifecycle(supabaseClient: SupabaseClient): void {
+  if (Platform.OS === 'web' || authLifecycleSubscription) {
     return;
   }
 
-  const handleAppStateChange = (
-    state: AppStateStatus,
-  ): void => {
+  const handleAppStateChange = (state: AppStateStatus): void => {
     if (state === 'active') {
       supabaseClient.auth.startAutoRefresh();
     } else {
@@ -40,17 +29,11 @@ function registerAuthLifecycle(
 
   handleAppStateChange(AppState.currentState);
 
-  authLifecycleSubscription = AppState.addEventListener(
-    'change',
-    handleAppStateChange,
-  );
+  authLifecycleSubscription = AppState.addEventListener('change', handleAppStateChange);
 }
 
 export function getSupabaseClient(): SupabaseClient | null {
-  if (
-    !environment.supabaseUrl ||
-    !environment.supabaseAnonKey
-  ) {
+  if (!environment.supabaseUrl || !environment.supabaseAnonKey) {
     return null;
   }
 
@@ -58,24 +41,17 @@ export function getSupabaseClient(): SupabaseClient | null {
     return client;
   }
 
-  client = createClient(
-    environment.supabaseUrl,
-    environment.supabaseAnonKey,
-    {
-      auth: {
-        storage:
-          Platform.OS === 'web'
-            ? AsyncStorage
-            : secureAuthStorage,
-        storageKey: 'velunee.auth.session.v1',
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-        flowType: 'pkce',
-        lock: processLock,
-      },
+  client = createClient(environment.supabaseUrl, environment.supabaseAnonKey, {
+    auth: {
+      storage: Platform.OS === 'web' ? AsyncStorage : secureAuthStorage,
+      storageKey: 'velunee.auth.session.v1',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+      flowType: 'pkce',
+      lock: processLock,
     },
-  );
+  });
 
   registerAuthLifecycle(client);
 

@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   createPostSchema,
@@ -48,9 +40,7 @@ export class CommunityController {
     @Param('postId') postId: string,
     @Query('type') type?: string,
   ): Promise<ReactionState> {
-    const kind: ReactionKind = reactionKindSchema
-      .catch('heart')
-      .parse(type);
+    const kind: ReactionKind = reactionKindSchema.catch('heart').parse(type);
     return this.communityService.react(user.id, postId, kind);
   }
 
@@ -60,13 +50,7 @@ export class CommunityController {
     @Param('postId') postId: string,
     @Query('type') type?: string,
   ): Promise<ReactionState> {
-    const kind: ReactionKind = reactionKindSchema
-      .catch('heart')
-      .parse(type);
-    return this.communityService.removeReaction(
-      user.id,
-      postId,
-      kind,
-    );
+    const kind: ReactionKind = reactionKindSchema.catch('heart').parse(type);
+    return this.communityService.removeReaction(user.id, postId, kind);
   }
 }

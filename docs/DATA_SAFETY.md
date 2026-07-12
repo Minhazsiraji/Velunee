@@ -17,14 +17,14 @@ community; no ads, no location, no camera/mic permissions requested yet).
 
 ## Data types collected
 
-| Data type | Collected | Shared | Purpose | Optional? |
-| --- | --- | --- | --- | --- |
-| Email address | Yes | No* | Account management, security | Required (unless guest) |
-| Name (display name) | Yes | No* | App functionality (personalization) | Optional |
-| User-generated content (chat) | Yes | Processed by AI provider | App functionality | Required to use chat |
-| User-generated content (community posts/comments) | Yes | Shown to other users | App functionality | Optional |
-| App interactions / preferences | Yes | No* | App functionality | Optional |
-| Diagnostics (crash/performance) | Yes | No* | Reliability | Optional |
+| Data type                                         | Collected | Shared                   | Purpose                             | Optional?               |
+| ------------------------------------------------- | --------- | ------------------------ | ----------------------------------- | ----------------------- |
+| Email address                                     | Yes       | No*                      | Account management, security        | Required (unless guest) |
+| Name (display name)                               | Yes       | No*                      | App functionality (personalization) | Optional                |
+| User-generated content (chat)                     | Yes       | Processed by AI provider | App functionality                   | Required to use chat    |
+| User-generated content (community posts/comments) | Yes       | Shown to other users     | App functionality                   | Optional                |
+| App interactions / preferences                    | Yes       | No*                      | App functionality                   | Optional                |
+| Diagnostics (crash/performance)                   | Yes       | No*                      | Reliability                         | Optional                |
 
 \* "No" means not shared for advertising or with third parties beyond the
 service providers (Supabase, Google Gemini) needed to run the app.
