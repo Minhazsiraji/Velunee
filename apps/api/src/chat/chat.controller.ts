@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Res,
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   sendChatMessageSchema,
+  type ChatHistoryResponse,
   type ChatResponse,
   type SendChatMessageInput,
   type StreamChunk,
@@ -19,6 +21,14 @@ import { ChatService } from './chat.service';
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+
+
+  @Get('history')
+  async getHistory(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ChatHistoryResponse> {
+    return this.chatService.getLatestHistory(user.id);
+  }
 
   @Post('messages')
   async sendMessage(

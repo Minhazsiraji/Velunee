@@ -1,11 +1,18 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { ChatMessage } from '@velunee/contracts';
 import {
   conversations,
   messages,
   users,
   type DatabaseConnection,
 } from '@velunee/database';
-import { and, eq } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNull,
+} from 'drizzle-orm';
 import { CryptoService } from '../crypto/crypto.service';
 import { DATABASE_CONNECTION } from '../database/database.constants';
 
@@ -21,17 +28,30 @@ export interface PersistedMessageInput {
   requestId: string;
 }
 
+export interface PersistedChatHistory {
+  conversationId: string | null;
+  messages: ChatMessage[];
+}
+
 @Injectable()
 export class ChatRepository {
-  private readonly logger = new Logger(ChatRepository.name);
+  private readonly logger = new Logger(
+    ChatRepository.name,
+  );
 
   constructor(
-    @Inject(DATABASE_CONNECTION) private readonly connection: DatabaseConnection | null,
+    @Inject(DATABASE_CONNECTION)
+    private readonly connection:
+      | DatabaseConnection
+      | null,
     private readonly crypto: CryptoService,
   ) {}
 
   get persistenceEnabled(): boolean {
-    return this.connection !== null && this.crypto.enabled;
+    return (
+      this.connection !== null &&
+      this.crypto.enabled
+    );
   }
 
   async ensureConversation(input: {
@@ -39,9 +59,15 @@ export class ChatRepository {
     userId: string;
     locale?: string;
   }): Promise<void> {
-    if (!this.persistenceEnabled || !this.connection) return;
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return;
+    }
 
     const { db } = this.connection;
+
     await db
       .insert(users)
       .values({
@@ -53,7 +79,18 @@ export class ChatRepository {
     const existing = await db
       .select({ id: conversations.id })
       .from(conversations)
-      .where(and(eq(conversations.id, input.conversationId), eq(conversations.userId, input.userId)))
+      .where(
+        and(
+          eq(
+            conversations.id,
+            input.conversationId,
+          ),
+          eq(
+            conversations.userId,
+            input.userId,
+          ),
+        ),
+      )
       .limit(1);
 
     if (existing.length === 0) {
@@ -65,27 +102,149 @@ export class ChatRepository {
     }
   }
 
-  async saveMessage(input: PersistedMessageInput): Promise<void> {
-    if (!this.persistenceEnabled || !this.connection) return;
+  async saveMessage(
+    input: PersistedMessageInput,
+  ): Promise<void> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return;
+    }
 
-    await this.connection.db.insert(messages).values({
+    const { db } = this.connection;
+
+    await db.insert(messages).values({
       id: input.id,
       conversationId: input.conversationId,
       userId: input.userId,
       role: input.role,
       inputMode: input.inputMode,
-      contentEncrypted: this.crypto.encrypt(input.content),
+      contentEncrypted: this.crypto.encrypt(
+        input.content,
+      ),
       provider: input.provider,
       model: input.model,
       requestId: input.requestId,
     });
+
+    await db
+      .update(conversations)
+      .set({
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(
+            conversations.id,
+            input.conversationId,
+          ),
+          eq(
+            conversations.userId,
+            input.userId,
+          ),
+        ),
+      );
+  }
+
+  async getLatestHistory(
+    userId: string,
+  ): Promise<PersistedChatHistory> {
+    if (
+      !this.persistenceEnabled ||
+      !this.connection
+    ) {
+      return {
+        conversationId: null,
+        messages: [],
+      };
+    }
+
+    const { db } = this.connection;
+
+    const [conversation] = await db
+      .select({
+        id: conversations.id,
+      })
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.userId, userId),
+          isNull(conversations.deletedAt),
+        ),
+      )
+      .orderBy(
+        desc(conversations.updatedAt),
+        desc(conversations.createdAt),
+      )
+      .limit(1);
+
+    if (!conversation) {
+      return {
+        conversationId: null,
+        messages: [],
+      };
+    }
+
+    const storedMessages = await db
+      .select({
+        id: messages.id,
+        role: messages.role,
+        inputMode: messages.inputMode,
+        contentEncrypted:
+          messages.contentEncrypted,
+        createdAt: messages.createdAt,
+      })
+      .from(messages)
+      .where(
+        and(
+          eq(
+            messages.conversationId,
+            conversation.id,
+          ),
+          eq(messages.userId, userId),
+          isNull(messages.deletedAt),
+        ),
+      )
+      .orderBy(asc(messages.createdAt));
+
+    const historyMessages =
+      storedMessages.flatMap<ChatMessage>(
+        (message) => {
+          if (message.role === 'tool') {
+            return [];
+          }
+
+          return [
+            {
+              id: message.id,
+              role: message.role,
+              content: this.crypto.decrypt(
+                message.contentEncrypted,
+              ),
+              inputMode: message.inputMode,
+              createdAt:
+                message.createdAt.toISOString(),
+            },
+          ];
+        },
+      );
+
+    return {
+      conversationId: conversation.id,
+      messages: historyMessages,
+    };
   }
 
   logPersistenceState(): void {
     if (!this.connection) {
-      this.logger.warn('Chat persistence is disabled because DATABASE_URL is not configured');
+      this.logger.warn(
+        'Chat persistence is disabled because DATABASE_URL is not configured',
+      );
     } else if (!this.crypto.enabled) {
-      this.logger.warn('Chat persistence is disabled because FIELD_ENCRYPTION_KEY is not configured');
+      this.logger.warn(
+        'Chat persistence is disabled because FIELD_ENCRYPTION_KEY is not configured',
+      );
     }
   }
 }

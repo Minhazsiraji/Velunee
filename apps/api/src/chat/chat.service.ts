@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { AIProvider } from '@velunee/ai-core';
-import type { ChatResponse, SendChatMessageInput } from '@velunee/contracts';
+import type {
+  ChatHistoryResponse,
+  ChatResponse,
+  SendChatMessageInput,
+} from '@velunee/contracts';
 import { randomUUID } from 'node:crypto';
 import { AI_PROVIDER } from './chat.constants';
 import { ChatRepository } from './chat.repository';
@@ -27,6 +31,13 @@ export class ChatService implements OnModuleInit {
   onModuleInit(): void {
     this.logger.log(`AI provider: ${this.ai.name}/${this.ai.model}`);
     this.repository.logPersistenceState();
+  }
+
+
+  async getLatestHistory(
+    userId: string,
+  ): Promise<ChatHistoryResponse> {
+    return this.repository.getLatestHistory(userId);
   }
 
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {

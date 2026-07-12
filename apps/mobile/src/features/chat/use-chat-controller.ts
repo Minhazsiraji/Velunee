@@ -1,6 +1,7 @@
 import type { ChatMessage } from '@velunee/contracts';
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -8,7 +9,10 @@ import {
 import { ApiError } from '@/lib/api';
 import { useChatStore } from '@/stores/chat-store';
 
-import { sendChatMessage } from './api';
+import {
+  loadChatHistory,
+  sendChatMessage,
+} from './api';
 
 interface HistoryItem {
   role: 'user' | 'assistant';
@@ -25,6 +29,7 @@ interface ChatController {
   input: string;
   errorMessage: string | null;
   isSending: boolean;
+  isLoadingHistory: boolean;
   canSend: boolean;
   canRetry: boolean;
   setInput: (value: string) => void;
@@ -89,7 +94,8 @@ function getLocalization(): {
 
     return {
       locale: options.locale || 'en',
-      timezone: options.timeZone || 'Asia/Dhaka',
+      timezone:
+        options.timeZone || 'Asia/Dhaka',
     };
   } catch {
     return {
@@ -104,12 +110,16 @@ export function useChatController(): ChatController {
     conversationId,
     messages,
     setConversationId,
+    setConversationHistory,
     addMessage,
     clearConversation,
   } = useChatStore();
 
   const [input, setInput] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const [isSending, setIsSending] =
+    useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] =
+    useState(true);
 
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
@@ -118,13 +128,56 @@ export function useChatController(): ChatController {
     useState<FailedRequest | null>(null);
 
   const sendingRef = useRef(false);
+  const historyLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (historyLoadedRef.current) return;
+
+    historyLoadedRef.current = true;
+    let cancelled = false;
+
+    const load = async (): Promise<void> => {
+      try {
+        const history =
+          await loadChatHistory();
+
+        if (!cancelled) {
+          setConversationHistory(
+            history.conversationId,
+            history.messages,
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(
+            getErrorMessage(error),
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingHistory(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setConversationHistory]);
 
   const submit = useCallback(
     async (
       request: FailedRequest,
       appendLocalMessage: boolean,
     ): Promise<void> => {
-      if (sendingRef.current) return;
+      if (
+        sendingRef.current ||
+        isLoadingHistory
+      ) {
+        return;
+      }
 
       sendingRef.current = true;
       setIsSending(true);
@@ -132,27 +185,36 @@ export function useChatController(): ChatController {
 
       if (appendLocalMessage) {
         addMessage(
-          createLocalUserMessage(request.content),
+          createLocalUserMessage(
+            request.content,
+          ),
         );
       }
 
       try {
-        const localization = getLocalization();
+        const localization =
+          getLocalization();
 
-        const response = await sendChatMessage({
-          conversationId,
-          message: request.content,
-          inputMode: 'text',
-          locale: localization.locale,
-          timezone: localization.timezone,
-          history: request.history,
-        });
+        const response =
+          await sendChatMessage({
+            conversationId,
+            message: request.content,
+            inputMode: 'text',
+            locale: localization.locale,
+            timezone:
+              localization.timezone,
+            history: request.history,
+          });
 
-        setConversationId(response.conversationId);
+        setConversationId(
+          response.conversationId,
+        );
         addMessage(response.message);
         setFailedRequest(null);
       } catch (error) {
-        setErrorMessage(getErrorMessage(error));
+        setErrorMessage(
+          getErrorMessage(error),
+        );
         setFailedRequest(request);
       } finally {
         sendingRef.current = false;
@@ -162,55 +224,96 @@ export function useChatController(): ChatController {
     [
       addMessage,
       conversationId,
+      isLoadingHistory,
       setConversationId,
     ],
   );
 
-  const send = useCallback(async (): Promise<void> => {
-    const content = input.trim();
+  const send =
+    useCallback(async (): Promise<void> => {
+      const content = input.trim();
 
-    if (!content || sendingRef.current) return;
+      if (
+        !content ||
+        sendingRef.current ||
+        isLoadingHistory
+      ) {
+        return;
+      }
 
-    const request: FailedRequest = {
-      content,
-      history: createHistory(messages),
-    };
+      const request: FailedRequest = {
+        content,
+        history: createHistory(messages),
+      };
 
-    setInput('');
+      setInput('');
 
-    await submit(request, true);
-  }, [input, messages, submit]);
+      await submit(request, true);
+    }, [
+      input,
+      isLoadingHistory,
+      messages,
+      submit,
+    ]);
 
-  const retry = useCallback(async (): Promise<void> => {
-    if (!failedRequest || sendingRef.current) return;
+  const retry =
+    useCallback(async (): Promise<void> => {
+      if (
+        !failedRequest ||
+        sendingRef.current ||
+        isLoadingHistory
+      ) {
+        return;
+      }
 
-    await submit(failedRequest, false);
-  }, [failedRequest, submit]);
+      await submit(
+        failedRequest,
+        false,
+      );
+    }, [
+      failedRequest,
+      isLoadingHistory,
+      submit,
+    ]);
 
-  const dismissError = useCallback((): void => {
-    setErrorMessage(null);
-    setFailedRequest(null);
-  }, []);
+  const dismissError =
+    useCallback((): void => {
+      setErrorMessage(null);
+      setFailedRequest(null);
+    }, []);
 
   const startNewConversation =
     useCallback((): void => {
-      if (sendingRef.current) return;
+      if (
+        sendingRef.current ||
+        isLoadingHistory
+      ) {
+        return;
+      }
 
       clearConversation();
       setInput('');
       setErrorMessage(null);
       setFailedRequest(null);
-    }, [clearConversation]);
+    }, [
+      clearConversation,
+      isLoadingHistory,
+    ]);
 
   return {
     messages,
     input,
     errorMessage,
     isSending,
+    isLoadingHistory,
     canSend:
-      input.trim().length > 0 && !isSending,
+      input.trim().length > 0 &&
+      !isSending &&
+      !isLoadingHistory,
     canRetry:
-      failedRequest !== null && !isSending,
+      failedRequest !== null &&
+      !isSending &&
+      !isLoadingHistory,
     setInput,
     send,
     retry,

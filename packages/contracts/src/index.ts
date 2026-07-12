@@ -10,6 +10,11 @@ export const chatMessageSchema = z.object({
   inputMode: inputModeSchema.default('text'),
 });
 
+export const chatHistoryResponseSchema = z.object({
+  conversationId: z.string().uuid().nullable(),
+  messages: z.array(chatMessageSchema),
+});
+
 export const sendChatMessageSchema = z.object({
   conversationId: z.string().uuid().optional(),
   message: z.string().trim().min(1).max(12_000),
@@ -67,6 +72,7 @@ export const systemConfigSchema = z.object({
 });
 
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+export type ChatHistoryResponse = z.infer<typeof chatHistoryResponseSchema>;
 export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
 export type StreamChunk = z.infer<typeof streamChunkSchema>;

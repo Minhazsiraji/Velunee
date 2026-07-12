@@ -27,6 +27,7 @@ export default function ChatScreen(): React.JSX.Element {
     input,
     errorMessage,
     isSending,
+    isLoadingHistory,
     canSend,
     canRetry,
     setInput,
@@ -74,14 +75,19 @@ export default function ChatScreen(): React.JSX.Element {
             accessibilityRole="button"
             accessibilityLabel="Start a new conversation"
             accessibilityState={{
-              disabled: isSending,
+              disabled:
+                isSending || isLoadingHistory,
             }}
-            disabled={isSending}
+            disabled={
+              isSending || isLoadingHistory
+            }
             onPress={startNewConversation}
             style={({ pressed }) => [
               styles.newChatButton,
               pressed && styles.pressed,
-              isSending && styles.disabled,
+              (isSending ||
+                isLoadingHistory) &&
+                styles.disabled,
             ]}
           >
             <Ionicons
@@ -91,6 +97,19 @@ export default function ChatScreen(): React.JSX.Element {
             />
           </Pressable>
         </View>
+
+        {isLoadingHistory ? (
+          <View style={styles.historyLoading}>
+            <ActivityIndicator
+              size="small"
+              color={colors.primaryMuted}
+            />
+
+            <Text style={styles.historyLoadingText}>
+              Loading your saved conversation...
+            </Text>
+          </View>
+        ) : null}
 
         <FlatList
           ref={listRef}
@@ -199,6 +218,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 18,
+  },
+  historyLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+  },
+  historyLoadingText: {
+    marginLeft: 8,
+    color: colors.textMuted,
+    fontSize: 13,
   },
   typingRow: {
     flexDirection: 'row',

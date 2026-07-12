@@ -4,7 +4,13 @@ import { create } from 'zustand';
 interface ChatState {
   conversationId?: string;
   messages: ChatMessage[];
-  setConversationId(conversationId: string): void;
+  setConversationId(
+    conversationId: string,
+  ): void;
+  setConversationHistory(
+    conversationId: string | null,
+    messages: ChatMessage[],
+  ): void;
   addMessage(message: ChatMessage): void;
   clearConversation(): void;
 }
@@ -18,9 +24,38 @@ const welcomeMessage: ChatMessage = {
   createdAt: new Date(0).toISOString(),
 };
 
-export const useChatStore = create<ChatState>((set) => ({
-  messages: [welcomeMessage],
-  setConversationId: (conversationId) => set({ conversationId }),
-  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
-  clearConversation: () => set({ conversationId: undefined, messages: [welcomeMessage] }),
-}));
+export const useChatStore = create<ChatState>(
+  (set) => ({
+    messages: [welcomeMessage],
+
+    setConversationId: (conversationId) =>
+      set({ conversationId }),
+
+    setConversationHistory: (
+      conversationId,
+      messages,
+    ) =>
+      set({
+        conversationId:
+          conversationId ?? undefined,
+        messages:
+          messages.length > 0
+            ? messages
+            : [welcomeMessage],
+      }),
+
+    addMessage: (message) =>
+      set((state) => ({
+        messages: [
+          ...state.messages,
+          message,
+        ],
+      })),
+
+    clearConversation: () =>
+      set({
+        conversationId: undefined,
+        messages: [welcomeMessage],
+      }),
+  }),
+);
