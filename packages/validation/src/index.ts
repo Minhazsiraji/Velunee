@@ -10,6 +10,7 @@ export const apiEnvironmentSchema = z
     AUTH_MODE: z.enum(['development', 'required']).default('development'),
     SUPABASE_URL: optionalUrl,
     SUPABASE_JWT_AUDIENCE: z.string().default('authenticated'),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
     DATABASE_URL: optionalUrl,
     FIELD_ENCRYPTION_KEY: z.string().optional(),
     REDIS_URL: optionalUrl,

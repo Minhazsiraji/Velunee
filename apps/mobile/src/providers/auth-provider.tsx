@@ -24,6 +24,10 @@ type VeluneeUser = User & {
   is_anonymous?: boolean;
 };
 
+export interface EmailSignUpResult {
+  needsEmailConfirmation: boolean;
+}
+
 interface AuthContextValue {
   session: Session | null;
   user: VeluneeUser | null;
@@ -33,6 +37,15 @@ interface AuthContextValue {
   isAnonymous: boolean;
   isConfigured: boolean;
   signInAsGuest: (captchaToken?: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+  ) => Promise<EmailSignUpResult>;
+  signInWithEmail: (
+    email: string,
+    password: string,
+  ) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   signOutCurrentDevice: () => Promise<void>;
   signOutEverywhere: () => Promise<void>;
 }
@@ -138,6 +151,80 @@ export function AuthProvider({
                   },
                 }
               : {},
+          );
+
+        if (error) throw error;
+      },
+
+      signUpWithEmail: async (
+        email: string,
+        password: string,
+      ): Promise<EmailSignUpResult> => {
+        if (!supabase) {
+          throw new Error(
+            'Supabase authentication is not configured.',
+          );
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const currentUser = session?.user as VeluneeUser | undefined;
+
+        // Upgrade an anonymous guest in place so their chats carry over.
+        if (currentUser?.is_anonymous) {
+          const { error: updateError } =
+            await supabase.auth.updateUser({
+              email: normalizedEmail,
+              password,
+            });
+
+          if (updateError) throw updateError;
+          return { needsEmailConfirmation: true };
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+        });
+
+        if (error) throw error;
+
+        // When confirmations are enabled Supabase returns a user
+        // without an active session until the email link is used.
+        return {
+          needsEmailConfirmation: !data.session,
+        };
+      },
+
+      signInWithEmail: async (
+        email: string,
+        password: string,
+      ) => {
+        if (!supabase) {
+          throw new Error(
+            'Supabase authentication is not configured.',
+          );
+        }
+
+        const { error } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
+          });
+
+        if (error) throw error;
+      },
+
+      sendPasswordReset: async (email: string) => {
+        if (!supabase) {
+          throw new Error(
+            'Supabase authentication is not configured.',
+          );
+        }
+
+        const { error } =
+          await supabase.auth.resetPasswordForEmail(
+            email.trim().toLowerCase(),
+            { redirectTo: 'velunee://reset-password' },
           );
 
         if (error) throw error;

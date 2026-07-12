@@ -82,6 +82,100 @@ export const streamChunkSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('error'), message: z.string() }),
 ]);
 
+export const companionStyleSchema = z.enum([
+  'warm',
+  'concise',
+  'playful',
+  'professional',
+]);
+
+export const answerLengthSchema = z.enum([
+  'short',
+  'balanced',
+  'detailed',
+]);
+
+export const accountProfileSchema = z.object({
+  displayName: z.string().max(120).nullable(),
+  preferredLocale: z.string().min(2).max(35),
+  timezone: z.string().min(1).max(100),
+  companionStyle: companionStyleSchema,
+  email: z.string().email().nullable(),
+  isAnonymous: z.boolean(),
+});
+
+export const accountPreferencesSchema = z.object({
+  answerLength: answerLengthSchema,
+  voiceEnabled: z.boolean(),
+  memoryEnabled: z.boolean(),
+  analyticsEnabled: z.boolean(),
+});
+
+export const accountOverviewResponseSchema = z.object({
+  profile: accountProfileSchema,
+  preferences: accountPreferencesSchema,
+  stats: z.object({
+    conversationCount: z.number().int().nonnegative(),
+  }),
+});
+
+export const updateProfileSchema = z
+  .object({
+    displayName: z.string().trim().max(120).nullish(),
+    preferredLocale: z.string().trim().min(2).max(35).optional(),
+    timezone: z.string().trim().min(1).max(100).optional(),
+    companionStyle: companionStyleSchema.optional(),
+  })
+  .refine(
+    (value) => Object.values(value).some((v) => v !== undefined),
+    { message: 'Provide at least one field to update' },
+  );
+
+export const updatePreferencesSchema = z
+  .object({
+    answerLength: answerLengthSchema.optional(),
+    voiceEnabled: z.boolean().optional(),
+    memoryEnabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+  })
+  .refine(
+    (value) => Object.values(value).some((v) => v !== undefined),
+    { message: 'Provide at least one field to update' },
+  );
+
+export const deleteAccountResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export const reactionKindSchema = z.enum(['heart', 'love']);
+
+export const communityPostSchema = z.object({
+  id: z.string().uuid(),
+  authorName: z.string(),
+  authorHandle: z.string().nullable(),
+  caption: z.string(),
+  isOwnPost: z.boolean(),
+  reactionCount: z.number().int().nonnegative(),
+  viewerHasReacted: z.boolean(),
+  commentCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+});
+
+export const communityFeedResponseSchema = z.object({
+  posts: z.array(communityPostSchema),
+  nextCursor: z.string().datetime().nullable(),
+});
+
+export const createPostSchema = z.object({
+  caption: z.string().trim().min(1).max(2_200),
+});
+
+export const reactionStateSchema = z.object({
+  postId: z.string().uuid(),
+  reactionCount: z.number().int().nonnegative(),
+  viewerHasReacted: z.boolean(),
+});
+
 export const systemConfigSchema = z.object({
   appName: z.string(),
   tagline: z.string(),
@@ -113,4 +207,29 @@ export type ConversationMutationResponse = z.infer<
 export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
 export type StreamChunk = z.infer<typeof streamChunkSchema>;
+export type CompanionStyle = z.infer<typeof companionStyleSchema>;
+export type AnswerLength = z.infer<typeof answerLengthSchema>;
+export type AccountProfile = z.infer<typeof accountProfileSchema>;
+export type AccountPreferences = z.infer<
+  typeof accountPreferencesSchema
+>;
+export type AccountOverviewResponse = z.infer<
+  typeof accountOverviewResponseSchema
+>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type UpdatePreferencesInput = z.infer<
+  typeof updatePreferencesSchema
+>;
+export type DeleteAccountResponse = z.infer<
+  typeof deleteAccountResponseSchema
+>;
+
+export type ReactionKind = z.infer<typeof reactionKindSchema>;
+export type CommunityPost = z.infer<typeof communityPostSchema>;
+export type CommunityFeedResponse = z.infer<
+  typeof communityFeedResponseSchema
+>;
+export type CreatePostInput = z.infer<typeof createPostSchema>;
+export type ReactionState = z.infer<typeof reactionStateSchema>;
+
 export type SystemConfig = z.infer<typeof systemConfigSchema>;

@@ -18,6 +18,18 @@ This repository contains the **MVP foundation** described in [`docs/ARCHITECTURE
 - Development authentication mode plus Supabase JWT verification for production
 - GitHub CI and deployment-ready Docker assets
 
+### Play Store release features (branch `feature/play-store-release`)
+
+- Email sign-up / sign-in / password reset, plus guest mode
+- Editable profile and preferences (companion style, answer length, voice,
+  memory, analytics)
+- In-app account deletion that removes stored data **and** the identity user
+- Community feed with posts, heart/love reactions, and comment counts
+- Robust loading / empty / error / offline states across the new screens
+- API unit tests, hardened Android release config, and Play Store docs
+
+See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) to ship it.
+
 ## Prerequisites
 
 - Node.js 22.13 or newer

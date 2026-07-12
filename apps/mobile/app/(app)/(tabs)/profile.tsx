@@ -1,36 +1,45 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PrimaryButton } from '@/components/primary-button';
+import { useAccountOverview } from '@/features/account/use-account';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
 export default function ProfileScreen(): React.JSX.Element {
-  const {
-    user,
-    isAnonymous,
-    signOutCurrentDevice,
-  } = useAuth();
+  const router = useRouter();
+  const { user, isAnonymous, signOutCurrentDevice } = useAuth();
+  const overview = useAccountOverview();
 
-  const [isSigningOut, setIsSigningOut] =
-    useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    null,
+  );
 
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null);
+  const profile = overview.data?.profile;
+  const conversationCount =
+    overview.data?.stats.conversationCount ?? 0;
+
+  const heading =
+    profile?.displayName?.trim() ||
+    (isAnonymous ? 'Guest' : profile?.email) ||
+    user?.email ||
+    'Velunee user';
 
   async function handleSignOut(): Promise<void> {
     if (isSigningOut) return;
-
     setIsSigningOut(true);
     setErrorMessage(null);
-
     try {
       await signOutCurrentDevice();
     } catch (error) {
@@ -46,79 +55,87 @@ export default function ProfileScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.avatar}>
-          <Ionicons
-            name="person"
-            size={40}
-            color={colors.white}
-          />
+          <Ionicons name="person" size={40} color={colors.white} />
         </View>
 
-        <Text style={styles.title}>
-          {isAnonymous
-            ? 'Guest profile'
-            : 'Velunee profile'}
-        </Text>
+        <Text style={styles.title}>{heading}</Text>
 
-        <Text style={styles.subtitle}>
-          {isAnonymous
-            ? 'You are securely signed in as an anonymous guest.'
-            : user?.email ?? 'Signed-in Velunee user'}
-        </Text>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>
-            USER ID
+        {isAnonymous ? (
+          <View style={styles.guestBanner}>
+            <Text style={styles.guestText}>
+              You&apos;re using a guest account. Create an account to
+              keep your conversations safe across devices.
+            </Text>
+            <PrimaryButton
+              label="Create Account"
+              onPress={() => router.push('/(auth)/sign-up')}
+              style={styles.guestButton}
+            />
+          </View>
+        ) : (
+          <Text style={styles.subtitle}>
+            {profile?.email ?? user?.email ?? 'Signed in'}
           </Text>
+        )}
 
-          <Text
-            style={styles.userId}
-            numberOfLines={1}
-          >
-            {user?.id ?? 'Unavailable'}
-          </Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            {overview.isLoading ? (
+              <ActivityIndicator color={colors.primaryLight} />
+            ) : (
+              <Text style={styles.statValue}>
+                {conversationCount}
+              </Text>
+            )}
+            <Text style={styles.statLabel}>Conversations</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>
+              {profile?.companionStyle
+                ? profile.companionStyle.charAt(0).toUpperCase() +
+                  profile.companionStyle.slice(1)
+                : '—'}
+            </Text>
+            <Text style={styles.statLabel}>Companion style</Text>
+          </View>
         </View>
-
-        {errorMessage ? (
-          <Text style={styles.error}>
-            {errorMessage}
-          </Text>
-        ) : null}
 
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{
-            busy: isSigningOut,
-            disabled: isSigningOut,
-          }}
-          disabled={isSigningOut}
-          onPress={() => void handleSignOut()}
+          onPress={() => router.push('/(app)/settings')}
           style={({ pressed }) => [
-            styles.button,
-            pressed && styles.pressed,
-            isSigningOut && styles.disabled,
+            styles.menuRow,
+            pressed && styles.menuRowPressed,
           ]}
         >
-          {isSigningOut ? (
-            <ActivityIndicator
-              color={colors.white}
-            />
-          ) : (
-            <>
-              <Ionicons
-                name="log-out-outline"
-                size={21}
-                color={colors.white}
-              />
-
-              <Text style={styles.buttonText}>
-                Sign Out
-              </Text>
-            </>
-          )}
+          <Ionicons
+            name="settings-outline"
+            size={22}
+            color={colors.text}
+          />
+          <Text style={styles.menuLabel}>Settings</Text>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textMuted}
+          />
         </Pressable>
-      </View>
+
+        {errorMessage ? (
+          <Text style={styles.error}>{errorMessage}</Text>
+        ) : null}
+
+        <PrimaryButton
+          label="Sign Out"
+          variant="outline"
+          icon="log-out-outline"
+          onPress={() => void handleSignOut()}
+          isLoading={isSigningOut}
+          style={styles.signOut}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -129,10 +146,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   container: {
-    flex: 1,
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 48,
+    paddingBottom: 40,
   },
   avatar: {
     width: 92,
@@ -143,37 +160,82 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   title: {
-    marginTop: 22,
+    marginTop: 20,
     color: colors.text,
-    fontSize: 27,
+    fontSize: 26,
     fontWeight: '800',
-  },
-  subtitle: {
-    marginTop: 9,
-    color: colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
     textAlign: 'center',
   },
-  card: {
-    width: '100%',
-    marginTop: 32,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-  },
-  label: {
-    color: colors.primaryLight,
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-  userId: {
+  subtitle: {
     marginTop: 8,
     color: colors.textSecondary,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  guestBanner: {
+    width: '100%',
+    marginTop: 18,
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  guestText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  guestButton: {
+    marginTop: 14,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 14,
+    width: '100%',
+    marginTop: 26,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  statValue: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  statLabel: {
+    marginTop: 6,
+    color: colors.textSecondary,
     fontSize: 13,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 26,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  menuRowPressed: {
+    opacity: 0.8,
+  },
+  menuLabel: {
+    flex: 1,
+    marginLeft: 14,
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
   },
   error: {
     marginTop: 16,
@@ -181,26 +243,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  button: {
-    width: '100%',
-    height: 54,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 28,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-  },
-  buttonText: {
-    marginLeft: 9,
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  disabled: {
-    opacity: 0.5,
+  signOut: {
+    marginTop: 26,
   },
 });

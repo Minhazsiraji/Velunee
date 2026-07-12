@@ -218,6 +218,49 @@ export const posts = community.table(
   (table) => [index('posts_status_created_idx').on(table.moderationStatus, table.createdAt)],
 );
 
+export const reactionType = pgEnum('reaction_type', ['heart', 'love']);
+
+export const reactions = community.table(
+  'reactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: reactionType('type').notNull().default('heart'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('reactions_post_user_type_uidx').on(
+      table.postId,
+      table.userId,
+      table.type,
+    ),
+    index('reactions_post_idx').on(table.postId),
+  ],
+);
+
+export const comments = community.table(
+  'comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: varchar('body', { length: 2200 }).notNull(),
+    moderationStatus: moderationStatus('moderation_status').notNull().default('approved'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('comments_post_created_idx').on(table.postId, table.createdAt)],
+);
+
 export const follows = community.table(
   'follows',
   {

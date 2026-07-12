@@ -15,11 +15,12 @@ import { AuthService } from './auth.service';
         return new SupabaseAuthProvider({
           supabaseUrl,
           audience: config.get<string>('SUPABASE_JWT_AUDIENCE') ?? 'authenticated',
+          serviceRoleKey: config.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
         });
       },
     },
     AuthService,
   ],
-  exports: [AuthService],
+  exports: [AuthService, AUTH_PROVIDER],
 })
 export class AuthModule {}
