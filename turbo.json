@@ -15,13 +15,7 @@
       "dependsOn": ["^lint"]
     },
     "typecheck": {
-<<<<<<< Updated upstream
-      "dependsOn": ["^typecheck"]
-=======
-      "dependsOn": [
-        "^build"
-      ]
->>>>>>> Stashed changes
+      "dependsOn": ["^build"]
     },
     "test": {
       "dependsOn": ["^build"],
