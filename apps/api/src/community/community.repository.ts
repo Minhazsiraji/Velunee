@@ -2,11 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   CommunityFeedResponse,
   CommunityPost,
+  ModerationQueueItem,
   ReactionKind,
   ReactionState,
 } from '@velunee/contracts';
+import type { ModerationResult } from '@velunee/moderation-core';
 import {
   comments,
+  contentChecks,
   posts,
   profiles,
   publicProfiles,
@@ -14,7 +17,7 @@ import {
   users,
   type DatabaseConnection,
 } from '@velunee/database';
-import { and, count, desc, eq, isNull, lt } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { DATABASE_CONNECTION } from '../database/database.constants';
 
@@ -39,7 +42,11 @@ export class CommunityRepository {
       .onConflictDoNothing();
   }
 
-  async createPost(userId: string, caption: string): Promise<CommunityPost> {
+  async createPost(
+    userId: string,
+    caption: string,
+    moderationStatus: 'approved' | 'review',
+  ): Promise<CommunityPost> {
     if (!this.connection) {
       throw new Error('Community persistence is not configured');
     }
@@ -47,7 +54,6 @@ export class CommunityRepository {
     const { db } = this.connection;
 
     const id = randomUUID();
-    // Auto-approve for MVP; a moderation pipeline can gate this later.
     const [row] = await db
       .insert(posts)
       .values({
@@ -55,7 +61,7 @@ export class CommunityRepository {
         userId,
         caption,
         visibility: 'public',
-        moderationStatus: 'approved',
+        moderationStatus,
       })
       .returning({ createdAt: posts.createdAt });
 
@@ -231,5 +237,84 @@ export class CommunityRepository {
       this.viewerReacted(postId, userId),
     ]);
     return { postId, reactionCount, viewerHasReacted };
+  }
+
+  async logContentCheck(subjectId: string, result: ModerationResult): Promise<void> {
+    if (!this.connection) return;
+    await this.connection.db.insert(contentChecks).values({
+      subjectType: 'post',
+      subjectId,
+      provider: result.providerReference ?? 'heuristic',
+      decision: result.decision,
+      riskScore: result.riskScore,
+      categories: result.categories,
+    });
+  }
+
+  async getModerationQueue(): Promise<ModerationQueueItem[]> {
+    if (!this.connection) return [];
+    const { db } = this.connection;
+
+    const rows = await db
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        caption: posts.caption,
+        moderationStatus: posts.moderationStatus,
+        createdAt: posts.createdAt,
+      })
+      .from(posts)
+      .where(
+        and(inArray(posts.moderationStatus, ['pending', 'review']), isNull(posts.deletedAt)),
+      )
+      .orderBy(desc(posts.createdAt))
+      .limit(50);
+
+    return Promise.all(
+      rows.map(async (row) => {
+        const [author, check] = await Promise.all([
+          this.getAuthor(row.userId),
+          this.latestContentCheck(row.id),
+        ]);
+        return {
+          id: row.id,
+          authorName: author.authorName,
+          caption: row.caption ?? '',
+          status: row.moderationStatus as 'pending' | 'review',
+          categories: check?.categories ?? [],
+          riskScore: check?.riskScore ?? 0,
+          createdAt: row.createdAt.toISOString(),
+        } satisfies ModerationQueueItem;
+      }),
+    );
+  }
+
+  private async latestContentCheck(
+    subjectId: string,
+  ): Promise<{ categories: string[]; riskScore: number } | null> {
+    if (!this.connection) return null;
+    const [row] = await this.connection.db
+      .select({
+        categories: contentChecks.categories,
+        riskScore: contentChecks.riskScore,
+      })
+      .from(contentChecks)
+      .where(and(eq(contentChecks.subjectType, 'post'), eq(contentChecks.subjectId, subjectId)))
+      .orderBy(desc(contentChecks.createdAt))
+      .limit(1);
+    return row ?? null;
+  }
+
+  async setModerationStatus(
+    postId: string,
+    status: 'approved' | 'rejected',
+  ): Promise<boolean> {
+    if (!this.connection) return false;
+    const updated = await this.connection.db
+      .update(posts)
+      .set({ moderationStatus: status, updatedAt: new Date() })
+      .where(and(eq(posts.id, postId), isNull(posts.deletedAt)))
+      .returning({ id: posts.id });
+    return updated.length > 0;
   }
 }

@@ -4,8 +4,10 @@ import {
   createPostSchema,
   reactionKindSchema,
   type CommunityFeedResponse,
-  type CommunityPost,
   type CreatePostInput,
+  type CreatePostResponse,
+  type ModerationActionResponse,
+  type ModerationQueueResponse,
   type ReactionKind,
   type ReactionState,
 } from '@velunee/contracts';
@@ -30,8 +32,31 @@ export class CommunityController {
     @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(createPostSchema))
     input: CreatePostInput,
-  ): Promise<CommunityPost> {
+  ): Promise<CreatePostResponse> {
     return this.communityService.createPost(user.id, input.caption);
+  }
+
+  @Get('moderation/queue')
+  async getModerationQueue(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ModerationQueueResponse> {
+    return this.communityService.getModerationQueue(user.id);
+  }
+
+  @Post('moderation/:postId/approve')
+  async approvePost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('postId') postId: string,
+  ): Promise<ModerationActionResponse> {
+    return this.communityService.moderatePost(user.id, postId, 'approve');
+  }
+
+  @Post('moderation/:postId/reject')
+  async rejectPost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('postId') postId: string,
+  ): Promise<ModerationActionResponse> {
+    return this.communityService.moderatePost(user.id, postId, 'reject');
   }
 
   @Post('posts/:postId/reactions')

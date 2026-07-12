@@ -21,6 +21,7 @@
     "@velunee/auth-core": "workspace:*",
     "@velunee/contracts": "workspace:*",
     "@velunee/database": "workspace:*",
+    "@velunee/moderation-core": "workspace:*",
     "@velunee/observability": "workspace:*",
     "@velunee/shared": "workspace:*",
     "@velunee/validation": "workspace:*",

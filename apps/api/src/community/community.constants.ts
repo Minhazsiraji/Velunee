@@ -1,0 +1,1 @@
+export const MODERATION_PROVIDER = Symbol('MODERATION_PROVIDER');

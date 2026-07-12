@@ -82,9 +82,13 @@ pnpm --filter @velunee/api test
 
 ## Known follow-ups (not blockers for a first release)
 
-- Voice input/output, selfie/wardrobe vision, and weather-aware suggestions are
-  designed for in the schema/product but not yet implemented in the mobile app.
-  When added, unblock the matching permissions in `app.json` and update
-  `DATA_SAFETY.md` and the privacy policy.
-- Community moderation currently auto-approves posts; add a moderation pipeline
-  before scaling the community.
+- Voice **output** (text-to-speech) is implemented. Voice **input** (speech-to-text),
+  selfie/wardrobe vision, and weather-aware suggestions are still to come; when
+  added, unblock the matching permissions (mic/camera/location) in `app.json` and
+  update `DATA_SAFETY.md` and the privacy policy.
+- Community moderation is active: posts are screened on creation (approved /
+  held for review / rejected) by `@velunee/moderation-core`, decisions are logged
+  to `content_checks`, and admins listed in `ADMIN_USER_IDS` can review the queue
+  via `GET /community/moderation/queue` and approve/reject. A dedicated ML
+  moderation provider can replace the heuristic behind the same interface, and an
+  admin-portal UI for the queue is a nice follow-up.

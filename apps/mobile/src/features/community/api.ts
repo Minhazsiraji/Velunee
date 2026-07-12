@@ -1,9 +1,9 @@
 import {
   communityFeedResponseSchema,
-  communityPostSchema,
+  createPostResponseSchema,
   reactionStateSchema,
   type CommunityFeedResponse,
-  type CommunityPost,
+  type CreatePostResponse,
   type ReactionKind,
   type ReactionState,
 } from '@velunee/contracts';
@@ -16,12 +16,12 @@ export async function loadFeed(cursor?: string): Promise<CommunityFeedResponse> 
   return communityFeedResponseSchema.parse(payload);
 }
 
-export async function createPost(caption: string): Promise<CommunityPost> {
+export async function createPost(caption: string): Promise<CreatePostResponse> {
   const payload = await apiRequest<unknown>('/community/posts', {
     method: 'POST',
     body: JSON.stringify({ caption }),
   });
-  return communityPostSchema.parse(payload);
+  return createPostResponseSchema.parse(payload);
 }
 
 export async function addReaction(

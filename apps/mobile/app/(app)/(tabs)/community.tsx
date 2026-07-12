@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -38,9 +39,15 @@ export default function CommunityScreen(): React.JSX.Element {
     const trimmed = caption.trim();
     if (!trimmed) return;
     try {
-      await createPost.mutateAsync(trimmed);
+      const result = await createPost.mutateAsync(trimmed);
       setCaption('');
       setComposerVisible(false);
+      if (result.underReview) {
+        Alert.alert(
+          'Post submitted for review',
+          'Thanks! Your post will appear once it clears a quick moderation check.',
+        );
+      }
     } catch {
       // Surface stays open; error shown inline below.
     }

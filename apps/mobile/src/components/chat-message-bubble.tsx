@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '@/theme/colors';
 
 import { MarkdownMessage } from './markdown-message';
+import { MessageSpeaker } from './message-speaker';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -24,10 +25,15 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps): React.JS
         {isUser ? (
           <Text style={[styles.message, styles.userMessage]}>{message.content}</Text>
         ) : (
-          <MarkdownMessage
-            content={message.content}
-            isStreaming={message.id.startsWith('stream-assistant-')}
-          />
+          <>
+            <MarkdownMessage
+              content={message.content}
+              isStreaming={message.id.startsWith('stream-assistant-')}
+            />
+            {!message.id.startsWith('stream-assistant-') && message.content.trim() ? (
+              <MessageSpeaker text={message.content} />
+            ) : null}
+          </>
         )}
       </View>
     </View>
