@@ -97,6 +97,7 @@ export interface ChatStreamHandlers {
 export async function streamChatMessage(
   input: SendChatMessageInput,
   handlers: ChatStreamHandlers,
+  signal?: AbortSignal,
 ): Promise<void> {
   let completed = false;
 
@@ -105,6 +106,7 @@ export async function streamChatMessage(
     {
       method: 'POST',
       body: JSON.stringify(input),
+      signal,
     },
     {
       onData: (data) => {

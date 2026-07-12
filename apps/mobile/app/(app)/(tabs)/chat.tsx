@@ -35,6 +35,7 @@ export default function ChatScreen(): React.JSX.Element {
     setInput,
     send,
     retry,
+    stopGenerating,
     dismissError,
     startNewConversation,
   } = useChatController();
@@ -173,6 +174,7 @@ export default function ChatScreen(): React.JSX.Element {
           isSending={isSending}
           onChangeText={setInput}
           onSend={() => void send()}
+          onStop={stopGenerating}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

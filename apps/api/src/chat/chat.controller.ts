@@ -165,8 +165,11 @@ export class ChatController {
         write({ type: 'delta', delta: chunk.text });
       }
 
-      if (!closed) {
+      if (fullText.trim()) {
         await session.complete(fullText);
+      }
+
+      if (!closed) {
         write({
           type: 'done',
           messageId: session.messageId,

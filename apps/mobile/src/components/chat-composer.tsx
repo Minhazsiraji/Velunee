@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ interface ChatComposerProps {
   isSending: boolean;
   onChangeText: (value: string) => void;
   onSend: () => void;
+  onStop: () => void;
 }
 
 export function ChatComposer({
@@ -24,6 +24,7 @@ export function ChatComposer({
   isSending,
   onChangeText,
   onSend,
+  onStop,
 }: ChatComposerProps): React.JSX.Element {
   return (
     <View style={styles.container}>
@@ -42,31 +43,44 @@ export function ChatComposer({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Send message"
+          accessibilityLabel={
+            isSending
+              ? 'Stop generating'
+              : 'Send message'
+          }
           accessibilityState={{
-            disabled: !canSend,
+            disabled:
+              !isSending && !canSend,
             busy: isSending,
           }}
-          disabled={!canSend}
-          onPress={onSend}
+          disabled={
+            !isSending && !canSend
+          }
+          onPress={
+            isSending ? onStop : onSend
+          }
           style={({ pressed }) => [
             styles.sendButton,
-            !canSend && styles.disabled,
+            isSending && styles.stopButton,
+            !isSending &&
+              !canSend &&
+              styles.disabled,
             pressed && styles.pressed,
           ]}
         >
-          {isSending ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.white}
-            />
-          ) : (
-            <Ionicons
-              name="arrow-up"
-              size={22}
-              color={colors.white}
-            />
-          )}
+          <Ionicons
+            name={
+              isSending
+                ? 'stop'
+                : 'arrow-up'
+            }
+            size={isSending ? 19 : 22}
+            color={
+              !isSending && !canSend
+                ? colors.primaryLight
+                : colors.white
+            }
+          />
         </Pressable>
       </View>
 
@@ -118,6 +132,9 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: colors.primary,
   },
+  stopButton: {
+    backgroundColor: '#B63C5E',
+  },
   disclaimer: {
     marginTop: 6,
     color: colors.textMuted,
@@ -125,7 +142,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   disabled: {
-    opacity: 0.35,
+    opacity: 1,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: '#4A356E',
   },
   pressed: {
     opacity: 0.75,

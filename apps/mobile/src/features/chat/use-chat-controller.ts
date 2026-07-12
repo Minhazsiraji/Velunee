@@ -36,6 +36,7 @@ interface ChatController {
   setInput: (value: string) => void;
   send: () => Promise<void>;
   retry: () => Promise<void>;
+  stopGenerating: () => void;
   dismissError: () => void;
   startNewConversation: () => void;
 }
@@ -154,6 +155,10 @@ export function useChatController(): ChatController {
     useState<FailedRequest | null>(null);
 
   const sendingRef = useRef(false);
+
+  const streamControllerRef =
+    useRef<AbortController | null>(null);
+
   const historyLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -193,6 +198,13 @@ export function useChatController(): ChatController {
     };
   }, [setConversationHistory]);
 
+  useEffect(
+    () => () => {
+      streamControllerRef.current?.abort();
+    },
+    [],
+  );
+
   const submit = useCallback(
     async (
       request: FailedRequest,
@@ -207,6 +219,12 @@ export function useChatController(): ChatController {
 
       const temporaryMessageId =
         createLocalId('stream-assistant');
+
+      const streamController =
+        new AbortController();
+
+      streamControllerRef.current =
+        streamController;
 
       let streamedText = '';
       let streamingMessageAdded = false;
@@ -282,6 +300,7 @@ export function useChatController(): ChatController {
               }
             },
           },
+          streamController.signal,
         );
 
         if (!streamedText.trim()) {
@@ -293,17 +312,29 @@ export function useChatController(): ChatController {
 
         setFailedRequest(null);
       } catch (error) {
-        if (streamingMessageAdded) {
-          removeMessage(
-            temporaryMessageId,
+        if (streamController.signal.aborted) {
+          setFailedRequest(null);
+          setErrorMessage(null);
+        } else {
+          if (streamingMessageAdded) {
+            removeMessage(
+              temporaryMessageId,
+            );
+          }
+
+          setErrorMessage(
+            getErrorMessage(error),
           );
+          setFailedRequest(request);
+        }
+      } finally {
+        if (
+          streamControllerRef.current ===
+          streamController
+        ) {
+          streamControllerRef.current = null;
         }
 
-        setErrorMessage(
-          getErrorMessage(error),
-        );
-        setFailedRequest(request);
-      } finally {
         sendingRef.current = false;
         setIsSending(false);
         setIsWaitingForResponse(false);
@@ -366,6 +397,11 @@ export function useChatController(): ChatController {
       submit,
     ]);
 
+  const stopGenerating =
+    useCallback((): void => {
+      streamControllerRef.current?.abort();
+    }, []);
+
   const dismissError =
     useCallback((): void => {
       setErrorMessage(null);
@@ -408,6 +444,7 @@ export function useChatController(): ChatController {
     setInput,
     send,
     retry,
+    stopGenerating,
     dismissError,
     startNewConversation,
   };

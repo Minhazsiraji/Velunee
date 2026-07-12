@@ -175,6 +175,22 @@ export async function apiEventStream(
   );
 
   const controller = new AbortController();
+  const externalSignal = init.signal;
+
+  const cancelFromExternal = (): void => {
+    controller.abort();
+  };
+
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener(
+      'abort',
+      cancelFromExternal,
+      { once: true },
+    );
+  }
+
   let timeout:
     | ReturnType<typeof setTimeout>
     | null = null;
@@ -288,6 +304,13 @@ export async function apiEventStream(
       0,
     );
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    externalSignal?.removeEventListener(
+      'abort',
+      cancelFromExternal,
+    );
   }
 }
