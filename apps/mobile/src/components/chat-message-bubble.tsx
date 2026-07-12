@@ -7,6 +7,8 @@ import {
 
 import { colors } from '@/theme/colors';
 
+import { MarkdownMessage } from './markdown-message';
+
 interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
@@ -39,16 +41,23 @@ export function ChatMessageBubble({
             : styles.assistantBubble,
         ]}
       >
-        <Text
-          style={[
-            styles.message,
-            isUser
-              ? styles.userMessage
-              : styles.assistantMessage,
-          ]}
-        >
-          {message.content}
-        </Text>
+        {isUser ? (
+          <Text
+            style={[
+              styles.message,
+              styles.userMessage,
+            ]}
+          >
+            {message.content}
+          </Text>
+        ) : (
+          <MarkdownMessage
+            content={message.content}
+            isStreaming={message.id.startsWith(
+              'stream-assistant-',
+            )}
+          />
+        )}
       </View>
     </View>
   );
@@ -103,8 +112,5 @@ const styles = StyleSheet.create({
   },
   userMessage: {
     color: colors.white,
-  },
-  assistantMessage: {
-    color: colors.text,
   },
 });
