@@ -12,7 +12,10 @@ export class AuthService {
     @Inject(AUTH_PROVIDER) private readonly provider: AuthProvider | null,
   ) {}
 
-  async authenticate(authorization?: string, developmentUserId?: string): Promise<AuthenticatedUser> {
+  async authenticate(
+    authorization?: string,
+    developmentUserId?: string,
+  ): Promise<AuthenticatedUser> {
     const mode = this.config.get<'development' | 'required'>('AUTH_MODE') ?? 'development';
     const token = this.extractBearerToken(authorization);
 

@@ -47,19 +47,10 @@ export function ConversationManagementModal({
   };
 
   return (
-    <Modal
-      transparent
-      visible={conversation !== null}
-      animationType="fade"
-      onRequestClose={close}
-    >
+    <Modal transparent visible={conversation !== null} animationType="fade" onRequestClose={close}>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : undefined
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable
           accessibilityRole="button"
@@ -73,14 +64,9 @@ export function ConversationManagementModal({
             <>
               <View style={styles.dialogHeader}>
                 <View style={styles.headingContent}>
-                  <Text style={styles.dialogTitle}>
-                    Manage conversation
-                  </Text>
+                  <Text style={styles.dialogTitle}>Manage conversation</Text>
 
-                  <Text
-                    numberOfLines={1}
-                    style={styles.currentTitle}
-                  >
+                  <Text numberOfLines={1} style={styles.currentTitle}>
                     {conversation?.title}
                   </Text>
                 </View>
@@ -90,102 +76,53 @@ export function ConversationManagementModal({
                   accessibilityLabel="Close"
                   disabled={isBusy}
                   onPress={close}
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    pressed && styles.pressed,
-                  ]}
+                  style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
                 >
-                  <Ionicons
-                    name="close"
-                    size={21}
-                    color={colors.textSecondary}
-                  />
+                  <Ionicons name="close" size={21} color={colors.textSecondary} />
                 </Pressable>
               </View>
 
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setMode('rename')}
-                style={({ pressed }) => [
-                  styles.menuOption,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.menuOption, pressed && styles.pressed]}
               >
                 <View style={styles.optionIcon}>
-                  <Ionicons
-                    name="pencil-outline"
-                    size={21}
-                    color={colors.primaryLight}
-                  />
+                  <Ionicons name="pencil-outline" size={21} color={colors.primaryLight} />
                 </View>
 
                 <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>
-                    Rename
-                  </Text>
+                  <Text style={styles.optionTitle}>Rename</Text>
 
-                  <Text style={styles.optionDescription}>
-                    Choose a clearer title
-                  </Text>
+                  <Text style={styles.optionDescription}>Choose a clearer title</Text>
                 </View>
 
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
 
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setMode('delete')}
-                style={({ pressed }) => [
-                  styles.menuOption,
-                  pressed && styles.pressed,
-                ]}
+                style={({ pressed }) => [styles.menuOption, pressed && styles.pressed]}
               >
-                <View
-                  style={[
-                    styles.optionIcon,
-                    styles.deleteIcon,
-                  ]}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={21}
-                    color={colors.danger}
-                  />
+                <View style={[styles.optionIcon, styles.deleteIcon]}>
+                  <Ionicons name="trash-outline" size={21} color={colors.danger} />
                 </View>
 
                 <View style={styles.optionContent}>
-                  <Text
-                    style={[
-                      styles.optionTitle,
-                      styles.dangerText,
-                    ]}
-                  >
-                    Delete
-                  </Text>
+                  <Text style={[styles.optionTitle, styles.dangerText]}>Delete</Text>
 
-                  <Text style={styles.optionDescription}>
-                    Permanently remove this chat
-                  </Text>
+                  <Text style={styles.optionDescription}>Permanently remove this chat</Text>
                 </View>
 
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
             </>
           ) : null}
 
           {mode === 'rename' ? (
             <>
-              <Text style={styles.dialogTitle}>
-                Rename conversation
-              </Text>
+              <Text style={styles.dialogTitle}>Rename conversation</Text>
 
               <Text style={styles.dialogDescription}>
                 Enter a short title that will help you find this conversation later.
@@ -208,49 +145,32 @@ export function ConversationManagementModal({
                 style={styles.input}
               />
 
-              <Text style={styles.characterCount}>
-                {title.length}/200
-              </Text>
+              <Text style={styles.characterCount}>{title.length}/200</Text>
 
               <View style={styles.actions}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isBusy}
                   onPress={() => setMode('menu')}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed && styles.pressed,
-                  ]}
+                  style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
                 >
-                  <Text style={styles.secondaryButtonText}>
-                    Back
-                  </Text>
+                  <Text style={styles.secondaryButtonText}>Back</Text>
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
-                  disabled={
-                    !trimmedTitle || isBusy
-                  }
-                  onPress={() =>
-                    void onRename(trimmedTitle)
-                  }
+                  disabled={!trimmedTitle || isBusy}
+                  onPress={() => void onRename(trimmedTitle)}
                   style={({ pressed }) => [
                     styles.primaryButton,
                     pressed && styles.pressed,
-                    (!trimmedTitle || isBusy) &&
-                      styles.disabled,
+                    (!trimmedTitle || isBusy) && styles.disabled,
                   ]}
                 >
                   {isBusy ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.white}
-                    />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
-                    <Text style={styles.primaryButtonText}>
-                      Save
-                    </Text>
+                    <Text style={styles.primaryButtonText}>Save</Text>
                   )}
                 </Pressable>
               </View>
@@ -260,19 +180,14 @@ export function ConversationManagementModal({
           {mode === 'delete' ? (
             <>
               <View style={styles.warningIcon}>
-                <Ionicons
-                  name="trash-outline"
-                  size={27}
-                  color={colors.danger}
-                />
+                <Ionicons name="trash-outline" size={27} color={colors.danger} />
               </View>
 
-              <Text style={styles.dialogTitle}>
-                Delete conversation?
-              </Text>
+              <Text style={styles.dialogTitle}>Delete conversation?</Text>
 
               <Text style={styles.dialogDescription}>
-                “{conversation?.title}” will be removed from your conversation history. This action cannot be undone.
+                “{conversation?.title}” will be removed from your conversation history. This action
+                cannot be undone.
               </Text>
 
               <View style={styles.actions}>
@@ -280,14 +195,9 @@ export function ConversationManagementModal({
                   accessibilityRole="button"
                   disabled={isBusy}
                   onPress={() => setMode('menu')}
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed && styles.pressed,
-                  ]}
+                  style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
                 >
-                  <Text style={styles.secondaryButtonText}>
-                    Cancel
-                  </Text>
+                  <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
 
                 <Pressable
@@ -301,14 +211,9 @@ export function ConversationManagementModal({
                   ]}
                 >
                   {isBusy ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.white}
-                    />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
-                    <Text style={styles.deleteButtonText}>
-                      Delete
-                    </Text>
+                    <Text style={styles.deleteButtonText}>Delete</Text>
                   )}
                 </Pressable>
               </View>

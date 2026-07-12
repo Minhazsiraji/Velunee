@@ -25,15 +25,23 @@ export default function AdminHome(): React.JSX.Element {
           </div>
         </div>
         <nav>
-          {['Overview', 'Users', 'Moderation', 'AI Quality', 'Feature Flags', 'Support', 'Audit Log'].map(
-            (item, index) => (
-              <button className={index === 0 ? 'active' : ''} key={item} type="button">
-                {item}
-              </button>
-            ),
-          )}
+          {[
+            'Overview',
+            'Users',
+            'Moderation',
+            'AI Quality',
+            'Feature Flags',
+            'Support',
+            'Audit Log',
+          ].map((item, index) => (
+            <button className={index === 0 ? 'active' : ''} key={item} type="button">
+              {item}
+            </button>
+          ))}
         </nav>
-        <div className="sidebarNote">Admin authentication and role permissions must be enabled before deployment.</div>
+        <div className="sidebarNote">
+          Admin authentication and role permissions must be enabled before deployment.
+        </div>
       </aside>
 
       <section className="content">
@@ -41,9 +49,14 @@ export default function AdminHome(): React.JSX.Element {
           <div>
             <p className="eyebrow">MVP FOUNDATION</p>
             <h1>Operations overview</h1>
-            <p className="subtitle">A controlled starting point for the modular Velunee platform.</p>
+            <p className="subtitle">
+              A controlled starting point for the modular Velunee platform.
+            </p>
           </div>
-          <div className="status"><span />Local development</div>
+          <div className="status">
+            <span />
+            Local development
+          </div>
         </header>
 
         <div className="cards">

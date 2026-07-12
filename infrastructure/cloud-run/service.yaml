@@ -6,9 +6,9 @@ spec:
   template:
     metadata:
       annotations:
-        autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "10"
-        run.googleapis.com/cpu-throttling: "true"
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '10'
+        run.googleapis.com/cpu-throttling: 'true'
     spec:
       containerConcurrency: 80
       timeoutSeconds: 300
@@ -20,12 +20,12 @@ spec:
             - name: NODE_ENV
               value: production
             - name: PORT
-              value: "4000"
+              value: '4000'
             - name: AUTH_MODE
               value: required
             - name: AI_PROVIDER
               value: gemini
           resources:
             limits:
-              cpu: "1"
+              cpu: '1'
               memory: 512Mi

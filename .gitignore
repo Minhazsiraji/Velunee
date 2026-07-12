@@ -19,6 +19,11 @@ ios/
 *.key
 *.mobileprovision
 
+# release credentials (never commit)
+google-service-account.json
+apps/mobile/google-service-account.json
+*-service-account.json
+
 # environment and secrets
 .env
 .env.*

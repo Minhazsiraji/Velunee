@@ -1,12 +1,6 @@
-import {
-  MarkdownStream,
-  type MarkdownStyleMap,
-} from '@ronradtke/react-native-markdown-display';
+import { MarkdownStream, type MarkdownStyleMap } from '@ronradtke/react-native-markdown-display';
 import { memo } from 'react';
-import {
-  Linking,
-  Platform,
-} from 'react-native';
+import { Linking, Platform } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -237,9 +231,7 @@ function MarkdownMessageComponent({
   content,
   isStreaming,
 }: MarkdownMessageProps): React.JSX.Element {
-  const handleLinkPress = (
-    url: string,
-  ): boolean => {
+  const handleLinkPress = (url: string): boolean => {
     if (!isSafeExternalUrl(url)) {
       return false;
     }
@@ -268,6 +260,4 @@ function MarkdownMessageComponent({
   );
 }
 
-export const MarkdownMessage = memo(
-  MarkdownMessageComponent,
-);
+export const MarkdownMessage = memo(MarkdownMessageComponent);

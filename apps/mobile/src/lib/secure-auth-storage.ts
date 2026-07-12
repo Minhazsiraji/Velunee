@@ -36,17 +36,11 @@ function getChunkKey(key: string, storageId: string, index: number): string {
 }
 
 function createStorageId(): string {
-  return `${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-async function readManifest(
-  key: string,
-): Promise<StorageManifest | null> {
-  const storedManifest = await SecureStore.getItemAsync(
-    getManifestKey(key),
-  );
+async function readManifest(key: string): Promise<StorageManifest | null> {
+  const storedManifest = await SecureStore.getItemAsync(getManifestKey(key));
 
   if (!storedManifest) return null;
 
@@ -68,15 +62,10 @@ async function readManifest(
   }
 }
 
-async function removeChunks(
-  key: string,
-  manifest: StorageManifest,
-): Promise<void> {
+async function removeChunks(key: string, manifest: StorageManifest): Promise<void> {
   await Promise.all(
     Array.from({ length: manifest.chunkCount }, (_, index) =>
-      SecureStore.deleteItemAsync(
-        getChunkKey(key, manifest.storageId, index),
-      ),
+      SecureStore.deleteItemAsync(getChunkKey(key, manifest.storageId, index)),
     ),
   );
 }
@@ -89,9 +78,7 @@ export const secureAuthStorage: AuthStorage = {
 
     const chunks = await Promise.all(
       Array.from({ length: manifest.chunkCount }, (_, index) =>
-        SecureStore.getItemAsync(
-          getChunkKey(key, manifest.storageId, index),
-        ),
+        SecureStore.getItemAsync(getChunkKey(key, manifest.storageId, index)),
       ),
     );
 
@@ -108,9 +95,7 @@ export const secureAuthStorage: AuthStorage = {
     const storageId = createStorageId();
 
     const chunks =
-      value.length > 0
-        ? value.match(new RegExp(`.{1,${CHUNK_SIZE}}`, 'gs')) ?? ['']
-        : [''];
+      value.length > 0 ? (value.match(new RegExp(`.{1,${CHUNK_SIZE}}`, 'gs')) ?? ['']) : [''];
 
     const nextManifest: StorageManifest = {
       version: 1,

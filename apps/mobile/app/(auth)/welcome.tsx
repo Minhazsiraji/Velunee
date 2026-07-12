@@ -1,23 +1,19 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PrimaryButton } from '@/components/primary-button';
+import { friendlyAuthError } from '@/features/auth/validation';
 import { useAuth } from '@/providers/auth-provider';
+import { colors } from '@/theme/colors';
 
 export default function WelcomeScreen(): React.JSX.Element {
   const router = useRouter();
   const { signInAsGuest } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(
-    null,
-  );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleGuestSignIn(): Promise<void> {
     if (isSubmitting) return;
@@ -29,67 +25,74 @@ export default function WelcomeScreen(): React.JSX.Element {
       await signInAsGuest();
       router.replace('/(app)');
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to continue as guest.',
-      );
+      setErrorMessage(friendlyAuthError(error));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.moon}>
-        <Text style={styles.moonText}>V</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.hero}>
+          <View style={styles.moon}>
+            <Text style={styles.moonText}>V</Text>
+          </View>
 
-      <Text style={styles.brand}>Velunee</Text>
+          <Text style={styles.brand}>Velunee</Text>
 
-      <Text style={styles.title}>
-        Your personal AI companion
-      </Text>
+          <Text style={styles.title}>Your personal AI companion</Text>
 
-      <Text style={styles.subtitle}>
-        Ask questions, make decisions, and move forward with
-        confidence.
-      </Text>
-
-      <Pressable
-        accessibilityRole="button"
-        disabled={isSubmitting}
-        onPress={() => void handleGuestSignIn()}
-        style={({ pressed }) => [
-          styles.button,
-          pressed && styles.buttonPressed,
-          isSubmitting && styles.buttonDisabled,
-        ]}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.buttonText}>
-            Continue as Guest
+          <Text style={styles.subtitle}>
+            Ask questions, make decisions, and move forward with confidence.
           </Text>
-        )}
-      </Pressable>
+        </View>
 
-      {errorMessage ? (
-        <Text style={styles.error}>{errorMessage}</Text>
-      ) : null}
+        <View style={styles.actions}>
+          <PrimaryButton label="Create Account" onPress={() => router.push('/(auth)/sign-up')} />
 
-      <Text style={styles.tagline}>Ask. Decide. Shine.</Text>
-    </View>
+          <PrimaryButton
+            label="Sign In"
+            variant="outline"
+            onPress={() => router.push('/(auth)/sign-in')}
+            style={styles.secondary}
+          />
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={() => void handleGuestSignIn()}
+            style={styles.guest}
+          >
+            <Text style={styles.guestText}>
+              {isSubmitting ? 'Please wait…' : 'Continue as Guest'}
+            </Text>
+          </Pressable>
+
+          {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+          <Text style={styles.tagline}>Ask. Decide. Shine.</Text>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: '#0F0B1F',
+    justifyContent: 'space-between',
     paddingHorizontal: 28,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  hero: {
+    flex: 1,
+    justifyContent: 'center',
   },
   moon: {
     width: 76,
@@ -109,20 +112,20 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   moonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 34,
     fontWeight: '800',
   },
   brand: {
     marginTop: 22,
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 36,
     fontWeight: '800',
     textAlign: 'center',
   },
   title: {
     marginTop: 20,
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 32,
@@ -130,40 +133,36 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 12,
-    color: '#B8B2C8',
+    color: colors.textSecondary,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
   },
-  button: {
-    height: 56,
+  actions: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 36,
-    borderRadius: 18,
-    backgroundColor: '#7C5CE7',
   },
-  buttonPressed: {
-    opacity: 0.85,
+  secondary: {
+    marginTop: 12,
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  guest: {
+    marginTop: 18,
+    paddingVertical: 8,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
+  guestText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
   },
   error: {
     marginTop: 14,
-    color: '#FF8A9A',
+    color: colors.danger,
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
   },
   tagline: {
-    marginTop: 28,
-    color: '#9D7BFF',
+    marginTop: 22,
+    color: colors.primaryLight,
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.5,

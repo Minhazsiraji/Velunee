@@ -16,8 +16,7 @@ import { ChatService } from './chat.service';
         createAIProvider({
           provider: config.get<'mock' | 'gemini'>('AI_PROVIDER') ?? 'mock',
           geminiApiKey: config.get<string>('GEMINI_API_KEY'),
-          geminiModel:
-            config.get<string>('GEMINI_MODEL') ?? 'gemini-3.1-flash-lite',
+          geminiModel: config.get<string>('GEMINI_MODEL') ?? 'gemini-3.1-flash-lite',
         }),
     },
     ChatRepository,

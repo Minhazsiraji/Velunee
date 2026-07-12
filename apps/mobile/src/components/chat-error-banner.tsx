@@ -1,10 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '@/theme/colors';
 
@@ -23,16 +18,10 @@ export function ChatErrorBanner({
 }: ChatErrorBannerProps): React.JSX.Element {
   return (
     <View style={styles.container}>
-      <Ionicons
-        name="alert-circle-outline"
-        size={19}
-        color={colors.danger}
-      />
+      <Ionicons name="alert-circle-outline" size={19} color={colors.danger} />
 
       <View style={styles.content}>
-        <Text style={styles.message}>
-          {message}
-        </Text>
+        <Text style={styles.message}>{message}</Text>
 
         <View style={styles.actions}>
           {canRetry ? (
@@ -45,9 +34,7 @@ export function ChatErrorBanner({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.retryText}>
-                Retry
-              </Text>
+              <Text style={styles.retryText}>Retry</Text>
             </Pressable>
           ) : null}
 
@@ -60,9 +47,7 @@ export function ChatErrorBanner({
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.dismissText}>
-              Dismiss
-            </Text>
+            <Text style={styles.dismissText}>Dismiss</Text>
           </Pressable>
         </View>
       </View>

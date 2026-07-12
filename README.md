@@ -1,6 +1,6 @@
 # Velunee
 
-**Personal AI Companion** — *Ask. Decide. Shine.*
+**Personal AI Companion** — _Ask. Decide. Shine._
 
 Velunee is a worldwide, AI-first personal companion for text, voice, image advice, planning, memory, and an optional moderated community.
 
@@ -17,6 +17,18 @@ This repository contains the **MVP foundation** described in [`docs/ARCHITECTURE
 - Gemini provider adapter with a local mock fallback
 - Development authentication mode plus Supabase JWT verification for production
 - GitHub CI and deployment-ready Docker assets
+
+### Play Store release features (branch `feature/play-store-release`)
+
+- Email sign-up / sign-in / password reset, plus guest mode
+- Editable profile and preferences (companion style, answer length, voice,
+  memory, analytics)
+- In-app account deletion that removes stored data **and** the identity user
+- Community feed with posts, heart/love reactions, and comment counts
+- Robust loading / empty / error / offline states across the new screens
+- API unit tests, hardened Android release config, and Play Store docs
+
+See [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) to ship it.
 
 ## Prerequisites
 

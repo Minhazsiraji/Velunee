@@ -1,14 +1,9 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type PropsWithChildren } from 'react';
 
 import { AuthProvider } from './auth-provider';
 
-export function AppProviders({
-  children,
-}: PropsWithChildren): React.JSX.Element {
+export function AppProviders({ children }: PropsWithChildren): React.JSX.Element {
   const [queryClient] = useState(
     () =>
       new QueryClient({

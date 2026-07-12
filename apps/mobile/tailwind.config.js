@@ -15,9 +15,9 @@ module.exports = {
         muted: '#BEB5CD',
         border: '#392B5A',
         success: '#73D9A6',
-        danger: '#FF7A8A'
-      }
-    }
+        danger: '#FF7A8A',
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };

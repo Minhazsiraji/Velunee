@@ -51,27 +51,16 @@ export default function ChatScreen(): React.JSX.Element {
   }, [messages, isSending]);
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={['top']}
-    >
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : 'height'
-        }
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.brand}>
-              VELUNEE
-            </Text>
+            <Text style={styles.brand}>VELUNEE</Text>
 
-            <Text style={styles.subtitle}>
-              Your personal AI companion
-            </Text>
+            <Text style={styles.subtitle}>Your personal AI companion</Text>
           </View>
 
           <View style={styles.headerActions}>
@@ -79,60 +68,40 @@ export default function ChatScreen(): React.JSX.Element {
               accessibilityRole="button"
               accessibilityLabel="View conversations"
               disabled={isSending}
-              onPress={() =>
-                router.push('/(app)/conversations' as Href)
-              }
+              onPress={() => router.push('/(app)/conversations' as Href)}
               style={({ pressed }) => [
                 styles.headerActionButton,
                 pressed && styles.pressed,
                 isSending && styles.disabled,
               ]}
             >
-              <Ionicons
-                name="time-outline"
-                size={22}
-                color={colors.textSecondary}
-              />
+              <Ionicons name="time-outline" size={22} color={colors.textSecondary} />
             </Pressable>
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Start a new conversation"
               accessibilityState={{
-                disabled:
-                  isSending || isLoadingHistory,
+                disabled: isSending || isLoadingHistory,
               }}
-              disabled={
-                isSending || isLoadingHistory
-              }
+              disabled={isSending || isLoadingHistory}
               onPress={startNewConversation}
               style={({ pressed }) => [
                 styles.headerActionButton,
                 pressed && styles.pressed,
-                (isSending ||
-                  isLoadingHistory) &&
-                  styles.disabled,
+                (isSending || isLoadingHistory) && styles.disabled,
               ]}
             >
-              <Ionicons
-                name="create-outline"
-                size={22}
-                color={colors.primaryLight}
-              />
+              <Ionicons name="create-outline" size={22} color={colors.primaryLight} />
             </Pressable>
           </View>
         </View>
 
         {isLoadingHistory ? (
           <View style={styles.historyLoading}>
-            <ActivityIndicator
-              size="small"
-              color={colors.primaryMuted}
-            />
+            <ActivityIndicator size="small" color={colors.primaryMuted} />
 
-            <Text style={styles.historyLoadingText}>
-              Loading your saved conversation...
-            </Text>
+            <Text style={styles.historyLoadingText}>Loading your saved conversation...</Text>
           </View>
         ) : null}
 
@@ -140,9 +109,7 @@ export default function ChatScreen(): React.JSX.Element {
           ref={listRef}
           data={messages}
           keyExtractor={(message) => message.id}
-          renderItem={({ item }) => (
-            <ChatMessageBubble message={item} />
-          )}
+          renderItem={({ item }) => <ChatMessageBubble message={item} />}
           contentContainerStyle={styles.messageList}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -152,11 +119,7 @@ export default function ChatScreen(): React.JSX.Element {
               animated: true,
             });
           }}
-          ListFooterComponent={
-            isWaitingForResponse
-              ? <TypingIndicator />
-              : null
-          }
+          ListFooterComponent={isWaitingForResponse ? <TypingIndicator /> : null}
         />
 
         {errorMessage ? (
@@ -189,14 +152,9 @@ function TypingIndicator(): React.JSX.Element {
       </View>
 
       <View style={styles.typingBubble}>
-        <ActivityIndicator
-          size="small"
-          color={colors.primaryMuted}
-        />
+        <ActivityIndicator size="small" color={colors.primaryMuted} />
 
-        <Text style={styles.typingText}>
-          Velunee is thinking...
-        </Text>
+        <Text style={styles.typingText}>Velunee is thinking...</Text>
       </View>
     </View>
   );

@@ -7,8 +7,8 @@ updates:
     open-pull-requests-limit: 10
     groups:
       expo:
-        patterns: ["expo*", "@expo/*", "react-native*"]
+        patterns: ['expo*', '@expo/*', 'react-native*']
       nest:
-        patterns: ["@nestjs/*"]
+        patterns: ['@nestjs/*']
       development:
         dependency-type: development

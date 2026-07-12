@@ -18,8 +18,8 @@ export class SystemController {
         chat: true,
         voice: false,
         imageAdvice: false,
-        community: false,
-        memory: false,
+        community: true,
+        memory: true,
       },
     };
   }
