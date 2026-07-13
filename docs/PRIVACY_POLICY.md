@@ -26,10 +26,14 @@ We collect only what the Service needs to function.
 | Profile data       | Display name, companion style, locale, timezone                         | Personalize responses                        |
 | Content you create | Chat messages, community posts, reactions, comments                     | Provide the assistant and community features |
 | App preferences    | Answer length, voice, memory, analytics toggles                         | Respect your settings                        |
+| Location (optional) | Approximate coordinates, only when you allow it                        | Weather-aware suggestions                    |
 | Technical data     | Device/app version, coarse diagnostics, request identifiers             | Reliability, security, abuse prevention      |
 
-We do **not** sell your personal data. We do not collect precise location,
-contacts, or device identifiers for advertising.
+We do **not** sell your personal data, and we do not use location, contacts, or
+device identifiers for advertising. Location is optional: if you grant
+permission, your approximate coordinates are used only in the moment to fetch
+current weather (via WeatherAPI.com) so Velunee can give practical advice. We do
+not store your location or track your movements.
 
 ### Guest accounts
 
@@ -67,6 +71,8 @@ contract and only as needed:
 
 - **Supabase** — authentication and database hosting.
 - **Google Gemini** — AI response generation.
+- **WeatherAPI.com** — current weather lookups from your approximate coordinates
+  (only when you enable location).
 
 We may disclose information if required by law or to protect users.
 

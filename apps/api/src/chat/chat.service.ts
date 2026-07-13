@@ -8,6 +8,7 @@ import type {
   SendChatMessageInput,
 } from '@velunee/contracts';
 import { randomUUID } from 'node:crypto';
+import { WeatherService } from '../weather/weather.service';
 import { AI_PROVIDER } from './chat.constants';
 import { ChatRepository } from './chat.repository';
 
@@ -28,7 +29,17 @@ export class ChatService implements OnModuleInit {
   constructor(
     @Inject(AI_PROVIDER) private readonly ai: AIProvider,
     private readonly repository: ChatRepository,
+    private readonly weather: WeatherService,
   ) {}
+
+  private async resolveContext(input: SendChatMessageInput): Promise<string | undefined> {
+    if (!input.location) return undefined;
+    const context = await this.weather.getContext(
+      input.location.latitude,
+      input.location.longitude,
+    );
+    return context ?? undefined;
+  }
 
   onModuleInit(): void {
     this.logger.log(`AI provider: ${this.ai.name}/${this.ai.model}`);
@@ -84,11 +95,14 @@ export class ChatService implements OnModuleInit {
       requestId,
     });
 
+    const context = await this.resolveContext(input);
+
     const result = await this.ai.generate({
       userId,
       requestId,
       locale: input.locale,
       timezone: input.timezone,
+      context,
       messages: [...(input.history ?? []), { role: 'user' as const, content: input.message }],
     });
 
@@ -140,11 +154,14 @@ export class ChatService implements OnModuleInit {
       requestId,
     });
 
+    const context = await this.resolveContext(input);
+
     const chunks = this.ai.stream({
       userId,
       requestId,
       locale: input.locale,
       timezone: input.timezone,
+      context,
       messages: [...(input.history ?? []), { role: 'user' as const, content: input.message }],
     });
 

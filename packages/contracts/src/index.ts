@@ -47,6 +47,12 @@ export const sendChatMessageSchema = z.object({
   locale: z.string().trim().min(2).max(35).optional(),
   timezone: z.string().trim().min(1).max(100).optional(),
   inputMode: inputModeSchema.default('text'),
+  location: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    })
+    .optional(),
   history: z
     .array(
       z.object({

@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createAIProvider, type AIProvider } from '@velunee/ai-core';
+import { WeatherModule } from '../weather/weather.module';
 import { AI_PROVIDER } from './chat.constants';
 import { ChatController } from './chat.controller';
 import { ChatRepository } from './chat.repository';
 import { ChatService } from './chat.service';
 
 @Module({
+  imports: [WeatherModule],
   controllers: [ChatController],
   providers: [
     {

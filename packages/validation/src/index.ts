@@ -17,6 +17,9 @@ export const apiEnvironmentSchema = z
     FIELD_ENCRYPTION_KEY: z.string().optional(),
     REDIS_URL: optionalUrl,
     GEMINI_API_KEY: z.string().optional(),
+    // WeatherAPI.com key. When set, chats that include the user's location get
+    // live weather context so Velunee can give practical, weather-aware advice.
+    WEATHER_API_KEY: z.string().optional(),
     GEMINI_MODEL: z.string().default('gemini-3.1-flash-lite'),
     AI_PROVIDER: z.enum(['mock', 'gemini']).default('mock'),
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

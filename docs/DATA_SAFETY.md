@@ -24,14 +24,21 @@ community; no ads, no location, no camera/mic permissions requested yet).
 | User-generated content (chat)                     | Yes       | Processed by AI provider | App functionality                   | Required to use chat    |
 | User-generated content (community posts/comments) | Yes       | Shown to other users     | App functionality                   | Optional                |
 | App interactions / preferences                    | Yes       | No*                      | App functionality                   | Optional                |
+| Approximate location (coordinates)                | Yes       | Sent to WeatherAPI.com   | Weather-aware chat suggestions      | Optional                |
 | Diagnostics (crash/performance)                   | Yes       | No*                      | Reliability                         | Optional                |
 
 \* "No" means not shared for advertising or with third parties beyond the
-service providers (Supabase, Google Gemini) needed to run the app.
+service providers (Supabase, Google Gemini, WeatherAPI.com) needed to run the
+app.
+
+Location note: coordinates are used only in-session to fetch current weather so
+Velunee can give practical advice; they are not stored and never used for
+advertising or tracking. The user is asked for permission and can decline.
 
 ## Not collected
 
-- Precise or approximate **location**
+- Precise/background location or location history (only a one-off approximate
+  fix, foreground, with permission)
 - **Contacts**, **calendar**, **SMS/call logs**
 - **Photos/videos** or **microphone** (no camera/mic permission is requested
   in the current release; update this sheet when voice/vision features ship)
@@ -47,8 +54,8 @@ service providers (Supabase, Google Gemini) needed to run the app.
 
 ## When features change
 
-If you add **voice input** (microphone), **selfie/wardrobe** (camera), or
-**weather** (location), you must:
+Weather (location) is now live. If you add **voice input** (microphone) or
+**selfie/wardrobe** (camera), you must:
 
 1. Unblock the relevant permission in `apps/mobile/app.json`.
 2. Add the data type to this sheet and the privacy policy.
