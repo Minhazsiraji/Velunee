@@ -16,6 +16,7 @@ implemented in the repository.
   - `DATABASE_URL=...`
   - `FIELD_ENCRYPTION_KEY=...` (`openssl rand -base64 32`)
   - `AI_PROVIDER=gemini` and `GEMINI_API_KEY=...`
+  - `WEATHER_API_KEY=...` (WeatherAPI.com — optional, enables weather-aware chat)
   - `CORS_ORIGINS=` your production origins
 - [ ] Regenerate and apply migrations. The schema now includes the community
       `reactions` and `comments` tables:
@@ -82,10 +83,11 @@ pnpm --filter @velunee/api test
 
 ## Known follow-ups (not blockers for a first release)
 
-- Voice **output** (text-to-speech) is implemented. Voice **input** (speech-to-text),
-  selfie/wardrobe vision, and weather-aware suggestions are still to come; when
-  added, unblock the matching permissions (mic/camera/location) in `app.json` and
-  update `DATA_SAFETY.md` and the privacy policy.
+- Voice **output** (text-to-speech) and **weather-aware suggestions** (WeatherAPI.com
+  - approximate location) are implemented. Voice **input** (speech-to-text) and
+    selfie/wardrobe vision are still to come; when added, unblock the matching
+    permissions (mic/camera) in `app.json` and update `DATA_SAFETY.md` and the
+    privacy policy.
 - Community moderation is active: posts are screened on creation (approved /
   held for review / rejected) by `@velunee/moderation-core`, decisions are logged
   to `content_checks`, and admins listed in `ADMIN_USER_IDS` can review the queue

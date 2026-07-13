@@ -2,6 +2,7 @@ import type { ChatMessage } from '@velunee/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '@/lib/api';
+import { getCurrentCoordinates } from '@/lib/location';
 import { useChatStore } from '@/stores/chat-store';
 
 import { loadChatHistory, streamChatMessage } from './api';
@@ -194,6 +195,7 @@ export function useChatController(): ChatController {
 
       try {
         const localization = getLocalization();
+        const coordinates = await getCurrentCoordinates();
 
         await streamChatMessage(
           {
@@ -202,6 +204,7 @@ export function useChatController(): ChatController {
             inputMode: 'text',
             locale: localization.locale,
             timezone: localization.timezone,
+            ...(coordinates ? { location: coordinates } : {}),
             history: request.history,
           },
           {

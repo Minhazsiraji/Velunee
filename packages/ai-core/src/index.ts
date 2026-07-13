@@ -9,6 +9,8 @@ export interface AIRequest {
   messages: AIMessage[];
   locale?: string;
   timezone?: string;
+  /** Extra situational context (e.g. live weather) injected into the system prompt. */
+  context?: string;
   userId: string;
   requestId: string;
 }
@@ -32,13 +34,14 @@ export interface AIProvider {
   stream(request: AIRequest): AsyncIterable<AIChunk>;
 }
 
-function buildSystemInstruction(locale?: string, timezone?: string): string {
+function buildSystemInstruction(locale?: string, timezone?: string, context?: string): string {
   return [
     'You are Velunee, a warm, practical, worldwide personal AI companion.',
     'Answer clearly, avoid pretending certainty, and never claim actions you did not perform.',
     'Protect private information and do not infer sensitive personal traits.',
     locale ? `Reply in the language most appropriate for locale ${locale}.` : '',
     timezone ? `The user timezone is ${timezone}.` : '',
+    context ? context : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -121,7 +124,7 @@ export class GeminiAIProvider implements AIProvider {
     const result = (await this.interactions.create({
       model: this.model,
       input: buildConversationInput(request.messages),
-      system_instruction: buildSystemInstruction(request.locale, request.timezone),
+      system_instruction: buildSystemInstruction(request.locale, request.timezone, request.context),
       store: false,
     })) as InteractionResult;
 
@@ -141,7 +144,7 @@ export class GeminiAIProvider implements AIProvider {
     const result = await this.interactions.create({
       model: this.model,
       input: buildConversationInput(request.messages),
-      system_instruction: buildSystemInstruction(request.locale, request.timezone),
+      system_instruction: buildSystemInstruction(request.locale, request.timezone, request.context),
       store: false,
       stream: true,
     });
