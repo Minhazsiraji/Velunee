@@ -89,8 +89,7 @@ export class HeuristicModerationProvider implements ModerationProvider {
       riskScore = Math.max(riskScore, 0.6);
     }
 
-    const decision: ModerationDecision =
-      categories.length > 0 ? 'review' : 'approved';
+    const decision: ModerationDecision = categories.length > 0 ? 'review' : 'approved';
 
     return {
       decision,

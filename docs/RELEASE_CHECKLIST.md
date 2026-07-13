@@ -84,10 +84,10 @@ pnpm --filter @velunee/api test
 ## Known follow-ups (not blockers for a first release)
 
 - Voice **output** (text-to-speech) and **weather-aware suggestions** (WeatherAPI.com
-  + approximate location) are implemented. Voice **input** (speech-to-text) and
-  selfie/wardrobe vision are still to come; when added, unblock the matching
-  permissions (mic/camera) in `app.json` and update `DATA_SAFETY.md` and the
-  privacy policy.
+  - approximate location) are implemented. Voice **input** (speech-to-text) and
+    selfie/wardrobe vision are still to come; when added, unblock the matching
+    permissions (mic/camera) in `app.json` and update `DATA_SAFETY.md` and the
+    privacy policy.
 - Community moderation is active: posts are screened on creation (approved /
   held for review / rejected) by `@velunee/moderation-core`, decisions are logged
   to `content_checks`, and admins listed in `ADMIN_USER_IDS` can review the queue
