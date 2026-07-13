@@ -39,12 +39,27 @@ export interface VisionRequest {
   requestId: string;
 }
 
+export interface AudioRequest {
+  audioBase64: string;
+  mimeType: string;
+  locale?: string;
+  userId: string;
+  requestId: string;
+}
+
+export interface TranscriptionResult {
+  text: string;
+  provider: string;
+  model: string;
+}
+
 export interface AIProvider {
   readonly name: string;
   readonly model: string;
   generate(request: AIRequest): Promise<AIResponse>;
   stream(request: AIRequest): AsyncIterable<AIChunk>;
   analyzeImage(request: VisionRequest): Promise<AIResponse>;
+  transcribeAudio(request: AudioRequest): Promise<TranscriptionResult>;
 }
 
 function buildVisionInstruction(mode: VisionMode, locale?: string): string {
@@ -131,6 +146,14 @@ export class MockAIProvider implements AIProvider {
 
     return {
       text: canned[request.mode],
+      provider: this.name,
+      model: this.model,
+    };
+  }
+
+  async transcribeAudio(_request: AudioRequest): Promise<TranscriptionResult> {
+    return {
+      text: '(Voice transcription needs a Gemini API key. Set AI_PROVIDER=gemini to convert your speech to text.)',
       provider: this.name,
       model: this.model,
     };
@@ -244,6 +267,32 @@ export class GeminiAIProvider implements AIProvider {
       inputTokens: result.usage?.total_input_tokens,
       outputTokens: result.usage?.total_output_tokens,
     };
+  }
+
+  async transcribeAudio(request: AudioRequest): Promise<TranscriptionResult> {
+    const localeHint = request.locale
+      ? ` The audio is likely in the language for locale ${request.locale}.`
+      : '';
+
+    const result = (await this.interactions.create({
+      model: this.model,
+      input: [
+        {
+          type: 'input_text',
+          text: `Transcribe this audio to plain text. Return only the transcript, no commentary.${localeHint}`,
+        },
+        {
+          type: 'input_audio',
+          audio_url: `data:${request.mimeType};base64,${request.audioBase64}`,
+        },
+      ],
+      store: false,
+    })) as InteractionResult;
+
+    const text = result.output_text?.trim();
+    if (!text) throw new Error('Gemini returned an empty transcript');
+
+    return { text, provider: this.name, model: this.model };
   }
 }
 

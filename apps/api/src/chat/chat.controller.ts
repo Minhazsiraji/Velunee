@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   renameConversationSchema,
   sendChatMessageSchema,
+  transcribeRequestSchema,
   visionRequestSchema,
   type ChatHistoryResponse,
   type ChatResponse,
@@ -22,6 +23,8 @@ import {
   type RenameConversationInput,
   type SendChatMessageInput,
   type StreamChunk,
+  type TranscribeRequestInput,
+  type TranscribeResponse,
   type VisionRequestInput,
   type VisionResponse,
 } from '@velunee/contracts';
@@ -109,6 +112,15 @@ export class ChatController {
     input: VisionRequestInput,
   ): Promise<VisionResponse> {
     return this.chatService.analyzeImage(user.id, input);
+  }
+
+  @Post('transcribe')
+  async transcribe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(transcribeRequestSchema))
+    input: TranscribeRequestInput,
+  ): Promise<TranscribeResponse> {
+    return this.chatService.transcribe(user.id, input);
   }
 
   @Post('stream')

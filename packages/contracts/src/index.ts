@@ -212,6 +212,17 @@ export const visionResponseSchema = z.object({
   requestId: z.string(),
 });
 
+export const transcribeRequestSchema = z.object({
+  audioBase64: z.string().min(1).max(12_000_000),
+  mimeType: z.string().min(1).max(60),
+  locale: z.string().trim().min(2).max(35).optional(),
+});
+
+export const transcribeResponseSchema = z.object({
+  text: z.string(),
+  requestId: z.string(),
+});
+
 export const systemConfigSchema = z.object({
   appName: z.string(),
   tagline: z.string(),
@@ -262,5 +273,9 @@ export type ModerationActionResponse = z.infer<
 export type VisionMode = z.infer<typeof visionModeSchema>;
 export type VisionRequestInput = z.infer<typeof visionRequestSchema>;
 export type VisionResponse = z.infer<typeof visionResponseSchema>;
+export type TranscribeRequestInput = z.infer<
+  typeof transcribeRequestSchema
+>;
+export type TranscribeResponse = z.infer<typeof transcribeResponseSchema>;
 
 export type SystemConfig = z.infer<typeof systemConfigSchema>;

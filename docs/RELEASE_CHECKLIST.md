@@ -83,14 +83,15 @@ pnpm --filter @velunee/api test
 
 ## Known follow-ups (not blockers for a first release)
 
-- Voice **output** (text-to-speech), **weather-aware suggestions** (WeatherAPI.com +
-  approximate location), and **image feedback / vision** ("how do I look?" and
-  outfit advice, camera/photos → multimodal Gemini) are implemented. Only voice
-  **input** (speech-to-text) remains; when added, unblock `RECORD_AUDIO` in
-  `app.json` and update `DATA_SAFETY.md` and the privacy policy.
-- Vision uses the Gemini multimodal path; verify the exact `@google/genai` image
-  input shape against your SDK version when you first test with a live key (the
-  mock provider returns canned feedback so the flow works without a key).
+- **All planned features are implemented:** chat, community + moderation,
+  hearts, account deletion, profile/settings, voice **output** (TTS), voice
+  **input** (record → Gemini transcription), **weather-aware suggestions**
+  (WeatherAPI.com + location), and **image feedback / vision** ("how do I look?"
+  + outfit advice → multimodal Gemini).
+- Vision and voice input use the Gemini multimodal/transcription paths; verify
+  the exact `@google/genai` image/audio input shape against your SDK version when
+  you first test with a live key (the mock provider returns canned responses so
+  both flows work without a key).
 - Community moderation is active: posts are screened on creation (approved /
   held for review / rejected) by `@velunee/moderation-core`, decisions are logged
   to `content_checks`, and admins listed in `ADMIN_USER_IDS` can review the queue
