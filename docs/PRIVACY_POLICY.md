@@ -28,6 +28,7 @@ We collect only what the Service needs to function.
 | App preferences     | Answer length, voice, memory, analytics toggles                         | Respect your settings                        |
 | Location (optional) | Approximate coordinates, only when you allow it                         | Weather-aware suggestions                    |
 | Photos (optional)   | Only an image you explicitly choose to ask about                        | Image feedback and outfit advice             |
+| Voice (optional)    | A short recording you make, only while you hold to record               | Converting your speech to text               |
 | Technical data      | Device/app version, coarse diagnostics, request identifiers             | Reliability, security, abuse prevention      |
 
 We do **not** sell your personal data, and we do not use location, contacts, or
@@ -61,6 +62,10 @@ If you use image feedback ("how do I look?" or outfit advice), the single photo
 you choose is sent to the AI provider only to generate that response. We do not
 store your photos on our servers, and they are not used for advertising or
 model training.
+
+If you use voice input, the short recording you make is sent to the AI provider
+only to transcribe it into text for your message. We do not store your voice
+recordings, and they are not used for advertising or model training.
 
 ## 5. How your data is protected
 

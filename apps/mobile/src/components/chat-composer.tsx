@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useVoiceInput } from '@/features/voice/use-voice-input';
 import { colors } from '@/theme/colors';
 
 interface ChatComposerProps {
@@ -20,6 +21,21 @@ export function ChatComposer({
   onSend,
   onStop,
 }: ChatComposerProps): React.JSX.Element {
+  const voice = useVoiceInput();
+
+  async function handleMicPress(): Promise<void> {
+    if (isSending || voice.isTranscribing) return;
+
+    if (voice.isRecording) {
+      const text = await voice.stopAndTranscribe();
+      if (text) {
+        onChangeText(value.trim() ? `${value.trim()} ${text}` : text);
+      }
+    } else {
+      await voice.startRecording();
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.composer}>
@@ -29,11 +45,31 @@ export function ChatComposer({
           editable={!isSending}
           multiline
           maxLength={12_000}
-          placeholder="Ask Velunee anything..."
+          placeholder={
+            voice.isRecording ? 'Listening… tap stop when done' : 'Ask Velunee anything...'
+          }
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.primaryMuted}
           style={styles.input}
         />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={voice.isRecording ? 'Stop recording' : 'Voice input'}
+          disabled={isSending || voice.isTranscribing}
+          onPress={() => void handleMicPress()}
+          style={({ pressed }) => [styles.micButton, pressed && styles.pressed]}
+        >
+          {voice.isTranscribing ? (
+            <ActivityIndicator size="small" color={colors.primaryLight} />
+          ) : (
+            <Ionicons
+              name={voice.isRecording ? 'stop-circle' : 'mic-outline'}
+              size={23}
+              color={voice.isRecording ? colors.danger : colors.textSecondary}
+            />
+          )}
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -59,7 +95,13 @@ export function ChatComposer({
         </Pressable>
       </View>
 
-      <Text style={styles.disclaimer}>Velunee can make mistakes. Check important information.</Text>
+      {voice.error ? (
+        <Text style={styles.voiceError}>{voice.error}</Text>
+      ) : (
+        <Text style={styles.disclaimer}>
+          Velunee can make mistakes. Check important information.
+        </Text>
+      )}
     </View>
   );
 }
@@ -97,6 +139,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlignVertical: 'top',
   },
+  micButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sendButton: {
     width: 42,
     height: 42,
@@ -112,6 +160,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: colors.textMuted,
     fontSize: 10,
+    textAlign: 'center',
+  },
+  voiceError: {
+    marginTop: 6,
+    color: colors.danger,
+    fontSize: 11,
     textAlign: 'center',
   },
   disabled: {

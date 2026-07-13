@@ -6,6 +6,8 @@ import type {
   ConversationHistoryResponse,
   ConversationListResponse,
   SendChatMessageInput,
+  TranscribeRequestInput,
+  TranscribeResponse,
   VisionRequestInput,
   VisionResponse,
 } from '@velunee/contracts';
@@ -95,6 +97,21 @@ export class ChatService implements OnModuleInit {
       model: result.model,
       requestId,
     };
+  }
+
+  async transcribe(userId: string, input: TranscribeRequestInput): Promise<TranscribeResponse> {
+    const requestId = randomUUID();
+    const result = await this.ai.transcribeAudio({
+      userId,
+      requestId,
+      audioBase64: input.audioBase64,
+      mimeType: input.mimeType,
+      locale: input.locale,
+    });
+
+    this.logger.log(`Audio transcribed requestId=${requestId}`);
+
+    return { text: result.text, requestId };
   }
 
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {
