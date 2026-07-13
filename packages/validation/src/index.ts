@@ -8,6 +8,8 @@ export const apiEnvironmentSchema = z
     PORT: z.coerce.number().int().positive().default(4000),
     CORS_ORIGINS: z.string().default('*'),
     AUTH_MODE: z.enum(['development', 'required']).default('development'),
+    // Comma-separated user IDs allowed to use community moderation endpoints.
+    ADMIN_USER_IDS: z.string().default(''),
     SUPABASE_URL: optionalUrl,
     SUPABASE_JWT_AUDIENCE: z.string().default('authenticated'),
     SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),

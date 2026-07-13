@@ -165,6 +165,30 @@ export const reactionStateSchema = z.object({
   viewerHasReacted: z.boolean(),
 });
 
+export const createPostResponseSchema = z.object({
+  post: communityPostSchema,
+  underReview: z.boolean(),
+});
+
+export const moderationQueueItemSchema = z.object({
+  id: z.string().uuid(),
+  authorName: z.string(),
+  caption: z.string(),
+  status: z.enum(['pending', 'review']),
+  categories: z.array(z.string()),
+  riskScore: z.number(),
+  createdAt: z.string().datetime(),
+});
+
+export const moderationQueueResponseSchema = z.object({
+  posts: z.array(moderationQueueItemSchema),
+});
+
+export const moderationActionResponseSchema = z.object({
+  postId: z.string().uuid(),
+  status: z.enum(['approved', 'rejected']),
+});
+
 export const systemConfigSchema = z.object({
   appName: z.string(),
   tagline: z.string(),
@@ -204,5 +228,9 @@ export type CommunityPost = z.infer<typeof communityPostSchema>;
 export type CommunityFeedResponse = z.infer<typeof communityFeedResponseSchema>;
 export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type ReactionState = z.infer<typeof reactionStateSchema>;
+export type CreatePostResponse = z.infer<typeof createPostResponseSchema>;
+export type ModerationQueueItem = z.infer<typeof moderationQueueItemSchema>;
+export type ModerationQueueResponse = z.infer<typeof moderationQueueResponseSchema>;
+export type ModerationActionResponse = z.infer<typeof moderationActionResponseSchema>;
 
 export type SystemConfig = z.infer<typeof systemConfigSchema>;
