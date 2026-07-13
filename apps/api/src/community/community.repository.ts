@@ -264,9 +264,7 @@ export class CommunityRepository {
         createdAt: posts.createdAt,
       })
       .from(posts)
-      .where(
-        and(inArray(posts.moderationStatus, ['pending', 'review']), isNull(posts.deletedAt)),
-      )
+      .where(and(inArray(posts.moderationStatus, ['pending', 'review']), isNull(posts.deletedAt)))
       .orderBy(desc(posts.createdAt))
       .limit(50);
 
@@ -305,10 +303,7 @@ export class CommunityRepository {
     return row ?? null;
   }
 
-  async setModerationStatus(
-    postId: string,
-    status: 'approved' | 'rejected',
-  ): Promise<boolean> {
+  async setModerationStatus(postId: string, status: 'approved' | 'rejected'): Promise<boolean> {
     if (!this.connection) return false;
     const updated = await this.connection.db
       .update(posts)

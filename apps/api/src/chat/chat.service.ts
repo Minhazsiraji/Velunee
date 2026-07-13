@@ -99,10 +99,7 @@ export class ChatService implements OnModuleInit {
     };
   }
 
-  async transcribe(
-    userId: string,
-    input: TranscribeRequestInput,
-  ): Promise<TranscribeResponse> {
+  async transcribe(userId: string, input: TranscribeRequestInput): Promise<TranscribeResponse> {
     const requestId = randomUUID();
     const result = await this.ai.transcribeAudio({
       userId,

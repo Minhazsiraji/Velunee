@@ -2,14 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FormField } from '@/components/form-field';
@@ -58,9 +51,7 @@ export default function VisionScreen(): React.JSX.Element {
 
       if (!permission.granted) {
         setError(
-          `Please allow access to your ${
-            source === 'camera' ? 'camera' : 'photos'
-          } to continue.`,
+          `Please allow access to your ${source === 'camera' ? 'camera' : 'photos'} to continue.`,
         );
         return;
       }
@@ -123,10 +114,7 @@ export default function VisionScreen(): React.JSX.Element {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <OptionPicker
           label="WHAT DO YOU WANT?"
           options={[...MODES]}
@@ -143,14 +131,8 @@ export default function VisionScreen(): React.JSX.Element {
             <Image source={{ uri: image.uri }} style={styles.preview} />
           ) : (
             <View style={styles.imagePlaceholder}>
-              <Ionicons
-                name="image-outline"
-                size={40}
-                color={colors.textMuted}
-              />
-              <Text style={styles.placeholderText}>
-                Tap to choose a photo
-              </Text>
+              <Ionicons name="image-outline" size={40} color={colors.textMuted} />
+              <Text style={styles.placeholderText}>Tap to choose a photo</Text>
             </View>
           )}
         </Pressable>

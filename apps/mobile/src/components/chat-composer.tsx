@@ -1,12 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useVoiceInput } from '@/features/voice/use-voice-input';
 import { colors } from '@/theme/colors';
@@ -53,9 +46,7 @@ export function ChatComposer({
           multiline
           maxLength={12_000}
           placeholder={
-            voice.isRecording
-              ? 'Listening… tap stop when done'
-              : 'Ask Velunee anything...'
+            voice.isRecording ? 'Listening… tap stop when done' : 'Ask Velunee anything...'
           }
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.primaryMuted}
@@ -64,15 +55,10 @@ export function ChatComposer({
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            voice.isRecording ? 'Stop recording' : 'Voice input'
-          }
+          accessibilityLabel={voice.isRecording ? 'Stop recording' : 'Voice input'}
           disabled={isSending || voice.isTranscribing}
           onPress={() => void handleMicPress()}
-          style={({ pressed }) => [
-            styles.micButton,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.micButton, pressed && styles.pressed]}
         >
           {voice.isTranscribing ? (
             <ActivityIndicator size="small" color={colors.primaryLight} />
@@ -80,9 +66,7 @@ export function ChatComposer({
             <Ionicons
               name={voice.isRecording ? 'stop-circle' : 'mic-outline'}
               size={23}
-              color={
-                voice.isRecording ? colors.danger : colors.textSecondary
-              }
+              color={voice.isRecording ? colors.danger : colors.textSecondary}
             />
           )}
         </Pressable>

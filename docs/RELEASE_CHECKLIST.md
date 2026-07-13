@@ -87,7 +87,7 @@ pnpm --filter @velunee/api test
   hearts, account deletion, profile/settings, voice **output** (TTS), voice
   **input** (record → Gemini transcription), **weather-aware suggestions**
   (WeatherAPI.com + location), and **image feedback / vision** ("how do I look?"
-  + outfit advice → multimodal Gemini).
+  - outfit advice → multimodal Gemini).
 - Vision and voice input use the Gemini multimodal/transcription paths; verify
   the exact `@google/genai` image/audio input shape against your SDK version when
   you first test with a live key (the mock provider returns canned responses so

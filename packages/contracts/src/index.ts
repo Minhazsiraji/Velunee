@@ -264,18 +264,12 @@ export type CreatePostInput = z.infer<typeof createPostSchema>;
 export type ReactionState = z.infer<typeof reactionStateSchema>;
 export type CreatePostResponse = z.infer<typeof createPostResponseSchema>;
 export type ModerationQueueItem = z.infer<typeof moderationQueueItemSchema>;
-export type ModerationQueueResponse = z.infer<
-  typeof moderationQueueResponseSchema
->;
-export type ModerationActionResponse = z.infer<
-  typeof moderationActionResponseSchema
->;
+export type ModerationQueueResponse = z.infer<typeof moderationQueueResponseSchema>;
+export type ModerationActionResponse = z.infer<typeof moderationActionResponseSchema>;
 export type VisionMode = z.infer<typeof visionModeSchema>;
 export type VisionRequestInput = z.infer<typeof visionRequestSchema>;
 export type VisionResponse = z.infer<typeof visionResponseSchema>;
-export type TranscribeRequestInput = z.infer<
-  typeof transcribeRequestSchema
->;
+export type TranscribeRequestInput = z.infer<typeof transcribeRequestSchema>;
 export type TranscribeResponse = z.infer<typeof transcribeResponseSchema>;
 
 export type SystemConfig = z.infer<typeof systemConfigSchema>;

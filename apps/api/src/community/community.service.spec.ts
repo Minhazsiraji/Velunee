@@ -42,9 +42,7 @@ function buildRepository(overrides: Partial<CommunityRepository> = {}): Communit
   } as unknown as CommunityRepository;
 }
 
-function buildModeration(
-  decision: ModerationResult['decision'] = 'approved',
-): ModerationProvider {
+function buildModeration(decision: ModerationResult['decision'] = 'approved'): ModerationProvider {
   return {
     checkText: jest.fn().mockResolvedValue({
       decision,
@@ -140,9 +138,7 @@ describe('CommunityService', () => {
   it('blocks moderation actions for non-admins', async () => {
     const service = buildService({ config: buildConfig('') });
 
-    await expect(service.getModerationQueue('user-1')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(service.getModerationQueue('user-1')).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('lets an allowlisted admin approve a post', async () => {

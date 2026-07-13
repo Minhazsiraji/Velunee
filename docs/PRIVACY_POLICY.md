@@ -20,16 +20,16 @@ launch).
 
 We collect only what the Service needs to function.
 
-| Category           | Examples                                                                | Why we collect it                            |
-| ------------------ | ----------------------------------------------------------------------- | -------------------------------------------- |
-| Account data       | Email address, hashed password (managed by our authentication provider) | Create and secure your account               |
-| Profile data       | Display name, companion style, locale, timezone                         | Personalize responses                        |
-| Content you create | Chat messages, community posts, reactions, comments                     | Provide the assistant and community features |
-| App preferences    | Answer length, voice, memory, analytics toggles                         | Respect your settings                        |
-| Location (optional) | Approximate coordinates, only when you allow it                        | Weather-aware suggestions                    |
-| Photos (optional)  | Only an image you explicitly choose to ask about                        | Image feedback and outfit advice             |
-| Voice (optional)   | A short recording you make, only while you hold to record               | Converting your speech to text               |
-| Technical data     | Device/app version, coarse diagnostics, request identifiers             | Reliability, security, abuse prevention      |
+| Category            | Examples                                                                | Why we collect it                            |
+| ------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
+| Account data        | Email address, hashed password (managed by our authentication provider) | Create and secure your account               |
+| Profile data        | Display name, companion style, locale, timezone                         | Personalize responses                        |
+| Content you create  | Chat messages, community posts, reactions, comments                     | Provide the assistant and community features |
+| App preferences     | Answer length, voice, memory, analytics toggles                         | Respect your settings                        |
+| Location (optional) | Approximate coordinates, only when you allow it                         | Weather-aware suggestions                    |
+| Photos (optional)   | Only an image you explicitly choose to ask about                        | Image feedback and outfit advice             |
+| Voice (optional)    | A short recording you make, only while you hold to record               | Converting your speech to text               |
+| Technical data      | Device/app version, coarse diagnostics, request identifiers             | Reliability, security, abuse prevention      |
 
 We do **not** sell your personal data, and we do not use location, contacts, or
 device identifiers for advertising. Location is optional: if you grant

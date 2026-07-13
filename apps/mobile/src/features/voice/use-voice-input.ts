@@ -1,9 +1,4 @@
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-} from 'expo-audio';
+import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
 import { useState } from 'react';
 
 import { transcribeAudio } from './api';
@@ -13,8 +8,7 @@ async function fileUriToBase64(uri: string): Promise<string> {
   const blob = await response.blob();
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () =>
-      reject(new Error('Could not read the recording.'));
+    reader.onerror = () => reject(new Error('Could not read the recording.'));
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : '';
       // Strip the "data:...;base64," prefix.
@@ -41,8 +35,7 @@ export function useVoiceInput(): VoiceInput {
   async function startRecording(): Promise<void> {
     setError(null);
     try {
-      const permission =
-        await AudioModule.requestRecordingPermissionsAsync();
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) {
         setError('Please allow microphone access to use voice input.');
         return;
@@ -80,9 +73,7 @@ export function useVoiceInput(): VoiceInput {
       });
       return response.text;
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'Transcription failed. Please try again.',
-      );
+      setError(e instanceof Error ? e.message : 'Transcription failed. Please try again.');
       return null;
     } finally {
       setIsTranscribing(false);
