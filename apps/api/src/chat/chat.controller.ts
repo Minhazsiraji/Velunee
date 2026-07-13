@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   renameConversationSchema,
   sendChatMessageSchema,
+  visionRequestSchema,
   type ChatHistoryResponse,
   type ChatResponse,
   type ConversationHistoryResponse,
@@ -21,6 +22,8 @@ import {
   type RenameConversationInput,
   type SendChatMessageInput,
   type StreamChunk,
+  type VisionRequestInput,
+  type VisionResponse,
 } from '@velunee/contracts';
 import type { Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -97,6 +100,15 @@ export class ChatController {
     input: SendChatMessageInput,
   ): Promise<ChatResponse> {
     return this.chatService.send(user.id, input);
+  }
+
+  @Post('vision')
+  async analyzeImage(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(visionRequestSchema))
+    input: VisionRequestInput,
+  ): Promise<VisionResponse> {
+    return this.chatService.analyzeImage(user.id, input);
   }
 
   @Post('stream')

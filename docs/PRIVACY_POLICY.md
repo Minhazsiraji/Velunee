@@ -27,6 +27,7 @@ We collect only what the Service needs to function.
 | Content you create | Chat messages, community posts, reactions, comments                     | Provide the assistant and community features |
 | App preferences    | Answer length, voice, memory, analytics toggles                         | Respect your settings                        |
 | Location (optional) | Approximate coordinates, only when you allow it                        | Weather-aware suggestions                    |
+| Photos (optional)  | Only an image you explicitly choose to ask about                        | Image feedback and outfit advice             |
 | Technical data     | Device/app version, coarse diagnostics, request identifiers             | Reliability, security, abuse prevention      |
 
 We do **not** sell your personal data, and we do not use location, contacts, or
@@ -55,6 +56,11 @@ When you send a message, its content is transmitted to our AI model provider
 (Google Gemini) solely to generate a response. We instruct the provider not
 to retain your prompts for training (`store: false`). We do not use your
 private conversations to train models.
+
+If you use image feedback ("how do I look?" or outfit advice), the single photo
+you choose is sent to the AI provider only to generate that response. We do not
+store your photos on our servers, and they are not used for advertising or
+model training.
 
 ## 5. How your data is protected
 

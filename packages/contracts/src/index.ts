@@ -195,6 +195,23 @@ export const moderationActionResponseSchema = z.object({
   status: z.enum(['approved', 'rejected']),
 });
 
+export const visionModeSchema = z.enum(['selfie', 'outfit', 'general']);
+
+export const visionRequestSchema = z.object({
+  imageBase64: z.string().min(1).max(12_000_000),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+  prompt: z.string().trim().max(2_000).optional(),
+  mode: visionModeSchema.default('selfie'),
+  locale: z.string().trim().min(2).max(35).optional(),
+});
+
+export const visionResponseSchema = z.object({
+  text: z.string(),
+  provider: z.string(),
+  model: z.string(),
+  requestId: z.string(),
+});
+
 export const systemConfigSchema = z.object({
   appName: z.string(),
   tagline: z.string(),
@@ -242,5 +259,8 @@ export type ModerationQueueResponse = z.infer<
 export type ModerationActionResponse = z.infer<
   typeof moderationActionResponseSchema
 >;
+export type VisionMode = z.infer<typeof visionModeSchema>;
+export type VisionRequestInput = z.infer<typeof visionRequestSchema>;
+export type VisionResponse = z.infer<typeof visionResponseSchema>;
 
 export type SystemConfig = z.infer<typeof systemConfigSchema>;
