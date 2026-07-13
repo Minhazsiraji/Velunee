@@ -27,11 +27,48 @@ export interface AIChunk {
   text: string;
 }
 
+export type VisionMode = 'selfie' | 'outfit' | 'general';
+
+export interface VisionRequest {
+  imageBase64: string;
+  mimeType: string;
+  prompt?: string;
+  mode: VisionMode;
+  locale?: string;
+  userId: string;
+  requestId: string;
+}
+
 export interface AIProvider {
   readonly name: string;
   readonly model: string;
   generate(request: AIRequest): Promise<AIResponse>;
   stream(request: AIRequest): AsyncIterable<AIChunk>;
+  analyzeImage(request: VisionRequest): Promise<AIResponse>;
+}
+
+function buildVisionInstruction(mode: VisionMode, locale?: string): string {
+  const base =
+    mode === 'selfie'
+      ? 'The user shared a selfie and wants warm, honest, specific feedback on how they look — a genuine compliment plus one or two kind, practical tips (grooming, angle, expression, colors). Be encouraging and respectful, never judgmental about body or identity.'
+      : mode === 'outfit'
+        ? 'The user shared clothing or a wardrobe and wants help choosing what to wear. Give clear, practical outfit advice (fit, colors, occasion-appropriateness) and, if they mention an occasion, tailor to it.'
+        : 'Describe what you see and answer the user helpfully and kindly.';
+
+  return [
+    'You are Velunee, a warm, practical personal companion looking at an image the user shared.',
+    base,
+    'Never guess sensitive attributes (age, health, ethnicity). Keep it concise and friendly.',
+    locale ? `Reply in the language most appropriate for locale ${locale}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+function defaultVisionPrompt(mode: VisionMode): string {
+  if (mode === 'selfie') return 'How do I look?';
+  if (mode === 'outfit') return 'What should I wear? Help me pick.';
+  return 'What do you see in this image?';
 }
 
 function buildSystemInstruction(locale?: string, timezone?: string, context?: string): string {
@@ -80,6 +117,23 @@ export class MockAIProvider implements AIProvider {
     for (const word of words) {
       yield { text: word };
     }
+  }
+
+  async analyzeImage(request: VisionRequest): Promise<AIResponse> {
+    const canned: Record<VisionMode, string> = {
+      selfie:
+        'You look great — bright, friendly, and put-together! Tip: face a soft light source and lift your chin slightly for an even more flattering angle.\n\n(Add a Gemini API key and set AI_PROVIDER=gemini to get real, personalized feedback on your photo.)',
+      outfit:
+        'Nice pick! This works well for a smart-casual day. Tip: keep one statement piece and let the rest stay neutral so the look feels balanced.\n\n(Add a Gemini API key and set AI_PROVIDER=gemini for tailored outfit advice on your actual photo.)',
+      general:
+        'Velunee received your image. Add a Gemini API key and set AI_PROVIDER=gemini to get a real description and helpful answer.',
+    };
+
+    return {
+      text: canned[request.mode],
+      provider: this.name,
+      model: this.model,
+    };
   }
 }
 
@@ -162,6 +216,34 @@ export class GeminiAIProvider implements AIProvider {
         yield { text };
       }
     }
+  }
+
+  async analyzeImage(request: VisionRequest): Promise<AIResponse> {
+    const prompt = request.prompt?.trim() || defaultVisionPrompt(request.mode);
+
+    const result = (await this.interactions.create({
+      model: this.model,
+      input: [
+        { type: 'input_text', text: prompt },
+        {
+          type: 'input_image',
+          image_url: `data:${request.mimeType};base64,${request.imageBase64}`,
+        },
+      ],
+      system_instruction: buildVisionInstruction(request.mode, request.locale),
+      store: false,
+    })) as InteractionResult;
+
+    const text = result.output_text?.trim();
+    if (!text) throw new Error('Gemini returned an empty response');
+
+    return {
+      text,
+      provider: this.name,
+      model: this.model,
+      inputTokens: result.usage?.total_input_tokens,
+      outputTokens: result.usage?.total_output_tokens,
+    };
   }
 }
 

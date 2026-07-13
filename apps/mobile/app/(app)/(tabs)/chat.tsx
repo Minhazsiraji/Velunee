@@ -66,6 +66,20 @@ export default function ChatScreen(): React.JSX.Element {
           <View style={styles.headerActions}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Ask about a photo"
+              disabled={isSending}
+              onPress={() => router.push('/(app)/vision' as Href)}
+              style={({ pressed }) => [
+                styles.headerActionButton,
+                pressed && styles.pressed,
+                isSending && styles.disabled,
+              ]}
+            >
+              <Ionicons name="camera-outline" size={22} color={colors.primaryLight} />
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel="View conversations"
               disabled={isSending}
               onPress={() => router.push('/(app)/conversations' as Href)}

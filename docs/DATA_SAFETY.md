@@ -25,6 +25,7 @@ community; no ads, no location, no camera/mic permissions requested yet).
 | User-generated content (community posts/comments) | Yes       | Shown to other users     | App functionality                   | Optional                |
 | App interactions / preferences                    | Yes       | No*                      | App functionality                   | Optional                |
 | Approximate location (coordinates)                | Yes       | Sent to WeatherAPI.com   | Weather-aware chat suggestions      | Optional                |
+| Photos (only the one you pick)                    | Yes       | Processed by AI provider | Image feedback ("how do I look?")   | Optional                |
 | Diagnostics (crash/performance)                   | Yes       | No*                      | Reliability                         | Optional                |
 
 \* "No" means not shared for advertising or with third parties beyond the
@@ -40,8 +41,10 @@ advertising or tracking. The user is asked for permission and can decline.
 - Precise/background location or location history (only a one-off approximate
   fix, foreground, with permission)
 - **Contacts**, **calendar**, **SMS/call logs**
-- **Photos/videos** or **microphone** (no camera/mic permission is requested
-  in the current release; update this sheet when voice/vision features ship)
+- **Microphone / audio** (no mic permission is requested in the current
+  release; update this sheet when voice input ships)
+- Photo **library browsing** or bulk photo access — only the single image the
+  user explicitly picks is read, and it is not stored on our servers
 - **Financial info**, **health info**
 - **Advertising identifiers** — the app contains no ads and no ad SDKs.
 
@@ -54,9 +57,9 @@ advertising or tracking. The user is asked for permission and can decline.
 
 ## When features change
 
-Weather (location) is now live. If you add **voice input** (microphone) or
-**selfie/wardrobe** (camera), you must:
+Weather (location) and image feedback (camera/photos) are now live. If you add
+**voice input** (microphone), you must:
 
-1. Unblock the relevant permission in `apps/mobile/app.json`.
+1. Unblock `android.permission.RECORD_AUDIO` in `apps/mobile/app.json`.
 2. Add the data type to this sheet and the privacy policy.
 3. Update the Data safety form before releasing the new version.

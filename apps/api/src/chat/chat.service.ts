@@ -6,6 +6,8 @@ import type {
   ConversationHistoryResponse,
   ConversationListResponse,
   SendChatMessageInput,
+  VisionRequestInput,
+  VisionResponse,
 } from '@velunee/contracts';
 import { randomUUID } from 'node:crypto';
 import { WeatherService } from '../weather/weather.service';
@@ -71,6 +73,28 @@ export class ChatService implements OnModuleInit {
 
   async deleteConversation(userId: string, conversationId: string): Promise<boolean> {
     return this.repository.deleteConversation(userId, conversationId);
+  }
+
+  async analyzeImage(userId: string, input: VisionRequestInput): Promise<VisionResponse> {
+    const requestId = randomUUID();
+    const result = await this.ai.analyzeImage({
+      userId,
+      requestId,
+      imageBase64: input.imageBase64,
+      mimeType: input.mimeType,
+      prompt: input.prompt,
+      mode: input.mode,
+      locale: input.locale,
+    });
+
+    this.logger.log(`Vision analyzed requestId=${requestId} mode=${input.mode}`);
+
+    return {
+      text: result.text,
+      provider: result.provider,
+      model: result.model,
+      requestId,
+    };
   }
 
   async send(userId: string, input: SendChatMessageInput): Promise<ChatResponse> {
