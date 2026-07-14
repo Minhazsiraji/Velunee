@@ -198,6 +198,7 @@ export const moderationActionResponseSchema = z.object({
 export const visionModeSchema = z.enum(['selfie', 'outfit', 'general']);
 
 export const visionRequestSchema = z.object({
+  conversationId: z.string().uuid().optional(),
   imageBase64: z.string().min(1).max(12_000_000),
   mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
   prompt: z.string().trim().max(2_000).optional(),
@@ -206,6 +207,9 @@ export const visionRequestSchema = z.object({
 });
 
 export const visionResponseSchema = z.object({
+  conversationId: z.string().uuid(),
+  userMessage: chatMessageSchema,
+  message: chatMessageSchema,
   text: z.string(),
   provider: z.string(),
   model: z.string(),
