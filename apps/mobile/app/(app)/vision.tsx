@@ -9,6 +9,7 @@ import { FormField } from '@/components/form-field';
 import { OptionPicker } from '@/components/option-picker';
 import { PrimaryButton } from '@/components/primary-button';
 import { analyzeImage } from '@/features/vision/api';
+import { useChatStore } from '@/stores/chat-store';
 import { colors } from '@/theme/colors';
 
 const MODES = [
@@ -34,6 +35,7 @@ function normalizeMime(mime?: string | null): AllowedMime {
 
 export default function VisionScreen(): React.JSX.Element {
   const router = useRouter();
+  const { conversationId, setConversationId, addMessage } = useChatStore();
   const [mode, setMode] = useState<PickerMode>('selfie');
   const [image, setImage] = useState<PickedImage | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -86,11 +88,16 @@ export default function VisionScreen(): React.JSX.Element {
     setResult(null);
     try {
       const response = await analyzeImage({
+        conversationId,
         imageBase64: image.base64,
         mimeType: image.mimeType,
         mode,
         prompt: prompt.trim() || undefined,
       });
+
+      setConversationId(response.conversationId);
+      addMessage(response.userMessage);
+      addMessage(response.message);
       setResult(response.text);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed. Please try again.');

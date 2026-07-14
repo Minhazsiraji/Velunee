@@ -78,7 +78,11 @@ export class ChatService implements OnModuleInit {
   }
 
   async analyzeImage(userId: string, input: VisionRequestInput): Promise<VisionResponse> {
+    const conversationId = input.conversationId ?? randomUUID();
     const requestId = randomUUID();
+    const userMessageId = randomUUID();
+    const assistantMessageId = randomUUID();
+
     const result = await this.ai.analyzeImage({
       userId,
       requestId,
@@ -89,9 +93,64 @@ export class ChatService implements OnModuleInit {
       locale: input.locale,
     });
 
-    this.logger.log(`Vision analyzed requestId=${requestId} mode=${input.mode}`);
+    const userContent =
+      input.prompt?.trim() ||
+      (input.mode === 'outfit'
+        ? 'What should I wear based on this photo?'
+        : input.mode === 'selfie'
+          ? 'How do I look in this photo?'
+          : 'Please analyze this photo.');
+
+    await this.repository.ensureConversation({
+      conversationId,
+      userId,
+      locale: input.locale,
+    });
+
+    await this.repository.saveMessage({
+      id: userMessageId,
+      conversationId,
+      userId,
+      role: 'user',
+      inputMode: 'image',
+      content: userContent,
+      requestId,
+    });
+
+    await this.repository.saveMessage({
+      id: assistantMessageId,
+      conversationId,
+      userId,
+      role: 'assistant',
+      inputMode: 'text',
+      content: result.text,
+      provider: result.provider,
+      model: result.model,
+      requestId,
+    });
+
+    const createdAt = new Date().toISOString();
+
+    this.logger.log(
+      `Vision analyzed requestId=${requestId} conversationId=${conversationId} mode=${input.mode}`,
+    );
 
     return {
+      conversationId,
+      userMessage: {
+        id: userMessageId,
+        role: 'user',
+        content: userContent,
+        inputMode: 'image',
+        createdAt,
+      },
+      message: {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: result.text,
+        inputMode: 'text',
+        createdAt,
+      },
       text: result.text,
       provider: result.provider,
       model: result.model,

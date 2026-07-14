@@ -3,6 +3,7 @@ import { visionResponseSchema, type VisionMode, type VisionResponse } from '@vel
 import { apiRequest } from '@/lib/api';
 
 export interface AnalyzeImageInput {
+  conversationId?: string;
   imageBase64: string;
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
   mode: VisionMode;
