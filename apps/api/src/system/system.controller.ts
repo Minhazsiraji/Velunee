@@ -20,6 +20,7 @@ export class SystemController {
         imageAdvice: false,
         community: true,
         memory: true,
+        balance: true,
       },
     };
   }

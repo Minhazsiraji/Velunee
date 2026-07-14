@@ -10,6 +10,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 const tabIcons: Record<string, IconName> = {
   chat: 'chatbubble-ellipses',
   community: 'people',
+  balance: 'wallet',
   profile: 'person-circle',
 };
 
@@ -45,6 +46,8 @@ export default function TabsLayout(): React.JSX.Element {
       <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
 
       <Tabs.Screen name="community" options={{ title: 'Community' }} />
+
+      <Tabs.Screen name="balance" options={{ title: 'Balance' }} />
 
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>

@@ -1,5 +1,7 @@
 import {
+  bigint,
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -22,6 +24,7 @@ export const moderation = pgSchema('moderation');
 export const billing = pgSchema('billing');
 export const operations = pgSchema('operations');
 export const audit = pgSchema('audit');
+export const finance = pgSchema('finance');
 
 export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system', 'tool']);
 export const inputMode = pgEnum('input_mode', ['text', 'voice', 'image']);
@@ -317,6 +320,114 @@ export const featureFlags = operations.table('feature_flags', {
   rules: jsonb('rules').$type<Record<string, unknown>>().notNull().default({}),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const transactionKind = pgEnum('transaction_kind', ['income', 'expense']);
+export const paymentMethod = pgEnum('payment_method', ['cash', 'card', 'mobile', 'bank', 'other']);
+
+// Amounts are stored as integer minor units (e.g. poisha for BDT) so every
+// balance calculation stays exact — no floating point drift.
+export const moneyProfiles = finance.table('money_profiles', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  currencyCode: varchar('currency_code', { length: 3 }).notNull().default('BDT'),
+  monthlyIncomeMinor: bigint('monthly_income_minor', { mode: 'number' }).notNull().default(0),
+  fixedExpensesMinor: bigint('fixed_expenses_minor', { mode: 'number' }).notNull().default(0),
+  savingsTargetMinor: bigint('savings_target_minor', { mode: 'number' }).notNull().default(0),
+  configuredAt: timestamp('configured_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// user_id null marks a shared system category available to everyone.
+export const moneyCategories = finance.table(
+  'categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 60 }).notNull(),
+    icon: varchar('icon', { length: 40 }).notNull().default('pricetag'),
+    isFixed: boolean('is_fixed').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('categories_user_idx').on(table.userId)],
+);
+
+export const moneyTransactions = finance.table(
+  'transactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: transactionKind('kind').notNull(),
+    amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
+    currencyCode: varchar('currency_code', { length: 3 }).notNull().default('BDT'),
+    categoryId: uuid('category_id').references(() => moneyCategories.id, {
+      onDelete: 'set null',
+    }),
+    note: varchar('note', { length: 240 }),
+    paymentMethod: paymentMethod('payment_method').notNull().default('cash'),
+    occurredOn: date('occurred_on').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('transactions_user_occurred_idx').on(table.userId, table.occurredOn)],
+);
+
+export const moneyBudgets = finance.table(
+  'budgets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => moneyCategories.id, { onDelete: 'cascade' }),
+    month: varchar('month', { length: 7 }).notNull(),
+    limitMinor: bigint('limit_minor', { mode: 'number' }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('budgets_user_category_month_uidx').on(table.userId, table.categoryId, table.month),
+  ],
+);
+
+export const savingsGoals = finance.table(
+  'savings_goals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    targetMinor: bigint('target_minor', { mode: 'number' }).notNull(),
+    savedMinor: bigint('saved_minor', { mode: 'number' }).notNull().default(0),
+    monthlyContributionMinor: bigint('monthly_contribution_minor', { mode: 'number' })
+      .notNull()
+      .default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    achievedAt: timestamp('achieved_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('savings_goals_user_idx').on(table.userId)],
+);
+
+export const recurringBills = finance.table(
+  'recurring_bills',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 120 }).notNull(),
+    amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
+    dueDay: integer('due_day').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('recurring_bills_user_idx').on(table.userId)],
+);
 
 export const securityEvents = audit.table(
   'security_events',
