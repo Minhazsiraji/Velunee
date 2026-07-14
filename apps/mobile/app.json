@@ -6,13 +6,7 @@
     "orientation": "portrait",
     "scheme": "velunee",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0F0B1F"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.velunee.app"
@@ -23,16 +17,7 @@
         "backgroundColor": "#0F0B1F"
       },
       "package": "com.velunee.app",
-      "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.INTERNET",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
@@ -70,7 +55,16 @@
         }
       ],
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0F0B1F"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
