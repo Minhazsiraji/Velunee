@@ -68,7 +68,9 @@
         {
           "microphonePermission": "Velunee uses your microphone only to turn your voice into text for the message you're writing."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
