@@ -17,6 +17,9 @@ export interface AuthProvider {
  * service-role key to clients.
  */
 export interface AuthAdmin {
+  /** Whether server-side identity administration is configured. */
+  readonly adminEnabled: boolean;
+
   /** Permanently delete the auth user from the identity provider. */
   deleteAuthUser(userId: string): Promise<void>;
 }
@@ -27,6 +30,7 @@ export function supportsAdmin(
   return (
     provider !== null &&
     provider !== undefined &&
+    (provider as AuthAdmin).adminEnabled === true &&
     typeof (provider as AuthAdmin).deleteAuthUser === 'function'
   );
 }
@@ -43,12 +47,14 @@ export class SupabaseAuthProvider implements AuthProvider, AuthAdmin {
   private readonly issuer: string;
   private readonly audience: string;
   private readonly serviceRoleKey?: string;
+  readonly adminEnabled: boolean;
 
   constructor(options: SupabaseAuthProviderOptions) {
     const baseUrl = options.supabaseUrl.replace(/\/$/, '');
     this.issuer = `${baseUrl}/auth/v1`;
     this.audience = options.audience ?? 'authenticated';
     this.serviceRoleKey = options.serviceRoleKey;
+    this.adminEnabled = Boolean(options.serviceRoleKey);
     this.jwks = createRemoteJWKSet(new URL(`${this.issuer}/.well-known/jwks.json`));
   }
 
