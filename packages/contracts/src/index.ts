@@ -789,3 +789,64 @@ export type UpdateMemoryInput = z.infer<typeof updateMemorySchema>;
 export type MemoryResponse = z.infer<typeof memoryResponseSchema>;
 export type MemoryDeletedResponse = z.infer<typeof memoryDeletedResponseSchema>;
 export type MemoriesClearedResponse = z.infer<typeof memoriesClearedResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Decide — the signature decision system (improvement outline §6).
+// Every decision separates facts (considered), a recommendation, an
+// alternative, the likely impact, and one concrete next action. Financial
+// verdicts always come from the deterministic affordability engine.
+// ---------------------------------------------------------------------------
+
+export const decisionKindSchema = z.enum(['affordability', 'outfit', 'timing', 'general']);
+
+export const decideNextActionKindSchema = z.enum([
+  'add_expense',
+  'open_balance',
+  'ask_chat',
+  'none',
+]);
+
+export const decideConsideredItemSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+});
+
+export const decideNextActionSchema = z.object({
+  label: z.string(),
+  kind: decideNextActionKindSchema,
+});
+
+export const decideRequestSchema = z.object({
+  question: z.string().trim().min(1).max(500),
+  locale: z.string().trim().min(2).max(35).optional(),
+  timezone: z.string().trim().min(1).max(100).optional(),
+  today: isoDateOnlySchema.optional(),
+  location: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    })
+    .optional(),
+});
+
+export const decideResponseSchema = z.object({
+  question: z.string(),
+  kind: decisionKindSchema,
+  recommendation: z.string(),
+  reasoning: z.string(),
+  considered: z.array(decideConsideredItemSchema),
+  alternative: z.string().nullable(),
+  impact: z.string().nullable(),
+  nextAction: decideNextActionSchema.nullable(),
+  affordability: affordabilityResponseSchema.nullable(),
+  provider: z.string(),
+  model: z.string(),
+  requestId: z.string(),
+});
+
+export type DecisionKind = z.infer<typeof decisionKindSchema>;
+export type DecideNextActionKind = z.infer<typeof decideNextActionKindSchema>;
+export type DecideConsideredItem = z.infer<typeof decideConsideredItemSchema>;
+export type DecideNextAction = z.infer<typeof decideNextActionSchema>;
+export type DecideRequestInput = z.infer<typeof decideRequestSchema>;
+export type DecideResponse = z.infer<typeof decideResponseSchema>;
