@@ -8,6 +8,7 @@ import { colors } from '@/theme/colors';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 const tabIcons: Record<string, IconName> = {
+  home: 'home',
   chat: 'chatbubble-ellipses',
   community: 'people',
   balance: 'wallet',
@@ -20,7 +21,7 @@ export default function TabsLayout(): React.JSX.Element {
 
   return (
     <Tabs
-      initialRouteName="chat"
+      initialRouteName="home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
@@ -43,6 +44,8 @@ export default function TabsLayout(): React.JSX.Element {
         ),
       })}
     >
+      <Tabs.Screen name="home" options={{ title: 'Home' }} />
+
       <Tabs.Screen name="chat" options={{ title: 'Chat' }} />
 
       <Tabs.Screen name="community" options={{ title: 'Community' }} />

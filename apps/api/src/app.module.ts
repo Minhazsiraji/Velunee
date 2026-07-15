@@ -12,6 +12,7 @@ import { CommunityModule } from './community/community.module';
 import { DatabaseModule } from './database/database.module';
 import { CryptoModule } from './crypto/crypto.module';
 import { HealthModule } from './health/health.module';
+import { HomeModule } from './home/home.module';
 import { SystemModule } from './system/system.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { SystemModule } from './system/system.module';
     AccountModule,
     CommunityModule,
     BalanceModule,
+    HomeModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

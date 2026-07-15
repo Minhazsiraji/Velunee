@@ -587,3 +587,92 @@ export type CreateRecurringBillInput = z.infer<typeof createRecurringBillSchema>
 export type RecurringBillsResponse = z.infer<typeof recurringBillsResponseSchema>;
 export type RecurringBillResponse = z.infer<typeof recurringBillResponseSchema>;
 export type BalanceReportResponse = z.infer<typeof balanceReportResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Home — the daily command centre. One endpoint composes the cards a
+// user has enabled; every card degrades to null when its source is missing so
+// the home screen always renders something useful.
+// ---------------------------------------------------------------------------
+
+export const homeCardPreferencesSchema = z.object({
+  weather: z.boolean(),
+  balance: z.boolean(),
+  bills: z.boolean(),
+  recentConversation: z.boolean(),
+  suggestion: z.boolean(),
+});
+
+export const updateHomeCardsSchema = z
+  .object({
+    weather: z.boolean().optional(),
+    balance: z.boolean().optional(),
+    bills: z.boolean().optional(),
+    recentConversation: z.boolean().optional(),
+    suggestion: z.boolean().optional(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one card to update',
+  });
+
+export const homeCardsResponseSchema = z.object({
+  cards: homeCardPreferencesSchema,
+});
+
+export const homeWeatherCardSchema = z.object({
+  locationName: z.string(),
+  temperatureC: z.number(),
+  feelsLikeC: z.number().nullable(),
+  condition: z.string().nullable(),
+  advice: z.string().nullable(),
+});
+
+export const homeBalanceCardSchema = z.object({
+  currency: currencyCodeSchema,
+  isConfigured: z.boolean(),
+  safeToSpendTodayMinor: minorAmountSchema,
+  suggestedDailyLimitMinor: minorAmountSchema,
+  remainingMinor: z.number().int(),
+  daysRemaining: z.number().int().nonnegative(),
+});
+
+export const homeBillCardSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  amountMinor: positiveMinorAmountSchema,
+  currency: currencyCodeSchema,
+  dueInDays: z.number().int().nonnegative(),
+});
+
+export const homeConversationCardSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  updatedAt: z.string().datetime(),
+});
+
+export const homeSuggestionSchema = z.object({
+  id: z.string(),
+  message: z.string(),
+});
+
+export const homeOverviewResponseSchema = z.object({
+  greeting: z.object({
+    title: z.string(),
+    subtitle: z.string().nullable(),
+  }),
+  weather: homeWeatherCardSchema.nullable(),
+  balance: homeBalanceCardSchema.nullable(),
+  upcomingBill: homeBillCardSchema.nullable(),
+  recentConversation: homeConversationCardSchema.nullable(),
+  suggestion: homeSuggestionSchema.nullable(),
+  cards: homeCardPreferencesSchema,
+});
+
+export type HomeCardPreferences = z.infer<typeof homeCardPreferencesSchema>;
+export type UpdateHomeCardsInput = z.infer<typeof updateHomeCardsSchema>;
+export type HomeCardsResponse = z.infer<typeof homeCardsResponseSchema>;
+export type HomeWeatherCard = z.infer<typeof homeWeatherCardSchema>;
+export type HomeBalanceCard = z.infer<typeof homeBalanceCardSchema>;
+export type HomeBillCard = z.infer<typeof homeBillCardSchema>;
+export type HomeConversationCard = z.infer<typeof homeConversationCardSchema>;
+export type HomeSuggestion = z.infer<typeof homeSuggestionSchema>;
+export type HomeOverviewResponse = z.infer<typeof homeOverviewResponseSchema>;
