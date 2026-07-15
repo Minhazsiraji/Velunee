@@ -10,6 +10,7 @@ import { AppAuthGuard } from './common/guards/app-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { CommunityModule } from './community/community.module';
 import { DatabaseModule } from './database/database.module';
+import { DecideModule } from './decide/decide.module';
 import { CryptoModule } from './crypto/crypto.module';
 import { HealthModule } from './health/health.module';
 import { HomeModule } from './home/home.module';
@@ -35,6 +36,7 @@ import { SystemModule } from './system/system.module';
     BalanceModule,
     HomeModule,
     MemoryModule,
+    DecideModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

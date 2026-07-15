@@ -127,6 +127,22 @@ function Dashboard({
         </View>
       ) : null}
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Ask Velunee to help you decide"
+        onPress={() => router.push('/decide')}
+        style={styles.decideCta}
+      >
+        <Ionicons name="git-compare-outline" size={20} color={colors.white} />
+        <View style={styles.decideCtaText}>
+          <Text style={styles.decideCtaTitle}>Help me decide</Text>
+          <Text style={styles.decideCtaBody}>
+            Wear, buy, go out? Velunee weighs your day and suggests a next step.
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.white} />
+      </Pressable>
+
       {data.weather ? (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -376,6 +392,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     lineHeight: 20,
+  },
+  decideCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  decideCtaText: {
+    flex: 1,
+    gap: 2,
+  },
+  decideCtaTitle: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  decideCtaBody: {
+    color: colors.white,
+    fontSize: 12,
+    lineHeight: 17,
+    opacity: 0.9,
   },
   cardHeader: {
     flexDirection: 'row',
