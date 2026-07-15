@@ -32,7 +32,13 @@ function buildWeather(snapshot: unknown = null): WeatherService {
 function balanceOverview(overrides: {
   remainingMinor?: number;
   isConfigured?: boolean;
-  bills?: Array<{ id: string; name: string; amountMinor: number; dueDay: number; dueInDays: number }>;
+  bills?: Array<{
+    id: string;
+    name: string;
+    amountMinor: number;
+    dueDay: number;
+    dueInDays: number;
+  }>;
 }): BalanceOverviewResponse {
   return {
     month: '2026-07',
@@ -85,9 +91,9 @@ describe('greetingTitle', () => {
 
 describe('weatherAdvice', () => {
   it('suggests an umbrella when rain is around', () => {
-    expect(
-      weatherAdvice({ temperatureC: 28, condition: 'Light rain', precipMm: 0 }),
-    ).toContain('umbrella');
+    expect(weatherAdvice({ temperatureC: 28, condition: 'Light rain', precipMm: 0 })).toContain(
+      'umbrella',
+    );
     expect(weatherAdvice({ temperatureC: 28, condition: 'Cloudy', precipMm: 1.4 })).toContain(
       'umbrella',
     );
@@ -165,7 +171,9 @@ describe('HomeService.getOverview', () => {
       }),
       buildBalance(
         balanceOverview({
-          bills: [{ id: uuid, name: 'Electricity', amountMinor: 1_500_00, dueDay: 16, dueInDays: 1 }],
+          bills: [
+            { id: uuid, name: 'Electricity', amountMinor: 1_500_00, dueDay: 16, dueInDays: 1 },
+          ],
         }),
       ),
     );

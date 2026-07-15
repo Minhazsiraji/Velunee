@@ -201,9 +201,7 @@ export class HomeService {
 
     const [weather, balanceResult, latestConversation] = await Promise.all([
       cards.weather ? this.weatherCard(query).catch(() => null) : Promise.resolve(null),
-      cards.balance || cards.bills
-        ? this.balanceCards(userId, query.today)
-        : Promise.resolve(null),
+      cards.balance || cards.bills ? this.balanceCards(userId, query.today) : Promise.resolve(null),
       cards.recentConversation
         ? this.repository.getLatestConversation(userId).catch(() => null)
         : Promise.resolve(null),

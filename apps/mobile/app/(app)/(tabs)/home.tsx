@@ -116,7 +116,9 @@ function Dashboard({
       }
     >
       <Text style={styles.greeting}>{data.greeting.title}</Text>
-      {data.greeting.subtitle ? <Text style={styles.subtitle}>{data.greeting.subtitle}</Text> : null}
+      {data.greeting.subtitle ? (
+        <Text style={styles.subtitle}>{data.greeting.subtitle}</Text>
+      ) : null}
 
       {data.suggestion ? (
         <View style={[styles.card, styles.suggestionCard]}>
@@ -138,7 +140,9 @@ function Dashboard({
           {data.weather.feelsLikeC !== null ? (
             <Text style={styles.cardMeta}>Feels like {data.weather.feelsLikeC}°C</Text>
           ) : null}
-          {data.weather.advice ? <Text style={styles.cardAdvice}>{data.weather.advice}</Text> : null}
+          {data.weather.advice ? (
+            <Text style={styles.cardAdvice}>{data.weather.advice}</Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -263,7 +267,12 @@ function CardSettingsModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Home cards</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={onClose}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={onClose}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>
