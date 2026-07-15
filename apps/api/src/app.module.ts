@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { parseApiEnvironment } from '@velunee/validation';
 import { AccountModule } from './account/account.module';
 import { AuthModule } from './auth/auth.module';
+import { BalanceModule } from './balance/balance.module';
 import { AppAuthGuard } from './common/guards/app-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { CommunityModule } from './community/community.module';
@@ -29,6 +30,7 @@ import { SystemModule } from './system/system.module';
     ChatModule,
     AccountModule,
     CommunityModule,
+    BalanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

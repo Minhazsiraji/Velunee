@@ -247,10 +247,11 @@ export class GeminiAIProvider implements AIProvider {
     const result = (await this.interactions.create({
       model: this.model,
       input: [
-        { type: 'input_text', text: prompt },
+        { type: 'text', text: prompt },
         {
-          type: 'input_image',
-          image_url: `data:${request.mimeType};base64,${request.imageBase64}`,
+          type: 'image',
+          data: request.imageBase64,
+          mime_type: request.mimeType,
         },
       ],
       system_instruction: buildVisionInstruction(request.mode, request.locale),
@@ -278,12 +279,13 @@ export class GeminiAIProvider implements AIProvider {
       model: this.model,
       input: [
         {
-          type: 'input_text',
+          type: 'text',
           text: `Transcribe this audio to plain text. Return only the transcript, no commentary.${localeHint}`,
         },
         {
-          type: 'input_audio',
-          audio_url: `data:${request.mimeType};base64,${request.audioBase64}`,
+          type: 'audio',
+          data: request.audioBase64,
+          mime_type: request.mimeType,
         },
       ],
       store: false,
