@@ -175,3 +175,179 @@ export function estimatedMonthsRemaining(goal: {
   if (goal.monthlyContributionMinor <= 0) return null;
   return Math.ceil((goal.targetMinor - goal.savedMinor) / goal.monthlyContributionMinor);
 }
+
+// ---------------------------------------------------------------------------
+// Velunee Balance signature functions (improvement outline §13). All pure and
+// deterministic so every verdict can be explained.
+// ---------------------------------------------------------------------------
+
+export type MoneyWeatherState = 'sunny' | 'partly' | 'cloudy' | 'stormy';
+
+export interface MoneyWeather {
+  state: MoneyWeatherState;
+  message: string;
+}
+
+// A one-glance financial forecast for the rest of the month.
+export function computeMoneyWeather(input: {
+  remainingMinor: number;
+  suggestedDailyLimitMinor: number;
+  averageDailySpendMinor: number;
+  daysElapsed: number;
+  budgetsOverLimit: number;
+}): MoneyWeather {
+  if (input.remainingMinor < 0) {
+    return {
+      state: 'stormy',
+      message: "Stormy — you're past this month's plan. Recovery mode can bring it back.",
+    };
+  }
+
+  const enoughHistory = input.daysElapsed >= 3;
+  const paceRatio =
+    input.suggestedDailyLimitMinor > 0
+      ? input.averageDailySpendMinor / input.suggestedDailyLimitMinor
+      : 0;
+
+  if (input.budgetsOverLimit > 0 || (enoughHistory && paceRatio > 1.25)) {
+    return {
+      state: 'cloudy',
+      message: 'Cloudy — spending is running ahead of your plan. A lighter day or two helps.',
+    };
+  }
+
+  if (enoughHistory && paceRatio > 1) {
+    return {
+      state: 'partly',
+      message: 'Partly cloudy — slightly ahead of your daily pace, still recoverable.',
+    };
+  }
+
+  return { state: 'sunny', message: 'Sunny — your money is on track this month.' };
+}
+
+export interface RecoveryPlan {
+  overspendMinor: number;
+  dailyCutMinor: number;
+  message: string;
+}
+
+// A concrete, supportive path back after overspending.
+export function computeRecovery(input: {
+  remainingMinor: number;
+  daysRemaining: number;
+  currency: string;
+}): RecoveryPlan | null {
+  if (input.remainingMinor >= 0) return null;
+
+  const overspendMinor = Math.abs(input.remainingMinor);
+
+  if (input.daysRemaining <= 0) {
+    return {
+      overspendMinor,
+      dailyCutMinor: 0,
+      message: `This month closed ${formatMinor(input.currency, overspendMinor)} over plan. A fresh plan next month resets it — no need to carry guilt forward.`,
+    };
+  }
+
+  const dailyCutMinor = Math.ceil(overspendMinor / input.daysRemaining);
+  return {
+    overspendMinor,
+    dailyCutMinor,
+    message: `Spending about ${formatMinor(input.currency, dailyCutMinor)} less each day for the next ${input.daysRemaining} days brings this month back on plan.`,
+  };
+}
+
+// How long total savings could cover daily life if income stopped.
+export function computeSafetyDays(input: {
+  totalSavedMinor: number;
+  averageDailySpendMinor: number;
+  fixedExpensesMinor: number;
+}): number | null {
+  const dailyBurnMinor =
+    input.averageDailySpendMinor + Math.round(input.fixedExpensesMinor / 30);
+  if (input.totalSavedMinor <= 0 || dailyBurnMinor <= 0) return null;
+  return Math.floor(input.totalSavedMinor / dailyBurnMinor);
+}
+
+export interface AffordabilityGoalImpact {
+  goalId: string;
+  name: string;
+  delayDays: number;
+}
+
+export interface AffordabilityResult {
+  verdict: 'yes' | 'careful' | 'no';
+  title: string;
+  explanation: string;
+  goalImpacts: AffordabilityGoalImpact[];
+  calculation: string[];
+}
+
+// "Can I afford this?" — a clear verdict with the reasoning shown.
+export function computeAffordability(input: {
+  amountMinor: number;
+  remainingMinor: number;
+  safeToSpendTodayMinor: number;
+  daysRemaining: number;
+  currency: string;
+  goals: Array<{ id: string; name: string; monthlyContributionMinor: number }>;
+}): AffordabilityResult {
+  const { amountMinor, currency } = input;
+  const remaining = Math.max(0, input.remainingMinor);
+
+  const goalImpacts: AffordabilityGoalImpact[] = input.goals
+    .filter((goal) => goal.monthlyContributionMinor > 0)
+    .slice(0, 3)
+    .map((goal) => ({
+      goalId: goal.id,
+      name: goal.name,
+      delayDays: Math.ceil((amountMinor * 30) / goal.monthlyContributionMinor),
+    }));
+
+  const calculation = [
+    `Purchase amount = ${formatMinor(currency, amountMinor)}`,
+    `Remaining in this month's plan = ${formatMinor(currency, input.remainingMinor)}`,
+    `Safe to spend today = ${formatMinor(currency, input.safeToSpendTodayMinor)}`,
+  ];
+
+  if (amountMinor <= input.safeToSpendTodayMinor) {
+    calculation.push('Verdict: amount ≤ safe to spend today');
+    return {
+      verdict: 'yes',
+      title: 'Yes, comfortably',
+      explanation: "It fits inside today's safe-to-spend amount without touching the rest of your plan.",
+      goalImpacts,
+      calculation,
+    };
+  }
+
+  if (amountMinor <= remaining) {
+    const newDailyLimitMinor =
+      input.daysRemaining > 0
+        ? Math.max(0, Math.floor((remaining - amountMinor) / input.daysRemaining))
+        : 0;
+    calculation.push(
+      `Verdict: amount ≤ remaining; daily limit afterwards = (remaining − amount) ÷ ${input.daysRemaining} days = ${formatMinor(currency, newDailyLimitMinor)}`,
+    );
+    return {
+      verdict: 'careful',
+      title: 'Yes, but plan for it',
+      explanation: `It fits this month's plan, but it's bigger than today's limit — your daily limit drops to about ${formatMinor(currency, newDailyLimitMinor)} afterwards.`,
+      goalImpacts,
+      calculation,
+    };
+  }
+
+  const shortfallMinor = amountMinor - remaining;
+  calculation.push(
+    `Verdict: amount exceeds remaining by ${formatMinor(currency, shortfallMinor)}`,
+  );
+  return {
+    verdict: 'no',
+    title: "Not within this month's plan",
+    explanation: `It's ${formatMinor(currency, shortfallMinor)} more than what's left in your plan. Waiting, or adjusting your plan first, would be safer.`,
+    goalImpacts,
+    calculation,
+  };
+}

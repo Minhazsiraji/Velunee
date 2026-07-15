@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
+  affordabilityRequestSchema,
   contributeSavingsGoalSchema,
   createBalanceCategorySchema,
   createBalanceTransactionSchema,
@@ -9,6 +10,8 @@ import {
   parseSpendingSchema,
   setBalanceBudgetSchema,
   updateBalanceProfileSchema,
+  type AffordabilityRequestInput,
+  type AffordabilityResponse,
   type BalanceBudgetsResponse,
   type BalanceCategoriesResponse,
   type BalanceCategoryResponse,
@@ -111,6 +114,16 @@ export class BalanceController {
     input: ParseSpendingInput,
   ): Promise<ParseSpendingResponse> {
     return this.balanceService.parseSpending(user.id, input);
+  }
+
+  @Post('affordability')
+  async checkAffordability(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(affordabilityRequestSchema))
+    input: AffordabilityRequestInput,
+    @Query('today') today?: string,
+  ): Promise<AffordabilityResponse> {
+    return this.balanceService.checkAffordability(user.id, input, { today });
   }
 
   @Get('budgets')

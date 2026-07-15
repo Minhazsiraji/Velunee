@@ -386,10 +386,24 @@ export const balanceBudgetStatusSchema = z.object({
   usedPercent: z.number().int().nonnegative(),
 });
 
+export const moneyWeatherSchema = z.object({
+  state: z.enum(['sunny', 'partly', 'cloudy', 'stormy']),
+  message: z.string(),
+});
+
+export const recoveryPlanSchema = z.object({
+  overspendMinor: positiveMinorAmountSchema,
+  dailyCutMinor: minorAmountSchema,
+  message: z.string(),
+});
+
 export const balanceOverviewResponseSchema = z.object({
   month: monthKeySchema,
   currency: currencyCodeSchema,
   isConfigured: z.boolean(),
+  moneyWeather: moneyWeatherSchema,
+  recovery: recoveryPlanSchema.nullable(),
+  safetyDays: z.number().int().nonnegative().nullable(),
   totals: z.object({
     incomeMinor: minorAmountSchema,
     extraIncomeMinor: minorAmountSchema,
@@ -422,6 +436,25 @@ export const balanceOverviewResponseSchema = z.object({
   budgets: z.array(balanceBudgetStatusSchema),
   upcomingBills: z.array(upcomingBillSchema),
   insights: z.array(balanceInsightSchema),
+  calculation: z.array(z.string()),
+});
+
+export const affordabilityRequestSchema = z.object({
+  amountMinor: positiveMinorAmountSchema,
+  note: z.string().trim().max(120).optional(),
+});
+
+export const affordabilityGoalImpactSchema = z.object({
+  goalId: z.string().uuid(),
+  name: z.string(),
+  delayDays: z.number().int().positive(),
+});
+
+export const affordabilityResponseSchema = z.object({
+  verdict: z.enum(['yes', 'careful', 'no']),
+  title: z.string(),
+  explanation: z.string(),
+  goalImpacts: z.array(affordabilityGoalImpactSchema).max(3),
   calculation: z.array(z.string()),
 });
 
@@ -576,6 +609,11 @@ export type BalanceInsight = z.infer<typeof balanceInsightSchema>;
 export type UpcomingBill = z.infer<typeof upcomingBillSchema>;
 export type BalanceBudgetStatus = z.infer<typeof balanceBudgetStatusSchema>;
 export type BalanceOverviewResponse = z.infer<typeof balanceOverviewResponseSchema>;
+export type MoneyWeather = z.infer<typeof moneyWeatherSchema>;
+export type RecoveryPlan = z.infer<typeof recoveryPlanSchema>;
+export type AffordabilityRequestInput = z.infer<typeof affordabilityRequestSchema>;
+export type AffordabilityGoalImpact = z.infer<typeof affordabilityGoalImpactSchema>;
+export type AffordabilityResponse = z.infer<typeof affordabilityResponseSchema>;
 export type SetBalanceBudgetInput = z.infer<typeof setBalanceBudgetSchema>;
 export type BalanceBudgetsResponse = z.infer<typeof balanceBudgetsResponseSchema>;
 export type SavingsGoal = z.infer<typeof savingsGoalSchema>;

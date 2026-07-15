@@ -1,4 +1,5 @@
 import {
+  affordabilityResponseSchema,
   balanceBudgetsResponseSchema,
   balanceCategoriesResponseSchema,
   balanceCategoryResponseSchema,
@@ -13,6 +14,7 @@ import {
   recurringBillsResponseSchema,
   savingsGoalResponseSchema,
   savingsGoalsResponseSchema,
+  type AffordabilityResponse,
   type BalanceBudgetsResponse,
   type BalanceCategoriesResponse,
   type BalanceCategoryResponse,
@@ -109,6 +111,14 @@ export async function parseSpending(text: string): Promise<ParseSpendingResponse
     body: JSON.stringify({ text }),
   });
   return parseSpendingResponseSchema.parse(payload);
+}
+
+export async function checkAffordability(amountMinor: number): Promise<AffordabilityResponse> {
+  const payload = await apiRequest<unknown>(`/balance/affordability?today=${todayIso()}`, {
+    method: 'POST',
+    body: JSON.stringify({ amountMinor }),
+  });
+  return affordabilityResponseSchema.parse(payload);
 }
 
 export async function loadBudgets(month?: string): Promise<BalanceBudgetsResponse> {

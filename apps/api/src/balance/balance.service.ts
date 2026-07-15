@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type {
+  AffordabilityRequestInput,
+  AffordabilityResponse,
   BalanceBudgetStatus,
   BalanceBudgetsResponse,
   BalanceCategoriesResponse,
@@ -30,7 +32,11 @@ import type {
 } from '@velunee/contracts';
 import { isoDateOnlySchema, monthKeySchema } from '@velunee/contracts';
 import {
+  computeAffordability,
+  computeMoneyWeather,
   computeOverviewNumbers,
+  computeRecovery,
+  computeSafetyDays,
   dueInDays,
   estimatedMonthsRemaining,
   formatMinor,
@@ -379,7 +385,7 @@ export class BalanceService {
     const profile = await this.profileOrDefault(userId);
     const currency = profile.currencyCode;
 
-    const [extraIncomeMinor, spentMinor, todayTotals, categories, categoryTotals, bills] =
+    const [extraIncomeMinor, spentMinor, todayTotals, categories, categoryTotals, bills, goals] =
       await Promise.all([
         this.repository.sumByKind(userId, 'income', window.from, window.to),
         this.repository.sumByKind(userId, 'expense', window.from, window.to),
@@ -389,6 +395,7 @@ export class BalanceService {
         this.repository.listCategories(userId),
         this.repository.spentByCategory(userId, window.from, window.to),
         this.repository.listBills(userId),
+        this.repository.listGoals(userId),
       ]);
 
     const fixedCategoryIds = new Set(
@@ -454,6 +461,26 @@ export class BalanceService {
       weekDeltas,
     });
 
+    const moneyWeather = computeMoneyWeather({
+      remainingMinor: numbers.remainingMinor,
+      suggestedDailyLimitMinor: numbers.suggestedDailyLimitMinor,
+      averageDailySpendMinor: numbers.averageDailySpendMinor,
+      daysElapsed: window.daysElapsed,
+      budgetsOverLimit: budgets.filter((budget) => budget.usedPercent >= 100).length,
+    });
+
+    const recovery = computeRecovery({
+      remainingMinor: numbers.remainingMinor,
+      daysRemaining: window.daysRemaining,
+      currency,
+    });
+
+    const safetyDays = computeSafetyDays({
+      totalSavedMinor: goals.reduce((total, goal) => total + goal.savedMinor, 0),
+      averageDailySpendMinor: numbers.averageDailySpendMinor,
+      fixedExpensesMinor: profile.fixedExpensesMinor,
+    });
+
     const calculation = [
       `Income = monthly income ${formatMinor(currency, profile.monthlyIncomeMinor)} + extra income recorded ${formatMinor(currency, extraIncomeMinor)} = ${formatMinor(currency, numbers.incomeMinor)}`,
       `Fixed costs reserved = the larger of your estimate ${formatMinor(currency, profile.fixedExpensesMinor)} and fixed-category spending ${formatMinor(currency, fixedSpentMinor)} = ${formatMinor(currency, numbers.fixedReservedMinor)}`,
@@ -469,6 +496,9 @@ export class BalanceService {
       month: window.month,
       currency,
       isConfigured: profile.configuredAt !== null,
+      moneyWeather,
+      recovery,
+      safetyDays,
       totals: {
         incomeMinor: numbers.incomeMinor,
         extraIncomeMinor,
@@ -494,6 +524,32 @@ export class BalanceService {
       insights,
       calculation,
     };
+  }
+
+  async checkAffordability(
+    userId: string,
+    input: AffordabilityRequestInput,
+    options: { today?: string },
+  ): Promise<AffordabilityResponse> {
+    const [overview, goals] = await Promise.all([
+      this.getOverview(userId, { today: options.today }),
+      this.repository.listGoals(userId),
+    ]);
+
+    return computeAffordability({
+      amountMinor: input.amountMinor,
+      remainingMinor: overview.totals.remainingMinor,
+      safeToSpendTodayMinor: overview.daily.safeToSpendTodayMinor,
+      daysRemaining: overview.daily.daysRemaining,
+      currency: overview.currency,
+      goals: goals
+        .filter((goal) => goal.achievedAt === null)
+        .map((goal) => ({
+          id: goal.id,
+          name: goal.name,
+          monthlyContributionMinor: goal.monthlyContributionMinor,
+        })),
+    });
   }
 
   async getBudgets(
