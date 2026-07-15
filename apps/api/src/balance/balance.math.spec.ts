@@ -196,12 +196,8 @@ describe('computeMoneyWeather', () => {
   });
 
   it('is partly cloudy slightly over pace and cloudy well over', () => {
-    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_100_00 }).state).toBe(
-      'partly',
-    );
-    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_400_00 }).state).toBe(
-      'cloudy',
-    );
+    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_100_00 }).state).toBe('partly');
+    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_400_00 }).state).toBe('cloudy');
   });
 
   it('is cloudy when any budget is blown and stormy when over plan', () => {
@@ -218,9 +214,7 @@ describe('computeMoneyWeather', () => {
 
 describe('computeRecovery', () => {
   it('is null while the plan is intact', () => {
-    expect(
-      computeRecovery({ remainingMinor: 100, daysRemaining: 10, currency: 'BDT' }),
-    ).toBeNull();
+    expect(computeRecovery({ remainingMinor: 100, daysRemaining: 10, currency: 'BDT' })).toBeNull();
   });
 
   it('spreads the overspend across the remaining days', () => {

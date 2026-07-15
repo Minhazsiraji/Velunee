@@ -234,12 +234,7 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
 
       {data.recovery ? (
         <View style={styles.recoveryCard}>
-          <Ionicons
-            name="trending-up"
-            size={18}
-            color={colors.danger}
-            style={styles.insightIcon}
-          />
+          <Ionicons name="trending-up" size={18} color={colors.danger} style={styles.insightIcon} />
           <Text style={styles.recoveryText}>{data.recovery.message}</Text>
         </View>
       ) : null}

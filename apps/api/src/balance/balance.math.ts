@@ -315,7 +315,8 @@ export function computeAffordability(input: {
     return {
       verdict: 'yes',
       title: 'Yes, comfortably',
-      explanation: "It fits inside today's safe-to-spend amount without touching the rest of your plan.",
+      explanation:
+        "It fits inside today's safe-to-spend amount without touching the rest of your plan.",
       goalImpacts,
       calculation,
     };
@@ -339,9 +340,7 @@ export function computeAffordability(input: {
   }
 
   const shortfallMinor = amountMinor - remaining;
-  calculation.push(
-    `Verdict: amount exceeds remaining by ${formatMinor(currency, shortfallMinor)}`,
-  );
+  calculation.push(`Verdict: amount exceeds remaining by ${formatMinor(currency, shortfallMinor)}`);
   return {
     verdict: 'no',
     title: "Not within this month's plan",
