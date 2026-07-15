@@ -154,6 +154,12 @@ export const memories = assistant.table(
     sourceMessageId: uuid('source_message_id').references(() => messages.id, {
       onDelete: 'set null',
     }),
+    enabled: boolean('enabled').notNull().default(true),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    allowedFeatures: jsonb('allowed_features')
+      .$type<string[]>()
+      .notNull()
+      .default(['chat', 'home']),
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

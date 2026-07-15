@@ -22,6 +22,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import {
   useBalanceCategories,
   useBalanceOverview,
+  useCheckAffordability,
   useCreateBill,
   useCreateTransaction,
   useDeleteBill,
@@ -188,10 +189,18 @@ interface DashboardProps {
   onOpenBill: () => void;
 }
 
+const WEATHER_EMOJI: Record<string, string> = {
+  sunny: '☀️',
+  partly: '🌤️',
+  cloudy: '☁️',
+  stormy: '⛈️',
+};
+
 function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.Element {
   const router = useRouter();
   const deleteBill = useDeleteBill();
   const [showCalculation, setShowCalculation] = useState(false);
+  const [affordVisible, setAffordVisible] = useState(false);
   const { currency, totals, daily } = data;
 
   const spentPercent =
@@ -201,6 +210,11 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
 
   return (
     <ScrollView contentContainerStyle={styles.dashboard} showsVerticalScrollIndicator={false}>
+      <View style={styles.weatherChip}>
+        <Text style={styles.weatherEmoji}>{WEATHER_EMOJI[data.moneyWeather.state] ?? '☀️'}</Text>
+        <Text style={styles.weatherText}>{data.moneyWeather.message}</Text>
+      </View>
+
       <View style={styles.heroCard}>
         <Text style={styles.heroLabel}>Safe to spend today</Text>
         <Text style={styles.heroAmount}>{formatMinor(currency, daily.safeToSpendTodayMinor)}</Text>
@@ -218,11 +232,34 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
         </Text>
       </View>
 
+      {data.recovery ? (
+        <View style={styles.recoveryCard}>
+          <Ionicons name="trending-up" size={18} color={colors.danger} style={styles.insightIcon} />
+          <Text style={styles.recoveryText}>{data.recovery.message}</Text>
+        </View>
+      ) : null}
+
       <View style={styles.statsRow}>
         <StatCard label="Income" value={formatMinor(currency, totals.incomeMinor)} />
         <StatCard label="Spent" value={formatMinor(currency, totals.spentMinor)} />
         <StatCard label="Savings goal" value={formatMinor(currency, totals.savingsTargetMinor)} />
       </View>
+
+      {data.safetyDays !== null ? (
+        <Text style={styles.safetyText}>
+          {`Your savings could cover about ${data.safetyDays} ${data.safetyDays === 1 ? 'day' : 'days'} of spending if income paused.`}
+        </Text>
+      ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Check whether you can afford a purchase"
+        onPress={() => setAffordVisible(true)}
+        style={styles.affordButton}
+      >
+        <Ionicons name="help-circle-outline" size={18} color={colors.primaryLight} />
+        <Text style={styles.affordButtonText}>Can I afford this?</Text>
+      </Pressable>
 
       {data.insights.length > 0 ? (
         <View style={styles.section}>
@@ -396,7 +433,113 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
         onPress={onOpenAdd}
         style={styles.addCta}
       />
+
+      <AffordabilityModal
+        visible={affordVisible}
+        currency={currency}
+        onClose={() => setAffordVisible(false)}
+      />
     </ScrollView>
+  );
+}
+
+function AffordabilityModal({
+  visible,
+  currency,
+  onClose,
+}: {
+  visible: boolean;
+  currency: string;
+  onClose: () => void;
+}): React.JSX.Element {
+  const affordability = useCheckAffordability();
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  function handleCheck(): void {
+    const amountMinor = parseMajorToMinor(amount);
+    if (!amountMinor) {
+      setError('Enter the price, like 2500 or 1,250.50.');
+      return;
+    }
+    setError(null);
+    affordability.mutate(amountMinor);
+  }
+
+  function handleClose(): void {
+    setAmount('');
+    setError(null);
+    affordability.reset();
+    onClose();
+  }
+
+  const result = affordability.data;
+  const verdictColor =
+    result?.verdict === 'yes'
+      ? colors.primaryLight
+      : result?.verdict === 'careful'
+        ? colors.textSecondary
+        : colors.danger;
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+      <KeyboardAvoidingView
+        style={styles.modalRoot}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Can I afford this?</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={handleClose}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <FormField
+            label={`PRICE (${currency})`}
+            placeholder="2500"
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={setAmount}
+            errorText={error ?? undefined}
+          />
+
+          <PrimaryButton label="Check" onPress={handleCheck} isLoading={affordability.isPending} />
+
+          {affordability.isError ? (
+            <Text style={styles.affordError}>
+              {affordability.error instanceof Error
+                ? affordability.error.message
+                : 'Could not check right now. Please try again.'}
+            </Text>
+          ) : null}
+
+          {result ? (
+            <View style={styles.affordResult}>
+              <Text style={[styles.affordVerdict, { color: verdictColor }]}>{result.title}</Text>
+              <Text style={styles.affordExplanation}>{result.explanation}</Text>
+              {result.goalImpacts.map((impact) => (
+                <Text key={impact.goalId} style={styles.affordGoal}>
+                  {`This equals about ${impact.delayDays} ${impact.delayDays === 1 ? 'day' : 'days'} of saving toward “${impact.name}”.`}
+                </Text>
+              ))}
+              <View style={styles.calculationBox}>
+                {result.calculation.map((line, index) => (
+                  <Text key={index} style={styles.calculationLine}>
+                    • {line}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -1117,5 +1260,83 @@ const styles = StyleSheet.create({
   },
   categoryChipTextActive: {
     color: colors.white,
+  },
+  weatherChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderColor: colors.borderSoft,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  weatherEmoji: {
+    fontSize: 18,
+  },
+  weatherText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  recoveryCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.dangerBackground,
+    borderColor: colors.dangerBorder,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+  },
+  recoveryText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  safetyText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  affordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    backgroundColor: colors.surface,
+  },
+  affordButtonText: {
+    color: colors.primaryLight,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  affordError: {
+    color: colors.danger,
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  affordResult: {
+    gap: 6,
+  },
+  affordVerdict: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  affordExplanation: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  affordGoal: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

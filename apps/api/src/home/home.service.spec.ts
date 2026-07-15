@@ -44,6 +44,9 @@ function balanceOverview(overrides: {
     month: '2026-07',
     currency: 'BDT',
     isConfigured: overrides.isConfigured ?? true,
+    moneyWeather: { state: 'sunny', message: 'Sunny — your money is on track this month.' },
+    recovery: null,
+    safetyDays: null,
     totals: {
       incomeMinor: 60_000_00,
       extraIncomeMinor: 0,

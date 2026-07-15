@@ -8,6 +8,7 @@ import type {
 } from '@velunee/contracts';
 
 import {
+  checkAffordability,
   contributeToGoal,
   createBill,
   createGoal,
@@ -87,6 +88,12 @@ export function useDeleteTransaction() {
 export function useParseSpending() {
   return useMutation({
     mutationFn: (text: string) => parseSpending(text),
+  });
+}
+
+export function useCheckAffordability() {
+  return useMutation({
+    mutationFn: (amountMinor: number) => checkAffordability(amountMinor),
   });
 }
 

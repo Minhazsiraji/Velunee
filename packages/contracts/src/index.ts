@@ -386,10 +386,24 @@ export const balanceBudgetStatusSchema = z.object({
   usedPercent: z.number().int().nonnegative(),
 });
 
+export const moneyWeatherSchema = z.object({
+  state: z.enum(['sunny', 'partly', 'cloudy', 'stormy']),
+  message: z.string(),
+});
+
+export const recoveryPlanSchema = z.object({
+  overspendMinor: positiveMinorAmountSchema,
+  dailyCutMinor: minorAmountSchema,
+  message: z.string(),
+});
+
 export const balanceOverviewResponseSchema = z.object({
   month: monthKeySchema,
   currency: currencyCodeSchema,
   isConfigured: z.boolean(),
+  moneyWeather: moneyWeatherSchema,
+  recovery: recoveryPlanSchema.nullable(),
+  safetyDays: z.number().int().nonnegative().nullable(),
   totals: z.object({
     incomeMinor: minorAmountSchema,
     extraIncomeMinor: minorAmountSchema,
@@ -422,6 +436,25 @@ export const balanceOverviewResponseSchema = z.object({
   budgets: z.array(balanceBudgetStatusSchema),
   upcomingBills: z.array(upcomingBillSchema),
   insights: z.array(balanceInsightSchema),
+  calculation: z.array(z.string()),
+});
+
+export const affordabilityRequestSchema = z.object({
+  amountMinor: positiveMinorAmountSchema,
+  note: z.string().trim().max(120).optional(),
+});
+
+export const affordabilityGoalImpactSchema = z.object({
+  goalId: z.string().uuid(),
+  name: z.string(),
+  delayDays: z.number().int().positive(),
+});
+
+export const affordabilityResponseSchema = z.object({
+  verdict: z.enum(['yes', 'careful', 'no']),
+  title: z.string(),
+  explanation: z.string(),
+  goalImpacts: z.array(affordabilityGoalImpactSchema).max(3),
   calculation: z.array(z.string()),
 });
 
@@ -576,6 +609,11 @@ export type BalanceInsight = z.infer<typeof balanceInsightSchema>;
 export type UpcomingBill = z.infer<typeof upcomingBillSchema>;
 export type BalanceBudgetStatus = z.infer<typeof balanceBudgetStatusSchema>;
 export type BalanceOverviewResponse = z.infer<typeof balanceOverviewResponseSchema>;
+export type MoneyWeather = z.infer<typeof moneyWeatherSchema>;
+export type RecoveryPlan = z.infer<typeof recoveryPlanSchema>;
+export type AffordabilityRequestInput = z.infer<typeof affordabilityRequestSchema>;
+export type AffordabilityGoalImpact = z.infer<typeof affordabilityGoalImpactSchema>;
+export type AffordabilityResponse = z.infer<typeof affordabilityResponseSchema>;
 export type SetBalanceBudgetInput = z.infer<typeof setBalanceBudgetSchema>;
 export type BalanceBudgetsResponse = z.infer<typeof balanceBudgetsResponseSchema>;
 export type SavingsGoal = z.infer<typeof savingsGoalSchema>;
@@ -676,3 +714,78 @@ export type HomeBillCard = z.infer<typeof homeBillCardSchema>;
 export type HomeConversationCard = z.infer<typeof homeConversationCardSchema>;
 export type HomeSuggestion = z.infer<typeof homeSuggestionSchema>;
 export type HomeOverviewResponse = z.infer<typeof homeOverviewResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Personal Memory Vault — what Velunee remembers, visible and controllable.
+// Community is deliberately not a valid feature key: personal memories can
+// never be used there, by construction.
+// ---------------------------------------------------------------------------
+
+export const memoryTypeSchema = z.enum([
+  'preference',
+  'goal',
+  'routine',
+  'project',
+  'person',
+  'date',
+  'communication',
+  'temporary',
+]);
+
+export const memoryFeatureSchema = z.enum(['chat', 'home', 'balance', 'style', 'learn']);
+
+export const memoryItemSchema = z.object({
+  id: z.string().uuid(),
+  type: memoryTypeSchema,
+  content: z.string(),
+  enabled: z.boolean(),
+  allowedFeatures: z.array(memoryFeatureSchema),
+  source: z.enum(['chat', 'manual']),
+  lastUsedAt: z.string().datetime().nullable(),
+  expiresAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export const memoriesResponseSchema = z.object({
+  memories: z.array(memoryItemSchema),
+});
+
+export const createMemorySchema = z.object({
+  type: memoryTypeSchema.default('preference'),
+  content: z.string().trim().min(1).max(600),
+  allowedFeatures: z.array(memoryFeatureSchema).min(1).optional(),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
+});
+
+export const updateMemorySchema = z
+  .object({
+    type: memoryTypeSchema.optional(),
+    content: z.string().trim().min(1).max(600).optional(),
+    enabled: z.boolean().optional(),
+    allowedFeatures: z.array(memoryFeatureSchema).min(1).optional(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const memoryResponseSchema = z.object({
+  memory: memoryItemSchema,
+});
+
+export const memoryDeletedResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export const memoriesClearedResponseSchema = z.object({
+  deletedCount: z.number().int().nonnegative(),
+});
+
+export type MemoryType = z.infer<typeof memoryTypeSchema>;
+export type MemoryFeature = z.infer<typeof memoryFeatureSchema>;
+export type MemoryItem = z.infer<typeof memoryItemSchema>;
+export type MemoriesResponse = z.infer<typeof memoriesResponseSchema>;
+export type CreateMemoryInput = z.infer<typeof createMemorySchema>;
+export type UpdateMemoryInput = z.infer<typeof updateMemorySchema>;
+export type MemoryResponse = z.infer<typeof memoryResponseSchema>;
+export type MemoryDeletedResponse = z.infer<typeof memoryDeletedResponseSchema>;
+export type MemoriesClearedResponse = z.infer<typeof memoriesClearedResponseSchema>;
