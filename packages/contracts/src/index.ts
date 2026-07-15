@@ -255,11 +255,7 @@ export const currencyCodeSchema = z
   .toUpperCase()
   .regex(/^[A-Z]{3}$/, 'Use a 3-letter currency code such as BDT');
 
-export const minorAmountSchema = z
-  .number()
-  .int()
-  .nonnegative()
-  .max(1_000_000_000_000);
+export const minorAmountSchema = z.number().int().nonnegative().max(1_000_000_000_000);
 
 export const positiveMinorAmountSchema = z.number().int().positive().max(1_000_000_000_000);
 

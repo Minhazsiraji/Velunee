@@ -594,7 +594,10 @@ export class BalanceService {
     };
   }
 
-  async createBill(userId: string, input: CreateRecurringBillInput): Promise<RecurringBillResponse> {
+  async createBill(
+    userId: string,
+    input: CreateRecurringBillInput,
+  ): Promise<RecurringBillResponse> {
     const bill = await this.repository.createBill(userId, input);
     const today = resolveMonthWindow().today;
     return {
@@ -630,15 +633,21 @@ export class BalanceService {
     const previousMonth = previousMonthOf(window.month);
     const previousWindow = resolveMonthWindow(previousMonth, window.today);
 
-    const [extraIncomeMinor, spentMinor, categoryTotals, dayTotals, previousSpentMinor, categories] =
-      await Promise.all([
-        this.repository.sumByKind(userId, 'income', window.from, window.to),
-        this.repository.sumByKind(userId, 'expense', window.from, window.to),
-        this.repository.spentByCategory(userId, window.from, window.to),
-        this.repository.spentByDay(userId, window.from, window.to),
-        this.repository.sumByKind(userId, 'expense', previousWindow.from, previousWindow.to),
-        this.repository.listCategories(userId),
-      ]);
+    const [
+      extraIncomeMinor,
+      spentMinor,
+      categoryTotals,
+      dayTotals,
+      previousSpentMinor,
+      categories,
+    ] = await Promise.all([
+      this.repository.sumByKind(userId, 'income', window.from, window.to),
+      this.repository.sumByKind(userId, 'expense', window.from, window.to),
+      this.repository.spentByCategory(userId, window.from, window.to),
+      this.repository.spentByDay(userId, window.from, window.to),
+      this.repository.sumByKind(userId, 'expense', previousWindow.from, previousWindow.to),
+      this.repository.listCategories(userId),
+    ]);
 
     const incomeMinor = profile.monthlyIncomeMinor + extraIncomeMinor;
     const savedMinor = incomeMinor - spentMinor;

@@ -1,4 +1,5 @@
 # Velunee - Final Potential Improvement Outline
+
 ## User-Perspective Product Requirements and Future Instructions
 
 This document defines how Velunee should evolve into a useful, trusted and differentiated personal AI companion. It focuses on what users should experience, not technical implementation.
@@ -203,12 +204,12 @@ Offer one simple action the user can take immediately.
 
 ## Example
 
-> **Best option:** Wear your navy outfit and carry a light jacket.  
->   
-> **Why:** It matches your office preference, the afternoon temperature will be lower, and you already selected this outfit as comfortable.  
->   
-> **Alternative:** The beige outfit is suitable if you prefer a more formal look.  
->   
+> **Best option:** Wear your navy outfit and carry a light jacket.
+>
+> **Why:** It matches your office preference, the afternoon temperature will be lower, and you already selected this outfit as comfortable.
+>
+> **Alternative:** The beige outfit is suitable if you prefer a more formal look.
+>
 > **Next step:** Save the navy outfit for today.
 
 The user must always remain in control.
@@ -1316,20 +1317,20 @@ A user finishing a task quickly can be a successful outcome.
 
 Use the following instructions whenever improving Velunee:
 
-> Improve Velunee as one connected personal AI companion rather than a collection of separate tools. Every new feature must solve a clear user problem, connect with the wider assistant when permission is granted and provide a visible benefit.  
->   
-> Prioritize the intelligent Home experience, Velunee Daily, Velunee Decide, user-controlled memory, transparent recommendations, direct actions, privacy, international support and community safety.  
->   
-> Keep the interface simple. Do not overload screens or onboarding. Introduce advanced features progressively.  
->   
-> AI-generated advice must clearly separate facts, calculations, assumptions and personal recommendations. Important financial calculations must come from a deterministic system and include "How was this calculated?"  
->   
-> Users must be able to view, edit and delete remembered information. Financial information, private chats, uploaded images and personal memories must never be shared with the community automatically.  
->   
-> Maintain useful behaviour when the AI service, internet connection or external integration is unavailable. Show clear loading, retry, offline and error states without losing user input.  
->   
-> Do not prioritize investment trading, lending, dating, live streaming, public financial rankings or other distracting features until the core companion experience is stable, trusted and genuinely useful.  
->   
+> Improve Velunee as one connected personal AI companion rather than a collection of separate tools. Every new feature must solve a clear user problem, connect with the wider assistant when permission is granted and provide a visible benefit.
+>
+> Prioritize the intelligent Home experience, Velunee Daily, Velunee Decide, user-controlled memory, transparent recommendations, direct actions, privacy, international support and community safety.
+>
+> Keep the interface simple. Do not overload screens or onboarding. Introduce advanced features progressively.
+>
+> AI-generated advice must clearly separate facts, calculations, assumptions and personal recommendations. Important financial calculations must come from a deterministic system and include "How was this calculated?"
+>
+> Users must be able to view, edit and delete remembered information. Financial information, private chats, uploaded images and personal memories must never be shared with the community automatically.
+>
+> Maintain useful behaviour when the AI service, internet connection or external integration is unavailable. Show clear loading, retry, offline and error states without losing user input.
+>
+> Do not prioritize investment trading, lending, dating, live streaming, public financial rankings or other distracting features until the core companion experience is stable, trusted and genuinely useful.
+>
 > Evaluate every improvement from the user's perspective: Does it save time, reduce confusion, improve a decision, protect privacy or help the user make progress?
 
 ---

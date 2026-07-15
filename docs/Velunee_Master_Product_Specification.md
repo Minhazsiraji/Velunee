@@ -1,17 +1,17 @@
 # Velunee — Master Product Specification
 
 **Product:** Velunee — Personal AI Companion
-**Tagline:** *Ask. Decide. Shine.*
+**Tagline:** _Ask. Decide. Shine._
 **Positioning:** Velunee is a personal AI companion that understands your daily life, connects your plans, money, learning, style and goals, and helps you confidently decide what to do next.
 **Platforms:** Android first (Play Store), then iOS and web.
 **Last updated:** 2026-07-15
 
 This is the single source of truth for Velunee product and engineering work. It consolidates and supersedes scattered notes and chat discussions. Two companion documents carry the full detail and are part of this specification:
 
-| Document | Contents |
-|---|---|
+| Document                                                                 | Contents                                                                                                                                            |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Velunee_Final_App_Architecture.md](./Velunee_Final_App_Architecture.md) | Approved production architecture: modular NestJS monolith, provider adapters, 19 modules, database domain layout, technology stack, scaling roadmap |
-| [Velunee_Final_43_Improvements.md](./Velunee_Final_43_Improvements.md) | 43-section user-perspective improvement outline: product north star, six experiences, improvement phases, acceptance criteria, coding instructions |
+| [Velunee_Final_43_Improvements.md](./Velunee_Final_43_Improvements.md)   | 43-section user-perspective improvement outline: product north star, six experiences, improvement phases, acceptance criteria, coding instructions  |
 
 Read both before starting significant product or engineering work. Section 42 of the improvements document contains the standing instructions that apply to **every** future change.
 
@@ -23,27 +23,28 @@ Velunee must not feel like a collection of unrelated tools. It should feel like 
 
 Every feature must support at least one of: save time, reduce confusion, improve daily decisions, increase confidence, protect privacy, or support progress toward personal goals. Features are never added merely because competitors have them.
 
-**Primary promise:** *Tell Velunee what is happening in your life. It will understand the situation, consider what matters to you and help you choose the best next step.*
-**Short version:** *One companion. Smarter everyday decisions.*
+**Primary promise:** _Tell Velunee what is happening in your life. It will understand the situation, consider what matters to you and help you choose the best next step._
+**Short version:** _One companion. Smarter everyday decisions._
 
 ## 2. The six connected experiences
 
 All product work organizes around six experiences operating through one shared assistant and one user-controlled memory system:
 
-| Experience | Purpose | Status (2026-07) |
-|---|---|---|
-| **Velunee Daily** | Personalized daily overview: weather, schedule, safe-to-spend, reminders, one useful suggestion | Not started — next major milestone |
-| **Velunee Decide** | Context-aware decision help: recommendation + why + alternative + impact + next action | Not started — signature feature, Phase 2 |
-| **Velunee Balance** | Money tracking, safe spending, budgets, savings goals, bill reminders | **MVP built** (`feature/velunee-balance`) |
-| **Velunee Style** | Wardrobe-aware outfit and shopping guidance (no beauty scores, ever) | Partial — vision/outfit advice exists; digital wardrobe not started |
-| **Velunee Learn** | Structured, personalized study support (teach, don't just answer) | Not started |
-| **Velunee Circle** | Safe community and private groups | Partial — feed, posts, reactions, moderation queue exist; groups/blocking/reporting not started |
+| Experience          | Purpose                                                                                         | Status (2026-07)                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Velunee Daily**   | Personalized daily overview: weather, schedule, safe-to-spend, reminders, one useful suggestion | Not started — next major milestone                                                              |
+| **Velunee Decide**  | Context-aware decision help: recommendation + why + alternative + impact + next action          | Not started — signature feature, Phase 2                                                        |
+| **Velunee Balance** | Money tracking, safe spending, budgets, savings goals, bill reminders                           | **MVP built** (`feature/velunee-balance`)                                                       |
+| **Velunee Style**   | Wardrobe-aware outfit and shopping guidance (no beauty scores, ever)                            | Partial — vision/outfit advice exists; digital wardrobe not started                             |
+| **Velunee Learn**   | Structured, personalized study support (teach, don't just answer)                               | Not started                                                                                     |
+| **Velunee Circle**  | Safe community and private groups                                                               | Partial — feed, posts, reactions, moderation queue exist; groups/blocking/reporting not started |
 
 ## 3. Current implementation status
 
 What exists in the repository today (`main` + open feature branches):
 
 ### Built and merged
+
 - **Monorepo foundation** — pnpm + Turborepo: `apps/mobile` (Expo/React Native), `apps/api` (NestJS), `apps/admin` (Next.js), `apps/worker`; shared packages: `contracts` (zod), `database` (Drizzle + hand-written SQL migrations with RLS), `auth-core`, `ai-core`, `moderation-core`, `ui`, `validation`, `shared`, `observability`, `storage-core`.
 - **Auth & account** — Supabase auth (email sign-up/in/reset, guest + guest upgrade), profile/settings, preferences, in-app account deletion (`DELETE /account` with service-role cleanup).
 - **Chat** — Gemini-backed conversation with SSE streaming, conversation management (list/rename/delete), encrypted message content, model-usage tracking.
@@ -54,9 +55,11 @@ What exists in the repository today (`main` + open feature branches):
 - **Release engineering** — Android/EAS build config, expo-updates, CI (format/typecheck/build), Play Store docs.
 
 ### Built, in review (branch `feature/velunee-balance`)
+
 - **Velunee Balance MVP** — see §4 below.
 
 ### Not started (ordered by the improvement phases in the 43-section outline)
+
 1. **Phase 1 remainder:** Home command centre, basic Daily Brief, Personal Memory Vault UI, Privacy Centre, notification system.
 2. **Phase 2:** Velunee Decide, "Why this recommendation?", cross-feature context with permission boundaries, Do-It-for-Me actions, Money Weather.
 3. **Phase 3:** Style digital wardrobe, structured Learn mode, Planner, richer weather guidance, international settings (currency/date/number formats, RTL).

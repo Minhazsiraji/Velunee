@@ -203,9 +203,7 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
     <ScrollView contentContainerStyle={styles.dashboard} showsVerticalScrollIndicator={false}>
       <View style={styles.heroCard}>
         <Text style={styles.heroLabel}>Safe to spend today</Text>
-        <Text style={styles.heroAmount}>
-          {formatMinor(currency, daily.safeToSpendTodayMinor)}
-        </Text>
+        <Text style={styles.heroAmount}>{formatMinor(currency, daily.safeToSpendTodayMinor)}</Text>
         <Text style={styles.heroHint}>
           {formatMinor(currency, totals.remainingMinor)} left for {daily.daysRemaining}{' '}
           {daily.daysRemaining === 1 ? 'day' : 'days'} · daily limit{' '}
@@ -223,10 +221,7 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
       <View style={styles.statsRow}>
         <StatCard label="Income" value={formatMinor(currency, totals.incomeMinor)} />
         <StatCard label="Spent" value={formatMinor(currency, totals.spentMinor)} />
-        <StatCard
-          label="Savings goal"
-          value={formatMinor(currency, totals.savingsTargetMinor)}
-        />
+        <StatCard label="Savings goal" value={formatMinor(currency, totals.savingsTargetMinor)} />
       </View>
 
       {data.insights.length > 0 ? (
@@ -395,7 +390,12 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
         </View>
       ) : null}
 
-      <PrimaryButton label="Add income or expense" icon="add" onPress={onOpenAdd} style={styles.addCta} />
+      <PrimaryButton
+        label="Add income or expense"
+        icon="add"
+        onPress={onOpenAdd}
+        style={styles.addCta}
+      />
     </ScrollView>
   );
 }
@@ -524,7 +524,12 @@ function AddEntryModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add income or expense</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={close}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={close}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -681,7 +686,12 @@ function AddBillModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Bill reminder</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={close}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={close}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>

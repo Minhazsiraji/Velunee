@@ -204,7 +204,12 @@ function CreateGoalModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New savings goal</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={close}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={close}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -285,7 +290,12 @@ function ContributeModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add to {goal?.name}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={close}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={close}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>

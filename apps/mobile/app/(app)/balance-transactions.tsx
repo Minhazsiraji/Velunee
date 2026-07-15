@@ -22,8 +22,7 @@ export default function BalanceTransactionsScreen(): React.JSX.Element {
   const transactionsQuery = useBalanceTransactions();
   const deleteTransaction = useDeleteTransaction();
 
-  const transactions =
-    transactionsQuery.data?.pages.flatMap((page) => page.transactions) ?? [];
+  const transactions = transactionsQuery.data?.pages.flatMap((page) => page.transactions) ?? [];
 
   function confirmDelete(transaction: BalanceTransaction): void {
     Alert.alert(
@@ -82,10 +81,7 @@ export default function BalanceTransactionsScreen(): React.JSX.Element {
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View
-              style={[
-                styles.kindBadge,
-                item.kind === 'income' ? styles.kindBadgeIncome : null,
-              ]}
+              style={[styles.kindBadge, item.kind === 'income' ? styles.kindBadgeIncome : null]}
             >
               <Ionicons
                 name={item.kind === 'income' ? 'arrow-down' : 'arrow-up'}

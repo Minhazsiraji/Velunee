@@ -1,8 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type {
-  BalancePaymentMethod,
-  BalanceTransactionKind,
-} from '@velunee/contracts';
+import type { BalancePaymentMethod, BalanceTransactionKind } from '@velunee/contracts';
 import {
   moneyBudgets,
   moneyCategories,
@@ -288,13 +285,7 @@ export class BalanceRepository {
         total: sql<string>`coalesce(sum(${moneyTransactions.amountMinor}), 0)`,
       })
       .from(moneyTransactions)
-      .where(
-        and(
-          eq(moneyTransactions.userId, userId),
-          isNull(moneyTransactions.deletedAt),
-          extra,
-        ),
-      );
+      .where(and(eq(moneyTransactions.userId, userId), isNull(moneyTransactions.deletedAt), extra));
     return Number(row?.total ?? 0);
   }
 
