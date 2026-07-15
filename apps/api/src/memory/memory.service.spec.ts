@@ -16,9 +16,9 @@ function buildRow(overrides: Partial<MemoryRow> = {}): MemoryRow {
   };
 }
 
-function buildRepository(rows: MemoryRow[] = []): jest.Mocked<
-  Pick<MemoryRepository, 'list' | 'create' | 'update' | 'softDelete' | 'clearAll'>
-> {
+function buildRepository(
+  rows: MemoryRow[] = [],
+): jest.Mocked<Pick<MemoryRepository, 'list' | 'create' | 'update' | 'softDelete' | 'clearAll'>> {
   return {
     list: jest.fn().mockResolvedValue(rows),
     create: jest.fn().mockImplementation((_userId, input) =>

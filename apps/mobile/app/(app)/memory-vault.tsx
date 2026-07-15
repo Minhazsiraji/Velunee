@@ -105,8 +105,8 @@ export default function MemoryVaultScreen(): React.JSX.Element {
         ListHeaderComponent={
           <Text style={styles.explainer}>
             Everything Velunee remembers about you lives here. You can edit, pause, or delete any
-            memory, and choose which parts of the app may use it. Memories are never shared with
-            the community.
+            memory, and choose which parts of the app may use it. Memories are never shared with the
+            community.
           </Text>
         }
         ListEmptyComponent={
@@ -268,10 +268,7 @@ function AddMemoryModal({
       setType('preference');
       onClose();
     } catch (error) {
-      Alert.alert(
-        'Could not save',
-        error instanceof Error ? error.message : 'Please try again.',
-      );
+      Alert.alert('Could not save', error instanceof Error ? error.message : 'Please try again.');
     }
   }
 
@@ -284,7 +281,12 @@ function AddMemoryModal({
         <View style={styles.modalCard}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Remember this</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={onClose}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={onClose}
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -297,7 +299,9 @@ function AddMemoryModal({
                 onPress={() => setType(key)}
                 style={[styles.featureChip, type === key && styles.featureChipActive]}
               >
-                <Text style={[styles.featureChipText, type === key && styles.featureChipTextActive]}>
+                <Text
+                  style={[styles.featureChipText, type === key && styles.featureChipTextActive]}
+                >
                   {TYPE_LABELS[key]}
                 </Text>
               </Pressable>
