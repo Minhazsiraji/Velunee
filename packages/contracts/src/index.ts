@@ -676,3 +676,78 @@ export type HomeBillCard = z.infer<typeof homeBillCardSchema>;
 export type HomeConversationCard = z.infer<typeof homeConversationCardSchema>;
 export type HomeSuggestion = z.infer<typeof homeSuggestionSchema>;
 export type HomeOverviewResponse = z.infer<typeof homeOverviewResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Personal Memory Vault — what Velunee remembers, visible and controllable.
+// Community is deliberately not a valid feature key: personal memories can
+// never be used there, by construction.
+// ---------------------------------------------------------------------------
+
+export const memoryTypeSchema = z.enum([
+  'preference',
+  'goal',
+  'routine',
+  'project',
+  'person',
+  'date',
+  'communication',
+  'temporary',
+]);
+
+export const memoryFeatureSchema = z.enum(['chat', 'home', 'balance', 'style', 'learn']);
+
+export const memoryItemSchema = z.object({
+  id: z.string().uuid(),
+  type: memoryTypeSchema,
+  content: z.string(),
+  enabled: z.boolean(),
+  allowedFeatures: z.array(memoryFeatureSchema),
+  source: z.enum(['chat', 'manual']),
+  lastUsedAt: z.string().datetime().nullable(),
+  expiresAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export const memoriesResponseSchema = z.object({
+  memories: z.array(memoryItemSchema),
+});
+
+export const createMemorySchema = z.object({
+  type: memoryTypeSchema.default('preference'),
+  content: z.string().trim().min(1).max(600),
+  allowedFeatures: z.array(memoryFeatureSchema).min(1).optional(),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
+});
+
+export const updateMemorySchema = z
+  .object({
+    type: memoryTypeSchema.optional(),
+    content: z.string().trim().min(1).max(600).optional(),
+    enabled: z.boolean().optional(),
+    allowedFeatures: z.array(memoryFeatureSchema).min(1).optional(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const memoryResponseSchema = z.object({
+  memory: memoryItemSchema,
+});
+
+export const memoryDeletedResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export const memoriesClearedResponseSchema = z.object({
+  deletedCount: z.number().int().nonnegative(),
+});
+
+export type MemoryType = z.infer<typeof memoryTypeSchema>;
+export type MemoryFeature = z.infer<typeof memoryFeatureSchema>;
+export type MemoryItem = z.infer<typeof memoryItemSchema>;
+export type MemoriesResponse = z.infer<typeof memoriesResponseSchema>;
+export type CreateMemoryInput = z.infer<typeof createMemorySchema>;
+export type UpdateMemoryInput = z.infer<typeof updateMemorySchema>;
+export type MemoryResponse = z.infer<typeof memoryResponseSchema>;
+export type MemoryDeletedResponse = z.infer<typeof memoryDeletedResponseSchema>;
+export type MemoriesClearedResponse = z.infer<typeof memoriesClearedResponseSchema>;

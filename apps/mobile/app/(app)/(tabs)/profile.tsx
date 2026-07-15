@@ -85,8 +85,28 @@ export default function ProfileScreen(): React.JSX.Element {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/(app)/settings')}
+          onPress={() => router.push('/(app)/memory-vault')}
           style={({ pressed }) => [styles.menuRow, pressed && styles.menuRowPressed]}
+        >
+          <Ionicons name="bulb-outline" size={22} color={colors.text} />
+          <Text style={styles.menuLabel}>Memory Vault</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/(app)/privacy-centre')}
+          style={({ pressed }) => [styles.menuRowCompact, pressed && styles.menuRowPressed]}
+        >
+          <Ionicons name="shield-checkmark-outline" size={22} color={colors.text} />
+          <Text style={styles.menuLabel}>Privacy Centre</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/(app)/settings')}
+          style={({ pressed }) => [styles.menuRowCompact, pressed && styles.menuRowPressed]}
         >
           <Ionicons name="settings-outline" size={22} color={colors.text} />
           <Text style={styles.menuLabel}>Settings</Text>
@@ -188,6 +208,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     marginTop: 26,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  menuRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 12,
     paddingHorizontal: 18,
     paddingVertical: 18,
     borderRadius: 16,
