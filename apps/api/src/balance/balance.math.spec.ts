@@ -196,8 +196,12 @@ describe('computeMoneyWeather', () => {
   });
 
   it('is partly cloudy slightly over pace and cloudy well over', () => {
-    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_100_00 }).state).toBe('partly');
-    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_400_00 }).state).toBe('cloudy');
+    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_100_00 }).state).toBe(
+      'partly',
+    );
+    expect(computeMoneyWeather({ ...base, averageDailySpendMinor: 1_400_00 }).state).toBe(
+      'cloudy',
+    );
   });
 
   it('is cloudy when any budget is blown and stormy when over plan', () => {
@@ -220,22 +224,14 @@ describe('computeRecovery', () => {
   });
 
   it('spreads the overspend across the remaining days', () => {
-    const plan = computeRecovery({
-      remainingMinor: -9_000_00,
-      daysRemaining: 18,
-      currency: 'BDT',
-    });
+    const plan = computeRecovery({ remainingMinor: -9_000_00, daysRemaining: 18, currency: 'BDT' });
     expect(plan?.overspendMinor).toBe(9_000_00);
     expect(plan?.dailyCutMinor).toBe(Math.ceil(9_000_00 / 18));
     expect(plan?.message).toContain('18 days');
   });
 
   it('stays supportive when the month is already over', () => {
-    const plan = computeRecovery({
-      remainingMinor: -5_000_00,
-      daysRemaining: 0,
-      currency: 'BDT',
-    });
+    const plan = computeRecovery({ remainingMinor: -5_000_00, daysRemaining: 0, currency: 'BDT' });
     expect(plan?.dailyCutMinor).toBe(0);
     expect(plan?.message).toContain('next month');
   });
@@ -255,10 +251,18 @@ describe('computeSafetyDays', () => {
 
   it('is null without savings or spending data', () => {
     expect(
-      computeSafetyDays({ totalSavedMinor: 0, averageDailySpendMinor: 500_00, fixedExpensesMinor: 0 }),
+      computeSafetyDays({
+        totalSavedMinor: 0,
+        averageDailySpendMinor: 500_00,
+        fixedExpensesMinor: 0,
+      }),
     ).toBeNull();
     expect(
-      computeSafetyDays({ totalSavedMinor: 10_000_00, averageDailySpendMinor: 0, fixedExpensesMinor: 0 }),
+      computeSafetyDays({
+        totalSavedMinor: 10_000_00,
+        averageDailySpendMinor: 0,
+        fixedExpensesMinor: 0,
+      }),
     ).toBeNull();
   });
 });

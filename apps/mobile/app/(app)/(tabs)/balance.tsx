@@ -234,7 +234,12 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
 
       {data.recovery ? (
         <View style={styles.recoveryCard}>
-          <Ionicons name="trending-up" size={18} color={colors.danger} style={styles.insightIcon} />
+          <Ionicons
+            name="trending-up"
+            size={18}
+            color={colors.danger}
+            style={styles.insightIcon}
+          />
           <Text style={styles.recoveryText}>{data.recovery.message}</Text>
         </View>
       ) : null}
@@ -247,8 +252,7 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
 
       {data.safetyDays !== null ? (
         <Text style={styles.safetyText}>
-          Your savings could cover about {data.safetyDays}{' '}
-          {data.safetyDays === 1 ? 'day' : 'days'} of spending if income paused.
+          {`Your savings could cover about ${data.safetyDays} ${data.safetyDays === 1 ? 'day' : 'days'} of spending if income paused.`}
         </Text>
       ) : null}
 
@@ -510,11 +514,7 @@ function AffordabilityModal({
             errorText={error ?? undefined}
           />
 
-          <PrimaryButton
-            label="Check"
-            onPress={handleCheck}
-            isLoading={affordability.isPending}
-          />
+          <PrimaryButton label="Check" onPress={handleCheck} isLoading={affordability.isPending} />
 
           {affordability.isError ? (
             <Text style={styles.affordError}>
@@ -530,8 +530,7 @@ function AffordabilityModal({
               <Text style={styles.affordExplanation}>{result.explanation}</Text>
               {result.goalImpacts.map((impact) => (
                 <Text key={impact.goalId} style={styles.affordGoal}>
-                  This equals about {impact.delayDays}{' '}
-                  {impact.delayDays === 1 ? 'day' : 'days'} of saving toward “{impact.name}”.
+                  {`This equals about ${impact.delayDays} ${impact.delayDays === 1 ? 'day' : 'days'} of saving toward “${impact.name}”.`}
                 </Text>
               ))}
               <View style={styles.calculationBox}>

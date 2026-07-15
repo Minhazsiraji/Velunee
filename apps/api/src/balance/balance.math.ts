@@ -264,8 +264,7 @@ export function computeSafetyDays(input: {
   averageDailySpendMinor: number;
   fixedExpensesMinor: number;
 }): number | null {
-  const dailyBurnMinor =
-    input.averageDailySpendMinor + Math.round(input.fixedExpensesMinor / 30);
+  const dailyBurnMinor = input.averageDailySpendMinor + Math.round(input.fixedExpensesMinor / 30);
   if (input.totalSavedMinor <= 0 || dailyBurnMinor <= 0) return null;
   return Math.floor(input.totalSavedMinor / dailyBurnMinor);
 }
