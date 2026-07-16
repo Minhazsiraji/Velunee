@@ -22,5 +22,6 @@ import { LearnService } from './learn.service';
     LearnService,
     LearnRepository,
   ],
+  exports: [LearnService],
 })
 export class LearnModule {}

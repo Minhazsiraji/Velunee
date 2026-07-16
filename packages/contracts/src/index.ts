@@ -1158,3 +1158,65 @@ export type PlannerDayLoad = z.infer<typeof plannerDayLoadSchema>;
 export type PlannerDayResponse = z.infer<typeof plannerDayResponseSchema>;
 export type PlannerTaskResponse = z.infer<typeof plannerTaskResponseSchema>;
 export type PlannerDeletedResponse = z.infer<typeof plannerDeletedResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Notifications — a "what needs your attention" feed composed from
+// Balance, Planner and Learn, respecting the user's categories and quiet hours
+// (improvement outline §25). Useful, never nagging.
+// ---------------------------------------------------------------------------
+
+export const notificationCategorySchema = z.enum(['bills', 'balance', 'tasks', 'exams']);
+export const notificationToneSchema = z.enum(['positive', 'neutral', 'warning']);
+
+export const notificationItemSchema = z.object({
+  id: z.string(),
+  category: notificationCategorySchema,
+  tone: notificationToneSchema,
+  title: z.string(),
+  body: z.string(),
+});
+
+export const notificationPreferencesSchema = z.object({
+  bills: z.boolean(),
+  balance: z.boolean(),
+  tasks: z.boolean(),
+  exams: z.boolean(),
+  quietHoursStart: z.number().int().min(0).max(23).nullable(),
+  quietHoursEnd: z.number().int().min(0).max(23).nullable(),
+  lockScreenPrivacy: z.boolean(),
+  dailySummaryOnly: z.boolean(),
+});
+
+export const updateNotificationPreferencesSchema = z
+  .object({
+    bills: z.boolean().optional(),
+    balance: z.boolean().optional(),
+    tasks: z.boolean().optional(),
+    exams: z.boolean().optional(),
+    quietHoursStart: z.number().int().min(0).max(23).nullish(),
+    quietHoursEnd: z.number().int().min(0).max(23).nullish(),
+    lockScreenPrivacy: z.boolean().optional(),
+    dailySummaryOnly: z.boolean().optional(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const notificationsResponseSchema = z.object({
+  notifications: z.array(notificationItemSchema),
+  quietHoursActive: z.boolean(),
+});
+
+export const notificationPreferencesResponseSchema = z.object({
+  preferences: notificationPreferencesSchema,
+});
+
+export type NotificationCategory = z.infer<typeof notificationCategorySchema>;
+export type NotificationTone = z.infer<typeof notificationToneSchema>;
+export type NotificationItem = z.infer<typeof notificationItemSchema>;
+export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
+export type UpdateNotificationPreferencesInput = z.infer<
+  typeof updateNotificationPreferencesSchema
+>;
+export type NotificationsResponse = z.infer<typeof notificationsResponseSchema>;
+export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;
