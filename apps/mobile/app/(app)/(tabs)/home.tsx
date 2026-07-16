@@ -30,6 +30,7 @@ const CARD_LABELS: Record<keyof HomeCardPreferences, string> = {
 
 export default function HomeScreen(): React.JSX.Element {
   const overview = useHomeOverview();
+  const router = useRouter();
   const [settingsVisible, setSettingsVisible] = useState(false);
 
   function renderBody(): React.JSX.Element {
@@ -70,15 +71,26 @@ export default function HomeScreen(): React.JSX.Element {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Home</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose which cards appear"
-          hitSlop={10}
-          onPress={() => setSettingsVisible(true)}
-          style={styles.settingsButton}
-        >
-          <Ionicons name="options-outline" size={22} color={colors.white} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            hitSlop={10}
+            onPress={() => router.push('/notifications')}
+            style={styles.settingsButton}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.white} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose which cards appear"
+            hitSlop={10}
+            onPress={() => setSettingsVisible(true)}
+            style={styles.settingsButton}
+          >
+            <Ionicons name="options-outline" size={22} color={colors.white} />
+          </Pressable>
+        </View>
       </View>
 
       {renderBody()}
@@ -331,6 +343,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 24,
     fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 10,
   },
   settingsButton: {
     backgroundColor: colors.primary,

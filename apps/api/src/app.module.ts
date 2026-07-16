@@ -16,6 +16,7 @@ import { HealthModule } from './health/health.module';
 import { HomeModule } from './home/home.module';
 import { LearnModule } from './learn/learn.module';
 import { MemoryModule } from './memory/memory.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PlannerModule } from './planner/planner.module';
 import { StyleModule } from './style/style.module';
 import { SystemModule } from './system/system.module';
@@ -43,6 +44,7 @@ import { SystemModule } from './system/system.module';
     StyleModule,
     LearnModule,
     PlannerModule,
+    NotificationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
