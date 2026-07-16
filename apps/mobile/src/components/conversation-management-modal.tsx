@@ -251,10 +251,10 @@ const styles = StyleSheet.create({
   action: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 14,
+    marginTop: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
     borderRadius: 14,
     backgroundColor: colors.surface,
   },

@@ -443,10 +443,10 @@ const styles = StyleSheet.create({
   conversationCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
     borderRadius: 16,
     backgroundColor: colors.surface,
   },
