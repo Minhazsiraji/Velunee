@@ -52,3 +52,7 @@ Thumbs.db
 *.tsbuildinfo
 apps/mobile/.env.local
 apps/api/.env.before-supabase-auth
+
+# Local-only deploy secrets (never commit)
+RENDER_SECRETS.local.txt
+*.local.txt

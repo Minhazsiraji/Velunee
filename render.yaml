@@ -1,0 +1,35 @@
+# Render Blueprint for the Velunee API.
+# In Render: New + → Blueprint → connect the Minhazsiraji/Velunee repo.
+# Render reads this file, builds the Dockerfile, and prompts for the three
+# secret env vars marked `sync: false` (they are NEVER stored in the repo).
+services:
+  - type: web
+    name: velunee-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    healthCheckPath: /api/v1/system/config
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_MODE
+        value: required
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: SUPABASE_URL
+        value: https://hzumacmyzxdaqcrelobn.supabase.co
+      - key: SUPABASE_JWT_AUDIENCE
+        value: authenticated
+      - key: AI_PROVIDER
+        value: mock
+      - key: LOG_LEVEL
+        value: info
+      # --- secrets: entered in the Render dashboard, prompted on first deploy ---
+      - key: DATABASE_URL
+        sync: false
+      - key: FIELD_ENCRYPTION_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
