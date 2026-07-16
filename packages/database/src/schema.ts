@@ -528,6 +528,30 @@ export const studyTopics = learning.table(
   (table) => [index('study_topics_user_idx').on(table.userId, table.status)],
 );
 
+export const taskPriority = pgEnum('task_priority', ['low', 'medium', 'high']);
+export const taskStatus = pgEnum('task_status', ['todo', 'done']);
+
+export const tasks = planning.table(
+  'tasks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 200 }).notNull(),
+    notes: varchar('notes', { length: 500 }),
+    dueOn: date('due_on').notNull(),
+    scheduledTime: varchar('scheduled_time', { length: 5 }),
+    priority: taskPriority('priority').notNull().default('medium'),
+    estimateMinutes: integer('estimate_minutes'),
+    status: taskStatus('status').notNull().default('todo'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('tasks_user_due_idx').on(table.userId, table.dueOn)],
+);
+
 export const securityEvents = audit.table(
   'security_events',
   {
