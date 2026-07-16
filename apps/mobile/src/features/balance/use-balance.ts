@@ -5,6 +5,7 @@ import type {
   CreateSavingsGoalInput,
   SetBalanceBudgetInput,
   UpdateBalanceProfileInput,
+  UpdateBalanceTransactionInput,
 } from '@velunee/contracts';
 
 import {
@@ -26,6 +27,7 @@ import {
   parseSpending,
   setBudget,
   updateProfile,
+  updateTransaction,
 } from './api';
 
 const balanceKey = ['balance'] as const;
@@ -82,6 +84,15 @@ export function useCreateTransaction() {
   const invalidate = useInvalidateBalance();
   return useMutation({
     mutationFn: (input: CreateBalanceTransactionInput) => createTransaction(input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateTransaction() {
+  const invalidate = useInvalidateBalance();
+  return useMutation({
+    mutationFn: (vars: { transactionId: string; input: UpdateBalanceTransactionInput }) =>
+      updateTransaction(vars.transactionId, vars.input),
     onSuccess: invalidate,
   });
 }

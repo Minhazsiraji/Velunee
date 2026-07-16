@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   affordabilityRequestSchema,
   contributeSavingsGoalSchema,
   createBalanceCategorySchema,
   createBalanceTransactionSchema,
+  updateBalanceTransactionSchema,
   createRecurringBillSchema,
   createSavingsGoalSchema,
   parseSpendingSchema,
@@ -24,6 +25,7 @@ import {
   type ContributeSavingsGoalInput,
   type CreateBalanceCategoryInput,
   type CreateBalanceTransactionInput,
+  type UpdateBalanceTransactionInput,
   type CreateRecurringBillInput,
   type CreateSavingsGoalInput,
   type ParseSpendingInput,
@@ -97,6 +99,16 @@ export class BalanceController {
     input: CreateBalanceTransactionInput,
   ): Promise<BalanceTransactionResponse> {
     return this.balanceService.createTransaction(user.id, input);
+  }
+
+  @Patch('transactions/:transactionId')
+  async updateTransaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('transactionId') transactionId: string,
+    @Body(new ZodValidationPipe(updateBalanceTransactionSchema))
+    input: UpdateBalanceTransactionInput,
+  ): Promise<BalanceTransactionResponse> {
+    return this.balanceService.updateTransaction(user.id, transactionId, input);
   }
 
   @Delete('transactions/:transactionId')

@@ -35,6 +35,7 @@ import {
   type SavingsGoalsResponse,
   type SetBalanceBudgetInput,
   type UpdateBalanceProfileInput,
+  type UpdateBalanceTransactionInput,
 } from '@velunee/contracts';
 
 import { apiRequest } from '@/lib/api';
@@ -94,6 +95,17 @@ export async function createTransaction(
   const payload = await apiRequest<unknown>('/balance/transactions', {
     method: 'POST',
     body: JSON.stringify({ occurredOn: todayIso(), ...input }),
+  });
+  return balanceTransactionResponseSchema.parse(payload);
+}
+
+export async function updateTransaction(
+  transactionId: string,
+  input: UpdateBalanceTransactionInput,
+): Promise<BalanceTransactionResponse> {
+  const payload = await apiRequest<unknown>(`/balance/transactions/${transactionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
   });
   return balanceTransactionResponseSchema.parse(payload);
 }

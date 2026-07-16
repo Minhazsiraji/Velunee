@@ -334,6 +334,21 @@ export const createBalanceTransactionSchema = z.object({
   occurredOn: isoDateOnlySchema.optional(),
 });
 
+// Edit an existing entry. Every field is optional (partial update); a null
+// categoryId or note clears it, undefined leaves it unchanged.
+export const updateBalanceTransactionSchema = z
+  .object({
+    kind: balanceTransactionKindSchema.optional(),
+    amountMinor: positiveMinorAmountSchema.optional(),
+    categoryId: z.string().uuid().nullable().optional(),
+    note: z.string().trim().max(240).nullable().optional(),
+    paymentMethod: balancePaymentMethodSchema.optional(),
+    occurredOn: isoDateOnlySchema.optional(),
+  })
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
 export const balanceTransactionsResponseSchema = z.object({
   transactions: z.array(balanceTransactionSchema),
   nextCursor: z.string().datetime().nullable(),
@@ -599,6 +614,7 @@ export type BalanceTransactionKind = z.infer<typeof balanceTransactionKindSchema
 export type BalancePaymentMethod = z.infer<typeof balancePaymentMethodSchema>;
 export type BalanceTransaction = z.infer<typeof balanceTransactionSchema>;
 export type CreateBalanceTransactionInput = z.infer<typeof createBalanceTransactionSchema>;
+export type UpdateBalanceTransactionInput = z.infer<typeof updateBalanceTransactionSchema>;
 export type BalanceTransactionsResponse = z.infer<typeof balanceTransactionsResponseSchema>;
 export type BalanceTransactionResponse = z.infer<typeof balanceTransactionResponseSchema>;
 export type BalanceDeletedResponse = z.infer<typeof balanceDeletedResponseSchema>;

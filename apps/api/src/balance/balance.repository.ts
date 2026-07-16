@@ -260,6 +260,64 @@ export class BalanceRepository {
     return { rows: pageRows, nextCursor };
   }
 
+  async updateTransaction(
+    userId: string,
+    transactionId: string,
+    patch: {
+      kind?: BalanceTransactionKind;
+      amountMinor?: number;
+      categoryId?: string | null;
+      note?: string | null;
+      paymentMethod?: BalancePaymentMethod;
+      occurredOn?: string;
+    },
+  ): Promise<TransactionRow | null> {
+    if (!this.connection) {
+      throw new Error(NOT_CONFIGURED);
+    }
+
+    const set: Record<string, unknown> = {};
+    if (patch.kind !== undefined) set.kind = patch.kind;
+    if (patch.amountMinor !== undefined) set.amountMinor = patch.amountMinor;
+    if (patch.categoryId !== undefined) set.categoryId = patch.categoryId;
+    if (patch.note !== undefined) set.note = patch.note;
+    if (patch.paymentMethod !== undefined) set.paymentMethod = patch.paymentMethod;
+    if (patch.occurredOn !== undefined) set.occurredOn = patch.occurredOn;
+
+    const columns = {
+      id: moneyTransactions.id,
+      kind: moneyTransactions.kind,
+      amountMinor: moneyTransactions.amountMinor,
+      currencyCode: moneyTransactions.currencyCode,
+      categoryId: moneyTransactions.categoryId,
+      note: moneyTransactions.note,
+      paymentMethod: moneyTransactions.paymentMethod,
+      occurredOn: moneyTransactions.occurredOn,
+      createdAt: moneyTransactions.createdAt,
+    };
+    const where = and(
+      eq(moneyTransactions.id, transactionId),
+      eq(moneyTransactions.userId, userId),
+      isNull(moneyTransactions.deletedAt),
+    );
+
+    if (Object.keys(set).length === 0) {
+      const [existing] = await this.connection.db
+        .select(columns)
+        .from(moneyTransactions)
+        .where(where)
+        .limit(1);
+      return existing ?? null;
+    }
+
+    const [row] = await this.connection.db
+      .update(moneyTransactions)
+      .set(set)
+      .where(where)
+      .returning(columns);
+    return row ?? null;
+  }
+
   async softDeleteTransaction(userId: string, transactionId: string): Promise<boolean> {
     if (!this.connection) {
       throw new Error(NOT_CONFIGURED);

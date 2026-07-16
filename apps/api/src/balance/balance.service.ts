@@ -18,6 +18,7 @@ import type {
   ContributeSavingsGoalInput,
   CreateBalanceCategoryInput,
   CreateBalanceTransactionInput,
+  UpdateBalanceTransactionInput,
   CreateRecurringBillInput,
   CreateSavingsGoalInput,
   ParseSpendingInput,
@@ -225,6 +226,34 @@ export class BalanceService {
       paymentMethod: input.paymentMethod,
       occurredOn: input.occurredOn ?? resolveMonthWindow().today,
     });
+
+    const categoryNames = await this.categoryNameMap(userId);
+    return { transaction: this.toTransactionContract(row, categoryNames) };
+  }
+
+  async updateTransaction(
+    userId: string,
+    transactionId: string,
+    input: UpdateBalanceTransactionInput,
+  ): Promise<BalanceTransactionResponse> {
+    if (input.categoryId) {
+      const exists = await this.repository.categoryExists(userId, input.categoryId);
+      if (!exists) {
+        throw new BadRequestException('Unknown category');
+      }
+    }
+
+    const row = await this.repository.updateTransaction(userId, transactionId, {
+      kind: input.kind,
+      amountMinor: input.amountMinor,
+      categoryId: input.categoryId,
+      note: input.note === undefined ? undefined : input.note?.length ? input.note : null,
+      paymentMethod: input.paymentMethod,
+      occurredOn: input.occurredOn,
+    });
+    if (!row) {
+      throw new NotFoundException('Transaction not found');
+    }
 
     const categoryNames = await this.categoryNameMap(userId);
     return { transaction: this.toTransactionContract(row, categoryNames) };
