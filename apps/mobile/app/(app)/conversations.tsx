@@ -265,64 +265,62 @@ export default function ConversationsScreen(): React.JSX.Element {
             const isOpening = openingId === item.id;
 
             return (
-              <View style={styles.conversationCard}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open conversation: ${item.title}`}
-                  disabled={openingId !== null}
-                  onPress={() => void openConversation(item)}
-                  style={({ pressed }) => [
-                    styles.conversationOpenArea,
-                    pressed && styles.pressed,
-                    openingId !== null && !isOpening && styles.disabled,
-                  ]}
-                >
-                  <View style={styles.conversationIcon}>
-                    <Ionicons
-                      name="chatbubble-ellipses-outline"
-                      size={21}
-                      color={colors.primaryLight}
-                    />
-                  </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Open conversation: ${item.title}`}
+                disabled={openingId !== null}
+                onPress={() => void openConversation(item)}
+                style={({ pressed }) => [
+                  styles.conversationCard,
+                  pressed && styles.pressed,
+                  openingId !== null && !isOpening && styles.disabled,
+                ]}
+              >
+                <View style={styles.conversationIcon}>
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={21}
+                    color={colors.primaryLight}
+                  />
+                </View>
 
-                  <View style={styles.conversationContent}>
-                    <View style={styles.conversationTopRow}>
-                      <Text numberOfLines={1} style={styles.conversationTitle}>
-                        {item.title}
-                      </Text>
-
-                      <Text style={styles.time}>{formatUpdatedAt(item.updatedAt)}</Text>
-                    </View>
-
-                    <Text numberOfLines={2} style={styles.preview}>
-                      {item.preview || 'No messages yet'}
+                <View style={styles.conversationContent}>
+                  <View style={styles.conversationTopRow}>
+                    <Text numberOfLines={1} style={styles.conversationTitle}>
+                      {item.title}
                     </Text>
 
-                    <Text style={styles.messageCount}>
-                      {item.messageCount} {item.messageCount === 1 ? 'message' : 'messages'}
-                    </Text>
-                  </View>
-                </Pressable>
+                    <Text style={styles.time}>{formatUpdatedAt(item.updatedAt)}</Text>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Manage conversation: ${item.title}`}
-                  disabled={openingId !== null || isManaging}
-                  hitSlop={8}
-                  onPress={() => setSelectedConversation(item)}
-                  style={({ pressed }) => [
-                    styles.manageButton,
-                    pressed && styles.pressed,
-                    (openingId !== null || isManaging) && styles.disabled,
-                  ]}
-                >
-                  {isOpening ? (
-                    <ActivityIndicator size="small" color={colors.primaryMuted} />
-                  ) : (
-                    <Ionicons name="ellipsis-vertical" size={20} color={colors.primaryLight} />
-                  )}
-                </Pressable>
-              </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Manage conversation: ${item.title}`}
+                      disabled={openingId !== null || isManaging}
+                      hitSlop={10}
+                      onPress={() => setSelectedConversation(item)}
+                      style={({ pressed }) => [
+                        styles.manageButton,
+                        pressed && styles.pressed,
+                        (openingId !== null || isManaging) && styles.disabled,
+                      ]}
+                    >
+                      {isOpening ? (
+                        <ActivityIndicator size="small" color={colors.primaryMuted} />
+                      ) : (
+                        <Ionicons name="ellipsis-vertical" size={18} color={colors.primaryLight} />
+                      )}
+                    </Pressable>
+                  </View>
+
+                  <Text numberOfLines={2} style={styles.preview}>
+                    {item.preview || 'No messages yet'}
+                  </Text>
+
+                  <Text style={styles.messageCount}>
+                    {item.messageCount} {item.messageCount === 1 ? 'message' : 'messages'}
+                  </Text>
+                </View>
+              </Pressable>
             );
           }}
           ListEmptyComponent={
@@ -444,30 +442,21 @@ const styles = StyleSheet.create({
   },
   conversationCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 10,
-    paddingRight: 8,
+    padding: 14,
     borderWidth: 1,
     borderColor: colors.borderSoft,
     borderRadius: 16,
     backgroundColor: colors.surface,
   },
-  conversationOpenArea: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingLeft: 14,
-    paddingRight: 6,
-  },
   manageButton: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
+    marginLeft: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
-    backgroundColor: colors.surfaceElevated,
+    borderRadius: 15,
   },
   conversationIcon: {
     width: 42,

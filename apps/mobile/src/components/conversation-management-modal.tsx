@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerBackground,
   },
   actionText: {
-    flex: 1,
+    flexShrink: 1,
   },
   actionTitle: {
     color: colors.text,
