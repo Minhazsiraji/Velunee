@@ -16,7 +16,7 @@ implemented in the repository.
   - `DATABASE_URL=...`
   - `FIELD_ENCRYPTION_KEY=...` (`openssl rand -base64 32`)
   - `AI_PROVIDER=gemini` and `GEMINI_API_KEY=...`
-  - `WEATHER_API_KEY=...` (WeatherAPI.com — optional, enables weather-aware chat)
+  - Weather needs no key — it uses Open-Meteo + BigDataCloud (both keyless)
   - `CORS_ORIGINS=` your production origins
 - [ ] Regenerate and apply migrations. The schema now includes the community
       `reactions` and `comments` tables:
