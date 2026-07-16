@@ -17,13 +17,13 @@ services:
       - key: AUTH_MODE
         value: required
       - key: CORS_ORIGINS
-        value: "*"
+        value: '*'
       - key: SUPABASE_URL
         value: https://hzumacmyzxdaqcrelobn.supabase.co
       - key: SUPABASE_JWT_AUDIENCE
         value: authenticated
       - key: AI_PROVIDER
-        value: mock
+        value: gemini
       - key: LOG_LEVEL
         value: info
       # --- secrets: entered in the Render dashboard, prompted on first deploy ---
@@ -32,4 +32,7 @@ services:
       - key: FIELD_ENCRYPTION_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # AI_PROVIDER=gemini requires this key or the API crash-loops on boot.
+      - key: GEMINI_API_KEY
         sync: false
