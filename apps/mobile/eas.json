@@ -17,7 +17,7 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://hzumacmyzxdaqcrelobn.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_sEOnqDJ_7nySDFC-Nh2Wow_ca85ewKC",
-        "EXPO_PUBLIC_API_URL": "https://improved-trout-wgqgxvq94v935gj-4000.app.github.dev/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://velunee-api.onrender.com/api/v1"
       },
       "android": {
         "buildType": "apk"
