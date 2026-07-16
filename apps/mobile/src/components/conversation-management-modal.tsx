@@ -3,7 +3,7 @@ import type { ConversationListItem } from '@velunee/contracts';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -34,11 +34,30 @@ export function ConversationManagementModal({
 }: ConversationManagementModalProps): React.JSX.Element {
   const [mode, setMode] = useState<Mode>('menu');
   const [title, setTitle] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     setMode('menu');
     setTitle(conversation?.title ?? '');
   }, [conversation]);
+
+  // Lift the sheet above the keyboard. A React Native Modal is a separate
+  // window that Android does not resize for the keyboard, so KeyboardAvoidingView
+  // is unreliable here — track the height and pad the container instead.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const trimmedTitle = title.trim();
 
@@ -47,11 +66,14 @@ export function ConversationManagementModal({
   };
 
   return (
-    <Modal transparent visible={conversation !== null} animationType="slide" onRequestClose={close}>
-      <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    <Modal
+      transparent
+      statusBarTranslucent
+      visible={conversation !== null}
+      animationType="slide"
+      onRequestClose={close}
+    >
+      <View style={[styles.root, { paddingBottom: keyboardHeight }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close menu"
@@ -200,7 +222,7 @@ export function ConversationManagementModal({
             </>
           ) : null}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
