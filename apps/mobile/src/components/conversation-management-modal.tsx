@@ -47,85 +47,73 @@ export function ConversationManagementModal({
   };
 
   return (
-    <Modal transparent visible={conversation !== null} animationType="fade" onRequestClose={close}>
+    <Modal transparent visible={conversation !== null} animationType="slide" onRequestClose={close}>
       <KeyboardAvoidingView
-        style={styles.overlay}
+        style={styles.root}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close conversation menu"
+          accessibilityLabel="Close menu"
           onPress={close}
-          style={StyleSheet.absoluteFill}
+          style={styles.backdrop}
         />
 
-        <View style={styles.dialog}>
+        <View style={styles.sheet}>
+          <View style={styles.grabber} />
+
           {mode === 'menu' ? (
             <>
-              <View style={styles.dialogHeader}>
-                <View style={styles.headingContent}>
-                  <Text style={styles.dialogTitle}>Manage conversation</Text>
-
-                  <Text numberOfLines={1} style={styles.currentTitle}>
-                    {conversation?.title}
-                  </Text>
-                </View>
-
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                  disabled={isBusy}
-                  onPress={close}
-                  style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-                >
-                  <Ionicons name="close" size={21} color={colors.textSecondary} />
-                </Pressable>
-              </View>
+              <Text numberOfLines={1} style={styles.sheetTitle}>
+                {conversation?.title || 'Conversation'}
+              </Text>
+              <Text style={styles.sheetSubtitle}>Manage this conversation</Text>
 
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Rename conversation"
                 onPress={() => setMode('rename')}
-                style={({ pressed }) => [styles.menuOption, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
               >
-                <View style={styles.optionIcon}>
-                  <Ionicons name="pencil-outline" size={21} color={colors.primaryLight} />
+                <View style={styles.actionIcon}>
+                  <Ionicons name="pencil" size={20} color={colors.primaryLight} />
                 </View>
-
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Rename</Text>
-
-                  <Text style={styles.optionDescription}>Choose a clearer title</Text>
+                <View style={styles.actionText}>
+                  <Text style={styles.actionTitle}>Rename</Text>
+                  <Text style={styles.actionSubtitle}>Choose a clearer title</Text>
                 </View>
-
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
 
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Delete conversation"
                 onPress={() => setMode('delete')}
-                style={({ pressed }) => [styles.menuOption, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
               >
-                <View style={[styles.optionIcon, styles.deleteIcon]}>
-                  <Ionicons name="trash-outline" size={21} color={colors.danger} />
+                <View style={[styles.actionIcon, styles.actionIconDanger]}>
+                  <Ionicons name="trash" size={20} color={colors.danger} />
                 </View>
-
-                <View style={styles.optionContent}>
-                  <Text style={[styles.optionTitle, styles.dangerText]}>Delete</Text>
-
-                  <Text style={styles.optionDescription}>Permanently remove this chat</Text>
+                <View style={styles.actionText}>
+                  <Text style={[styles.actionTitle, styles.dangerText]}>Delete</Text>
+                  <Text style={styles.actionSubtitle}>Permanently remove this chat</Text>
                 </View>
+              </Pressable>
 
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={close}
+                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             </>
           ) : null}
 
           {mode === 'rename' ? (
             <>
-              <Text style={styles.dialogTitle}>Rename conversation</Text>
-
-              <Text style={styles.dialogDescription}>
-                Enter a short title that will help you find this conversation later.
+              <Text style={styles.sheetTitle}>Rename conversation</Text>
+              <Text style={styles.sheetSubtitle}>
+                Enter a short title to help you find this chat later.
               </Text>
 
               <TextInput
@@ -135,19 +123,16 @@ export function ConversationManagementModal({
                 maxLength={200}
                 onChangeText={setTitle}
                 onSubmitEditing={() => {
-                  if (trimmedTitle && !isBusy) {
-                    void onRename(trimmedTitle);
-                  }
+                  if (trimmedTitle && !isBusy) void onRename(trimmedTitle);
                 }}
                 placeholder="Conversation title"
                 placeholderTextColor={colors.textMuted}
                 selectionColor={colors.primaryLight}
                 style={styles.input}
               />
+              <Text style={styles.charCount}>{title.length}/200</Text>
 
-              <Text style={styles.characterCount}>{title.length}/200</Text>
-
-              <View style={styles.actions}>
+              <View style={styles.buttonRow}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isBusy}
@@ -156,7 +141,6 @@ export function ConversationManagementModal({
                 >
                   <Text style={styles.secondaryButtonText}>Back</Text>
                 </Pressable>
-
                 <Pressable
                   accessibilityRole="button"
                   disabled={!trimmedTitle || isBusy}
@@ -180,17 +164,15 @@ export function ConversationManagementModal({
           {mode === 'delete' ? (
             <>
               <View style={styles.warningIcon}>
-                <Ionicons name="trash-outline" size={27} color={colors.danger} />
+                <Ionicons name="trash" size={24} color={colors.danger} />
               </View>
-
-              <Text style={styles.dialogTitle}>Delete conversation?</Text>
-
-              <Text style={styles.dialogDescription}>
-                “{conversation?.title}” will be removed from your conversation history. This action
+              <Text style={styles.sheetTitle}>Delete conversation?</Text>
+              <Text style={styles.sheetSubtitle}>
+                “{conversation?.title || 'This chat'}” will be removed from your history. This
                 cannot be undone.
               </Text>
 
-              <View style={styles.actions}>
+              <View style={styles.buttonRow}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={isBusy}
@@ -199,7 +181,6 @@ export function ConversationManagementModal({
                 >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
-
                 <Pressable
                   accessibilityRole="button"
                   disabled={isBusy}
@@ -226,92 +207,99 @@ export function ConversationManagementModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  root: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(5, 3, 12, 0.78)',
   },
-  dialog: {
-    width: '100%',
-    maxWidth: 430,
-    padding: 20,
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
     backgroundColor: colors.surfaceElevated,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 32,
   },
-  dialogHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
+  grabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginBottom: 16,
   },
-  headingContent: {
-    flex: 1,
-    marginRight: 12,
-  },
-  dialogTitle: {
+  sheetTitle: {
     color: colors.text,
     fontSize: 19,
     fontWeight: '700',
   },
-  currentTitle: {
-    marginTop: 5,
+  sheetSubtitle: {
     color: colors.textMuted,
     fontSize: 13,
+    lineHeight: 19,
+    marginTop: 4,
   },
-  closeButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-  },
-  menuOption: {
+  action: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    padding: 13,
+    marginTop: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: colors.borderSoft,
     borderRadius: 14,
     backgroundColor: colors.surface,
   },
-  optionIcon: {
-    width: 40,
-    height: 40,
+  actionIcon: {
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 14,
     borderRadius: 12,
     backgroundColor: colors.surfaceElevated,
   },
-  deleteIcon: {
+  actionIconDanger: {
     backgroundColor: colors.dangerBackground,
   },
-  optionContent: {
+  actionText: {
     flex: 1,
   },
-  optionTitle: {
+  actionTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
-  optionDescription: {
-    marginTop: 3,
+  actionSubtitle: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 13,
+    marginTop: 2,
   },
   dangerText: {
     color: colors.danger,
   },
-  dialogDescription: {
-    marginTop: 9,
+  cancelButton: {
+    marginTop: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  cancelText: {
     color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    fontWeight: '700',
   },
   input: {
     marginTop: 18,
@@ -324,24 +312,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: colors.surface,
   },
-  characterCount: {
+  charCount: {
     marginTop: 6,
     color: colors.textMuted,
     fontSize: 11,
     textAlign: 'right',
   },
-  actions: {
+  buttonRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 10,
-    marginTop: 22,
+    marginTop: 20,
   },
   secondaryButton: {
-    minWidth: 90,
+    minWidth: 96,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
@@ -353,11 +341,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   primaryButton: {
-    minWidth: 90,
+    minWidth: 96,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: colors.primary,
   },
@@ -367,20 +355,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   warningIcon: {
-    width: 54,
-    height: 54,
+    width: 52,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    borderRadius: 18,
+    marginBottom: 14,
+    borderRadius: 16,
     backgroundColor: colors.dangerBackground,
   },
   deleteButton: {
-    minWidth: 90,
+    minWidth: 96,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 12,
     borderRadius: 12,
     backgroundColor: '#B63C5E',
   },

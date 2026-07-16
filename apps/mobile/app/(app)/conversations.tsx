@@ -302,18 +302,13 @@ export default function ConversationsScreen(): React.JSX.Element {
                       {item.messageCount} {item.messageCount === 1 ? 'message' : 'messages'}
                     </Text>
                   </View>
-
-                  {isOpening ? (
-                    <ActivityIndicator size="small" color={colors.primaryMuted} />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                  )}
                 </Pressable>
 
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Manage conversation: ${item.title}`}
                   disabled={openingId !== null || isManaging}
+                  hitSlop={8}
                   onPress={() => setSelectedConversation(item)}
                   style={({ pressed }) => [
                     styles.manageButton,
@@ -321,7 +316,11 @@ export default function ConversationsScreen(): React.JSX.Element {
                     (openingId !== null || isManaging) && styles.disabled,
                   ]}
                 >
-                  <Ionicons name="ellipsis-vertical" size={20} color={colors.primaryLight} />
+                  {isOpening ? (
+                    <ActivityIndicator size="small" color={colors.primaryMuted} />
+                  ) : (
+                    <Ionicons name="ellipsis-vertical" size={20} color={colors.primaryLight} />
+                  )}
                 </Pressable>
               </View>
             );
@@ -445,29 +444,29 @@ const styles = StyleSheet.create({
   },
   conversationCard: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     marginBottom: 10,
+    paddingRight: 8,
     borderWidth: 1,
     borderColor: colors.borderSoft,
     borderRadius: 16,
     backgroundColor: colors.surface,
-    overflow: 'hidden',
   },
   conversationOpenArea: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 6,
   },
   manageButton: {
-    width: 54,
-    minWidth: 54,
-    alignSelf: 'stretch',
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: colors.borderSoft,
+    borderRadius: 20,
     backgroundColor: colors.surfaceElevated,
   },
   conversationIcon: {
