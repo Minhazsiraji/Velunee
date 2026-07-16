@@ -850,3 +850,131 @@ export type DecideConsideredItem = z.infer<typeof decideConsideredItemSchema>;
 export type DecideNextAction = z.infer<typeof decideNextActionSchema>;
 export type DecideRequestInput = z.infer<typeof decideRequestSchema>;
 export type DecideResponse = z.infer<typeof decideResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Style — a digital wardrobe with weather- and occasion-aware outfit
+// suggestions (improvement outline §14). No beauty scores, ever: guidance is
+// about coordination, appropriateness and comfort.
+// ---------------------------------------------------------------------------
+
+export const wardrobeCategorySchema = z.enum([
+  'top',
+  'bottom',
+  'dress',
+  'outerwear',
+  'shoes',
+  'accessory',
+]);
+export const garmentWarmthSchema = z.enum(['light', 'medium', 'warm']);
+export const garmentFormalitySchema = z.enum(['casual', 'smart', 'formal']);
+export const styleOccasionSchema = z.enum(['casual', 'work', 'formal', 'party', 'travel']);
+
+export const wardrobeItemSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(80),
+  category: wardrobeCategorySchema,
+  color: z.string().min(1).max(40),
+  warmth: garmentWarmthSchema,
+  formality: garmentFormalitySchema,
+  notes: z.string().nullable(),
+  timesWorn: z.number().int().nonnegative(),
+  lastWornOn: isoDateOnlySchema.nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export const wardrobeItemsResponseSchema = z.object({
+  items: z.array(wardrobeItemSchema),
+});
+
+export const createWardrobeItemSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  category: wardrobeCategorySchema,
+  color: z.string().trim().min(1).max(40).optional(),
+  warmth: garmentWarmthSchema.optional(),
+  formality: garmentFormalitySchema.optional(),
+  notes: z.string().trim().max(240).optional(),
+});
+
+export const updateWardrobeItemSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    category: wardrobeCategorySchema.optional(),
+    color: z.string().trim().min(1).max(40).optional(),
+    warmth: garmentWarmthSchema.optional(),
+    formality: garmentFormalitySchema.optional(),
+    notes: z.string().trim().max(240).nullish(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const wardrobeItemResponseSchema = z.object({
+  item: wardrobeItemSchema,
+});
+
+export const styleDeletedResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export const outfitPieceSchema = z.object({
+  itemId: z.string().uuid(),
+  name: z.string(),
+  category: wardrobeCategorySchema,
+  color: z.string(),
+});
+
+export const suggestOutfitRequestSchema = z.object({
+  occasion: styleOccasionSchema.default('casual'),
+  temperatureC: z.number().min(-50).max(60).optional(),
+  rain: z.boolean().optional(),
+});
+
+export const suggestOutfitResponseSchema = z.object({
+  ok: z.boolean(),
+  headline: z.string(),
+  message: z.string(),
+  pieces: z.array(outfitPieceSchema),
+  missing: z.array(wardrobeCategorySchema),
+  tips: z.array(z.string()),
+});
+
+export const saveOutfitSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  itemIds: z.array(z.string().uuid()).min(1).max(8),
+  occasion: styleOccasionSchema.default('casual'),
+});
+
+export const savedOutfitSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(80),
+  occasion: styleOccasionSchema,
+  isFavorite: z.boolean(),
+  pieces: z.array(outfitPieceSchema),
+  createdAt: z.string().datetime(),
+});
+
+export const savedOutfitsResponseSchema = z.object({
+  outfits: z.array(savedOutfitSchema),
+});
+
+export const savedOutfitResponseSchema = z.object({
+  outfit: savedOutfitSchema,
+});
+
+export type WardrobeCategory = z.infer<typeof wardrobeCategorySchema>;
+export type GarmentWarmth = z.infer<typeof garmentWarmthSchema>;
+export type GarmentFormality = z.infer<typeof garmentFormalitySchema>;
+export type StyleOccasion = z.infer<typeof styleOccasionSchema>;
+export type WardrobeItem = z.infer<typeof wardrobeItemSchema>;
+export type WardrobeItemsResponse = z.infer<typeof wardrobeItemsResponseSchema>;
+export type CreateWardrobeItemInput = z.infer<typeof createWardrobeItemSchema>;
+export type UpdateWardrobeItemInput = z.infer<typeof updateWardrobeItemSchema>;
+export type WardrobeItemResponse = z.infer<typeof wardrobeItemResponseSchema>;
+export type StyleDeletedResponse = z.infer<typeof styleDeletedResponseSchema>;
+export type OutfitPiece = z.infer<typeof outfitPieceSchema>;
+export type SuggestOutfitRequestInput = z.infer<typeof suggestOutfitRequestSchema>;
+export type SuggestOutfitResponse = z.infer<typeof suggestOutfitResponseSchema>;
+export type SaveOutfitInput = z.infer<typeof saveOutfitSchema>;
+export type SavedOutfit = z.infer<typeof savedOutfitSchema>;
+export type SavedOutfitsResponse = z.infer<typeof savedOutfitsResponseSchema>;
+export type SavedOutfitResponse = z.infer<typeof savedOutfitResponseSchema>;
