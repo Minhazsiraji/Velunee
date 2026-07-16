@@ -20,6 +20,7 @@ import {
   loadCategories,
   loadGoals,
   loadOverview,
+  loadProfile,
   loadReport,
   loadTransactions,
   parseSpending,
@@ -48,6 +49,14 @@ export function useBalanceCategories() {
     queryKey: [...balanceKey, 'categories'],
     queryFn: () => loadCategories(),
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useBalanceProfile(enabled: boolean) {
+  return useQuery({
+    queryKey: [...balanceKey, 'profile'],
+    queryFn: () => loadProfile(),
+    enabled,
   });
 }
 

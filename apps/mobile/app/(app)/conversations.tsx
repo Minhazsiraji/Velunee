@@ -321,7 +321,7 @@ export default function ConversationsScreen(): React.JSX.Element {
                     (openingId !== null || isManaging) && styles.disabled,
                   ]}
                 >
-                  <Text style={styles.manageButtonText}>⋮</Text>
+                  <Ionicons name="ellipsis-vertical" size={20} color={colors.primaryLight} />
                 </Pressable>
               </View>
             );
@@ -469,13 +469,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.borderSoft,
     backgroundColor: colors.surfaceElevated,
-  },
-  manageButtonText: {
-    color: colors.primaryLight,
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 30,
-    textAlign: 'center',
   },
   conversationIcon: {
     width: 42,

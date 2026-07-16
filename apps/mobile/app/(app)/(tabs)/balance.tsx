@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,7 @@ import { PrimaryButton } from '@/components/primary-button';
 import {
   useBalanceCategories,
   useBalanceOverview,
+  useBalanceProfile,
   useCheckAffordability,
   useCreateBill,
   useCreateTransaction,
@@ -29,13 +30,14 @@ import {
   useParseSpending,
   useUpdateBalanceProfile,
 } from '@/features/balance/use-balance';
-import { formatMinor, parseMajorToMinor } from '@/features/balance/format';
+import { formatMinor, minorToMajorText, parseMajorToMinor } from '@/features/balance/format';
 import { colors } from '@/theme/colors';
 
 export default function BalanceScreen(): React.JSX.Element {
   const overview = useBalanceOverview();
   const [addVisible, setAddVisible] = useState(false);
   const [billVisible, setBillVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
 
   function renderBody(): React.JSX.Element {
     if (overview.isLoading) {
@@ -80,15 +82,26 @@ export default function BalanceScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Balance</Text>
         {overview.data?.isConfigured ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add income or expense"
-            hitSlop={10}
-            onPress={() => setAddVisible(true)}
-            style={styles.addButton}
-          >
-            <Ionicons name="add" size={24} color={colors.white} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit income and plan"
+              hitSlop={10}
+              onPress={() => setEditVisible(true)}
+              style={styles.editButton}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.primaryLight} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add income or expense"
+              hitSlop={10}
+              onPress={() => setAddVisible(true)}
+              style={styles.addButton}
+            >
+              <Ionicons name="add" size={24} color={colors.white} />
+            </Pressable>
+          </View>
         ) : null}
       </View>
 
@@ -96,6 +109,7 @@ export default function BalanceScreen(): React.JSX.Element {
 
       <AddEntryModal visible={addVisible} onClose={() => setAddVisible(false)} />
       <AddBillModal visible={billVisible} onClose={() => setBillVisible(false)} />
+      <EditPlanModal visible={editVisible} onClose={() => setEditVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -868,10 +882,159 @@ function AddBillModal({
   );
 }
 
+function EditPlanModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}): React.JSX.Element {
+  const profile = useBalanceProfile(visible);
+  const updateProfile = useUpdateBalanceProfile();
+  const [income, setIncome] = useState('');
+  const [fixed, setFixed] = useState('');
+  const [savings, setSavings] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible && profile.data) {
+      setIncome(minorToMajorText(profile.data.profile.monthlyIncomeMinor));
+      setFixed(minorToMajorText(profile.data.profile.fixedExpensesMinor));
+      setSavings(minorToMajorText(profile.data.profile.savingsTargetMinor));
+      setError(null);
+    }
+  }, [visible, profile.data]);
+
+  function close(): void {
+    setError(null);
+    onClose();
+  }
+
+  function handleSave(): void {
+    const incomeMinor = parseMajorToMinor(income);
+    if (!incomeMinor) {
+      setError('Enter your monthly income.');
+      return;
+    }
+    const fixedMinor = fixed ? parseMajorToMinor(fixed) : 0;
+    const savingsMinor = savings ? parseMajorToMinor(savings) : 0;
+    if (fixedMinor === null || savingsMinor === null) {
+      setError('Amounts should be numbers like 25000 or 1,250.50.');
+      return;
+    }
+    setError(null);
+    updateProfile.mutate(
+      {
+        monthlyIncomeMinor: incomeMinor,
+        fixedExpensesMinor: fixedMinor,
+        savingsTargetMinor: savingsMinor,
+      },
+      {
+        onSuccess: () => close(),
+        onError: (mutationError) =>
+          setError(mutationError instanceof Error ? mutationError.message : 'Please try again.'),
+      },
+    );
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
+      <KeyboardAvoidingView
+        style={styles.modalRoot}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit your plan</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={close}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          {profile.isLoading ? (
+            <View style={styles.editLoading}>
+              <ActivityIndicator size="large" color={colors.primaryLight} />
+            </View>
+          ) : (
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.editHint}>
+                Update your monthly income, fixed expenses, or savings goal. Your daily
+                safe-to-spend recalculates instantly.
+              </Text>
+
+              <FormField
+                label="MONTHLY INCOME (BDT)"
+                placeholder="104000"
+                keyboardType="numeric"
+                value={income}
+                onChangeText={setIncome}
+              />
+              <FormField
+                label="FIXED MONTHLY EXPENSES"
+                placeholder="25000 — rent, bills, EMI"
+                keyboardType="numeric"
+                value={fixed}
+                onChangeText={setFixed}
+              />
+              <FormField
+                label="MONTHLY SAVINGS GOAL"
+                placeholder="10000"
+                keyboardType="numeric"
+                value={savings}
+                onChangeText={setSavings}
+                errorText={error}
+              />
+
+              <PrimaryButton
+                label="Save changes"
+                onPress={handleSave}
+                isLoading={updateProfile.isPending}
+                style={styles.modalButton}
+              />
+            </ScrollView>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  editButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editLoading: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editHint: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 12,
+    marginBottom: 4,
   },
   header: {
     flexDirection: 'row',

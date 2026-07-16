@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   ChatMessage,
   ConversationHistoryResponse,
+  ConversationListItem,
   ConversationListResponse,
 } from '@velunee/contracts';
 import { conversations, messages, users, type DatabaseConnection } from '@velunee/database';
@@ -195,7 +196,7 @@ export class ChatRepository {
       .orderBy(desc(conversations.updatedAt), desc(conversations.createdAt));
 
     const items = await Promise.all(
-      storedConversations.map(async (conversation) => {
+      storedConversations.map(async (conversation): Promise<ConversationListItem | null> => {
         const storedMessages = await db
           .select({
             contentEncrypted: messages.contentEncrypted,
@@ -225,6 +226,15 @@ export class ChatRepository {
           ? (this.crypto.tryDecrypt(lastMessage.contentEncrypted) ?? '')
           : '';
 
+        const customTitle = conversation.title?.trim() ?? '';
+
+        // Hide conversations we can neither name nor preview — e.g. legacy rows
+        // encrypted under a previous FIELD_ENCRYPTION_KEY that no longer decrypt.
+        // A user-set title keeps a conversation visible even if content is gone.
+        if (!customTitle && firstUserContent === '' && lastContent === '') {
+          return null;
+        }
+
         const generatedTitle =
           firstUserContent.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New conversation';
 
@@ -232,7 +242,7 @@ export class ChatRepository {
 
         return {
           id: conversation.id,
-          title: conversation.title?.trim() || generatedTitle,
+          title: customTitle || generatedTitle,
           preview,
           messageCount: visibleMessages.length,
           createdAt: conversation.createdAt.toISOString(),
@@ -241,7 +251,9 @@ export class ChatRepository {
       }),
     );
 
-    return { conversations: items };
+    return {
+      conversations: items.filter((item): item is ConversationListItem => item !== null),
+    };
   }
 
   async getConversationHistory(
