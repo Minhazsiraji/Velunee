@@ -239,7 +239,7 @@ function Dashboard({
         />
         <QuickAction icon="wallet" label="Add expense" onPress={() => router.push('./balance')} />
         <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
-        <QuickAction icon="camera" label="Photo advice" onPress={() => router.push('/vision')} />
+        <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
       </View>
     </ScrollView>
   );
