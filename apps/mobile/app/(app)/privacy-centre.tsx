@@ -41,6 +41,12 @@ const SECTIONS: PrivacySection[] = [
     body: 'Only what you deliberately post is visible to others. Your memories, money, chats, and photos never enter the community automatically.',
   },
   {
+    icon: 'hand-left-outline',
+    title: 'Blocked accounts',
+    body: "People you block can't see your posts, and you won't see theirs. You can report a post from its menu, and unblock anyone here.",
+    action: { label: 'Manage blocked accounts', href: '/blocked' },
+  },
+  {
     icon: 'trash-outline',
     title: 'Deleting your data',
     body: 'You can delete your account from Settings at any time. This removes your conversations, memories, financial records, and profile.',

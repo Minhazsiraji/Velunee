@@ -1,14 +1,27 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
 import type { CommunityFeedResponse, CommunityPost } from '@velunee/contracts';
 
-import { addReaction, createPost, loadFeed, removeReaction } from './api';
+import type { ReportReason } from '@velunee/contracts';
+
+import {
+  addReaction,
+  blockPostAuthor,
+  createPost,
+  loadBlocked,
+  loadFeed,
+  removeReaction,
+  reportPost,
+  unblockUser,
+} from './api';
 
 const feedQueryKey = ['community', 'feed'] as const;
+const blockedQueryKey = ['community', 'blocked'] as const;
 
 type FeedData = InfiniteData<CommunityFeedResponse>;
 
@@ -42,6 +55,42 @@ export function useCreatePost() {
     mutationFn: (caption: string) => createPost(caption),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: feedQueryKey });
+    },
+  });
+}
+
+export function useReportPost() {
+  return useMutation({
+    mutationFn: (input: { postId: string; reason: ReportReason }) =>
+      reportPost(input.postId, input.reason),
+  });
+}
+
+export function useBlockPostAuthor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => blockPostAuthor(postId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: feedQueryKey });
+      void queryClient.invalidateQueries({ queryKey: blockedQueryKey });
+    },
+  });
+}
+
+export function useBlockedUsers() {
+  return useQuery({
+    queryKey: blockedQueryKey,
+    queryFn: () => loadBlocked(),
+  });
+}
+
+export function useUnblockUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => unblockUser(userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: feedQueryKey });
+      void queryClient.invalidateQueries({ queryKey: blockedQueryKey });
     },
   });
 }

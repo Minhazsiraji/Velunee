@@ -8,13 +8,19 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
+  BlockedUsersResponse,
+  BlockResponse,
   CommunityFeedResponse,
   CreatePostResponse,
   ModerationActionResponse,
   ModerationQueueResponse,
   ReactionKind,
   ReactionState,
+  ReportPostInput,
+  ReportResponse,
 } from '@velunee/contracts';
+
+const REPORT_REVIEW_THRESHOLD = 2;
 import type { ModerationProvider } from '@velunee/moderation-core';
 import { MODERATION_PROVIDER } from './community.constants';
 import { CommunityRepository } from './community.repository';
@@ -80,6 +86,59 @@ export class CommunityService {
       throw new NotFoundException('Post not found');
     }
     return this.repository.removeReaction(userId, postId, type);
+  }
+
+  async blockPostAuthor(userId: string, postId: string): Promise<BlockResponse> {
+    this.assertEnabled();
+    const authorId = await this.repository.postAuthorId(postId);
+    if (!authorId) {
+      throw new NotFoundException('Post not found');
+    }
+    if (authorId === userId) {
+      throw new BadRequestException('You cannot block yourself.');
+    }
+    await this.repository.blockUser(userId, authorId);
+    return { userId: authorId, blocked: true };
+  }
+
+  async unblockUser(userId: string, targetId: string): Promise<BlockResponse> {
+    this.assertEnabled();
+    await this.repository.unblockUser(userId, targetId);
+    return { userId: targetId, blocked: false };
+  }
+
+  async listBlocked(userId: string): Promise<BlockedUsersResponse> {
+    this.assertEnabled();
+    return { users: await this.repository.listBlocked(userId) };
+  }
+
+  async reportPost(
+    userId: string,
+    postId: string,
+    input: ReportPostInput,
+  ): Promise<ReportResponse> {
+    this.assertEnabled();
+    const authorId = await this.repository.postAuthorId(postId);
+    if (!authorId) {
+      throw new NotFoundException('Post not found');
+    }
+    if (authorId === userId) {
+      throw new BadRequestException('You cannot report your own post.');
+    }
+
+    const reportCount = await this.repository.reportPost(
+      userId,
+      postId,
+      input.reason,
+      input.note ?? null,
+    );
+
+    const underReview = reportCount >= REPORT_REVIEW_THRESHOLD;
+    if (underReview) {
+      await this.repository.flagForReview(postId);
+    }
+
+    return { reported: true, underReview };
   }
 
   async getModerationQueue(userId: string): Promise<ModerationQueueResponse> {
