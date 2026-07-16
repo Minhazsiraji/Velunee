@@ -26,6 +26,7 @@ export const operations = pgSchema('operations');
 export const audit = pgSchema('audit');
 export const finance = pgSchema('finance');
 export const style = pgSchema('style');
+export const learning = pgSchema('learning');
 
 export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system', 'tool']);
 export const inputMode = pgEnum('input_mode', ['text', 'voice', 'image']);
@@ -483,6 +484,48 @@ export const outfits = style.table(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [index('outfits_user_idx').on(table.userId)],
+);
+
+export const learnerLevel = pgEnum('learner_level', ['beginner', 'intermediate', 'advanced']);
+export const explanationStyle = pgEnum('explanation_style', [
+  'simple',
+  'step_by_step',
+  'exam_focused',
+]);
+export const studyStatus = pgEnum('study_status', ['learning', 'reviewing', 'mastered']);
+
+export const learnerProfiles = learning.table('learner_profiles', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  country: varchar('country', { length: 60 }),
+  curriculum: varchar('curriculum', { length: 80 }),
+  grade: varchar('grade', { length: 40 }),
+  subject: varchar('subject', { length: 60 }),
+  language: varchar('language', { length: 35 }).notNull().default('en'),
+  level: learnerLevel('level').notNull().default('beginner'),
+  explanationStyle: explanationStyle('explanation_style').notNull().default('simple'),
+  examDate: date('exam_date'),
+  configuredAt: timestamp('configured_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const studyTopics = learning.table(
+  'study_topics',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    subject: varchar('subject', { length: 60 }).notNull(),
+    topic: varchar('topic', { length: 120 }).notNull(),
+    status: studyStatus('status').notNull().default('learning'),
+    note: varchar('note', { length: 240 }),
+    lastReviewedOn: date('last_reviewed_on'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('study_topics_user_idx').on(table.userId, table.status)],
 );
 
 export const securityEvents = audit.table(

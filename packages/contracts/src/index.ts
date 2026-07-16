@@ -978,3 +978,107 @@ export type SaveOutfitInput = z.infer<typeof saveOutfitSchema>;
 export type SavedOutfit = z.infer<typeof savedOutfitSchema>;
 export type SavedOutfitsResponse = z.infer<typeof savedOutfitsResponseSchema>;
 export type SavedOutfitResponse = z.infer<typeof savedOutfitResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Learn — structured study mode (improvement outline §15). Tailored to
+// the learner's grade/curriculum/level, and it teaches understanding rather
+// than just handing over final answers.
+// ---------------------------------------------------------------------------
+
+export const learnerLevelSchema = z.enum(['beginner', 'intermediate', 'advanced']);
+export const explanationStyleSchema = z.enum(['simple', 'step_by_step', 'exam_focused']);
+export const studyStatusSchema = z.enum(['learning', 'reviewing', 'mastered']);
+export const learnModeSchema = z.enum(['explain', 'step_by_step', 'example', 'practice', 'quiz']);
+
+export const learnerProfileSchema = z.object({
+  country: z.string().nullable(),
+  curriculum: z.string().nullable(),
+  grade: z.string().nullable(),
+  subject: z.string().nullable(),
+  language: z.string(),
+  level: learnerLevelSchema,
+  explanationStyle: explanationStyleSchema,
+  examDate: isoDateOnlySchema.nullable(),
+  isConfigured: z.boolean(),
+});
+
+export const learnerProfileResponseSchema = z.object({
+  profile: learnerProfileSchema,
+});
+
+export const updateLearnerProfileSchema = z
+  .object({
+    country: z.string().trim().max(60).nullish(),
+    curriculum: z.string().trim().max(80).nullish(),
+    grade: z.string().trim().max(40).nullish(),
+    subject: z.string().trim().max(60).nullish(),
+    language: z.string().trim().min(2).max(35).optional(),
+    level: learnerLevelSchema.optional(),
+    explanationStyle: explanationStyleSchema.optional(),
+    examDate: isoDateOnlySchema.nullish(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const learnAskRequestSchema = z.object({
+  question: z.string().trim().min(1).max(600),
+  mode: learnModeSchema.default('explain'),
+});
+
+export const learnAskResponseSchema = z.object({
+  mode: learnModeSchema,
+  answer: z.string(),
+  followUp: z.string().nullable(),
+  provider: z.string(),
+  model: z.string(),
+  requestId: z.string(),
+});
+
+export const studyTopicSchema = z.object({
+  id: z.string().uuid(),
+  subject: z.string().min(1).max(60),
+  topic: z.string().min(1).max(120),
+  status: studyStatusSchema,
+  note: z.string().nullable(),
+  lastReviewedOn: isoDateOnlySchema.nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export const studyTopicsResponseSchema = z.object({
+  topics: z.array(studyTopicSchema),
+});
+
+export const createStudyTopicSchema = z.object({
+  subject: z.string().trim().min(1).max(60),
+  topic: z.string().trim().min(1).max(120),
+  note: z.string().trim().max(240).optional(),
+});
+
+export const updateStudyTopicStatusSchema = z.object({
+  status: studyStatusSchema,
+});
+
+export const studyTopicResponseSchema = z.object({
+  topic: studyTopicSchema,
+});
+
+export const learnDeletedResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export type LearnerLevel = z.infer<typeof learnerLevelSchema>;
+export type ExplanationStyle = z.infer<typeof explanationStyleSchema>;
+export type StudyStatus = z.infer<typeof studyStatusSchema>;
+export type LearnMode = z.infer<typeof learnModeSchema>;
+export type LearnerProfile = z.infer<typeof learnerProfileSchema>;
+export type LearnerProfileResponse = z.infer<typeof learnerProfileResponseSchema>;
+export type UpdateLearnerProfileInput = z.infer<typeof updateLearnerProfileSchema>;
+export type LearnAskRequestInput = z.infer<typeof learnAskRequestSchema>;
+export type LearnAskResponse = z.infer<typeof learnAskResponseSchema>;
+export type StudyTopic = z.infer<typeof studyTopicSchema>;
+export type StudyTopicsResponse = z.infer<typeof studyTopicsResponseSchema>;
+export type CreateStudyTopicInput = z.infer<typeof createStudyTopicSchema>;
+export type UpdateStudyTopicStatusInput = z.infer<typeof updateStudyTopicStatusSchema>;
+export type StudyTopicResponse = z.infer<typeof studyTopicResponseSchema>;
+export type LearnDeletedResponse = z.infer<typeof learnDeletedResponseSchema>;
