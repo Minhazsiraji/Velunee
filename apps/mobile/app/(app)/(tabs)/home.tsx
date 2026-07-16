@@ -240,6 +240,7 @@ function Dashboard({
         <QuickAction icon="wallet" label="Add expense" onPress={() => router.push('./balance')} />
         <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
         <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
+        <QuickAction icon="calendar" label="Plan my day" onPress={() => router.push('/planner')} />
       </View>
     </ScrollView>
   );
@@ -452,10 +453,12 @@ const styles = StyleSheet.create({
   },
   quickRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   quickAction: {
-    flex: 1,
+    flexBasis: '30%',
+    flexGrow: 1,
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.borderSoft,

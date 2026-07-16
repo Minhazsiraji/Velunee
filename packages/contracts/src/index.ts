@@ -1082,3 +1082,79 @@ export type CreateStudyTopicInput = z.infer<typeof createStudyTopicSchema>;
 export type UpdateStudyTopicStatusInput = z.infer<typeof updateStudyTopicStatusSchema>;
 export type StudyTopicResponse = z.infer<typeof studyTopicResponseSchema>;
 export type LearnDeletedResponse = z.infer<typeof learnDeletedResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Velunee Planner — daily/weekly tasks with realistic-day guidance
+// (improvement outline §16). Helps build achievable plans, not overloaded ones.
+// ---------------------------------------------------------------------------
+
+export const taskPrioritySchema = z.enum(['low', 'medium', 'high']);
+export const taskStatusSchema = z.enum(['todo', 'done']);
+export const dayTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM (24-hour)');
+
+export const plannerTaskSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  notes: z.string().nullable(),
+  dueOn: isoDateOnlySchema,
+  scheduledTime: dayTimeSchema.nullable(),
+  priority: taskPrioritySchema,
+  estimateMinutes: z.number().int().positive().nullable(),
+  status: taskStatusSchema,
+  createdAt: z.string().datetime(),
+});
+
+export const createTaskSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  dueOn: isoDateOnlySchema.optional(),
+  scheduledTime: dayTimeSchema.optional(),
+  priority: taskPrioritySchema.default('medium'),
+  estimateMinutes: z.number().int().min(1).max(1440).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const updateTaskSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+    dueOn: isoDateOnlySchema.optional(),
+    scheduledTime: dayTimeSchema.nullish(),
+    priority: taskPrioritySchema.optional(),
+    estimateMinutes: z.number().int().min(1).max(1440).nullish(),
+    status: taskStatusSchema.optional(),
+    notes: z.string().trim().max(500).nullish(),
+  })
+  .refine((value) => Object.values(value).some((v) => v !== undefined), {
+    message: 'Provide at least one field to update',
+  });
+
+export const plannerDayLoadSchema = z.object({
+  totalMinutes: z.number().int().nonnegative(),
+  taskCount: z.number().int().nonnegative(),
+  overloaded: z.boolean(),
+  message: z.string(),
+});
+
+export const plannerDayResponseSchema = z.object({
+  day: isoDateOnlySchema,
+  tasks: z.array(plannerTaskSchema),
+  overdue: z.array(plannerTaskSchema),
+  load: plannerDayLoadSchema,
+});
+
+export const plannerTaskResponseSchema = z.object({
+  task: plannerTaskSchema,
+});
+
+export const plannerDeletedResponseSchema = z.object({
+  deleted: z.literal(true),
+});
+
+export type TaskPriority = z.infer<typeof taskPrioritySchema>;
+export type TaskStatus = z.infer<typeof taskStatusSchema>;
+export type PlannerTask = z.infer<typeof plannerTaskSchema>;
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type PlannerDayLoad = z.infer<typeof plannerDayLoadSchema>;
+export type PlannerDayResponse = z.infer<typeof plannerDayResponseSchema>;
+export type PlannerTaskResponse = z.infer<typeof plannerTaskResponseSchema>;
+export type PlannerDeletedResponse = z.infer<typeof plannerDeletedResponseSchema>;
