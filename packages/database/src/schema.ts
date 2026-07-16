@@ -528,6 +528,44 @@ export const studyTopics = learning.table(
   (table) => [index('study_topics_user_idx').on(table.userId, table.status)],
 );
 
+export const blocks = community.table(
+  'blocks',
+  {
+    blockerId: uuid('blocker_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: uuid('blocked_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.blockerId, table.blockedId] }),
+    index('blocks_blocked_idx').on(table.blockedId),
+  ],
+);
+
+export const reports = community.table(
+  'reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reporterId: uuid('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    reason: varchar('reason', { length: 30 }).notNull(),
+    note: varchar('note', { length: 300 }),
+    status: varchar('status', { length: 20 }).notNull().default('open'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('reports_reporter_post_uidx').on(table.reporterId, table.postId),
+    index('reports_post_idx').on(table.postId),
+  ],
+);
+
 export const taskPriority = pgEnum('task_priority', ['low', 'medium', 'high']);
 export const taskStatus = pgEnum('task_status', ['todo', 'done']);
 

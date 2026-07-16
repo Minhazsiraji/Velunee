@@ -1220,3 +1220,42 @@ export type UpdateNotificationPreferencesInput = z.infer<
 >;
 export type NotificationsResponse = z.infer<typeof notificationsResponseSchema>;
 export type NotificationPreferencesResponse = z.infer<typeof notificationPreferencesResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Community safety — block accounts and report posts (improvement outline §19).
+// Blocking hides posts both ways; enough reports send a post to human review.
+// ---------------------------------------------------------------------------
+
+export const reportReasonSchema = z.enum(['spam', 'harassment', 'scam', 'nudity', 'hate', 'other']);
+
+export const reportPostSchema = z.object({
+  reason: reportReasonSchema,
+  note: z.string().trim().max(300).optional(),
+});
+
+export const reportResponseSchema = z.object({
+  reported: z.literal(true),
+  underReview: z.boolean(),
+});
+
+export const blockResponseSchema = z.object({
+  userId: z.string().uuid(),
+  blocked: z.boolean(),
+});
+
+export const blockedUserSchema = z.object({
+  userId: z.string().uuid(),
+  name: z.string(),
+  blockedAt: z.string().datetime(),
+});
+
+export const blockedUsersResponseSchema = z.object({
+  users: z.array(blockedUserSchema),
+});
+
+export type ReportReason = z.infer<typeof reportReasonSchema>;
+export type ReportPostInput = z.infer<typeof reportPostSchema>;
+export type ReportResponse = z.infer<typeof reportResponseSchema>;
+export type BlockResponse = z.infer<typeof blockResponseSchema>;
+export type BlockedUser = z.infer<typeof blockedUserSchema>;
+export type BlockedUsersResponse = z.infer<typeof blockedUsersResponseSchema>;

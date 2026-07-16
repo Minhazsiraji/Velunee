@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { CommunityPost } from '@velunee/contracts';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { CommunityPost, ReportReason } from '@velunee/contracts';
 
+import { useBlockPostAuthor, useReportPost } from '@/features/community/use-community';
 import { colors } from '@/theme/colors';
 
 function relativeTime(iso: string): string {
@@ -27,6 +28,44 @@ export function CommunityPostCard({
   onToggleReaction,
 }: CommunityPostCardProps): React.JSX.Element {
   const initial = post.authorName.replace('@', '').charAt(0) || 'V';
+  const reportPost = useReportPost();
+  const blockAuthor = useBlockPostAuthor();
+
+  function submitReport(reason: ReportReason): void {
+    reportPost.mutate(
+      { postId: post.id, reason },
+      {
+        onSuccess: () =>
+          Alert.alert('Thanks for reporting', 'Our team will take a look at this post.'),
+        onError: (error) =>
+          Alert.alert('Could not report', error instanceof Error ? error.message : 'Try again.'),
+      },
+    );
+  }
+
+  function openReportReasons(): void {
+    Alert.alert('Why are you reporting this?', undefined, [
+      { text: 'Spam', onPress: () => submitReport('spam') },
+      { text: 'Harassment', onPress: () => submitReport('harassment') },
+      { text: 'Something else', onPress: () => submitReport('other') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function confirmBlock(): void {
+    Alert.alert('Block this person?', "You won't see their posts, and they won't see yours.", [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block', style: 'destructive', onPress: () => blockAuthor.mutate(post.id) },
+    ]);
+  }
+
+  function openMenu(): void {
+    Alert.alert('Post options', undefined, [
+      { text: 'Report post', onPress: openReportReasons },
+      { text: 'Block this person', style: 'destructive', onPress: confirmBlock },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
 
   return (
     <View style={styles.card}>
@@ -41,6 +80,16 @@ export function CommunityPostCard({
           </Text>
           <Text style={styles.time}>{relativeTime(post.createdAt)}</Text>
         </View>
+        {post.isOwnPost ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Post options"
+            hitSlop={10}
+            onPress={openMenu}
+          >
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.textMuted} />
+          </Pressable>
+        )}
       </View>
 
       <Text style={styles.caption}>{post.caption}</Text>

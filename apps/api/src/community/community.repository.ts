@@ -8,16 +8,18 @@ import type {
 } from '@velunee/contracts';
 import type { ModerationResult } from '@velunee/moderation-core';
 import {
+  blocks,
   comments,
   contentChecks,
   posts,
   profiles,
   publicProfiles,
   reactions,
+  reports,
   users,
   type DatabaseConnection,
 } from '@velunee/database';
-import { and, count, desc, eq, inArray, isNull, lt } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, lt, notInArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { DATABASE_CONNECTION } from '../database/database.constants';
 
@@ -114,9 +116,14 @@ export class CommunityRepository {
     }
     const { db } = this.connection;
 
+    const hidden = await this.getHiddenAuthorIds(userId);
+
     const conditions = [eq(posts.moderationStatus, 'approved'), isNull(posts.deletedAt)];
     if (cursor) {
       conditions.push(lt(posts.createdAt, new Date(cursor)));
+    }
+    if (hidden.length > 0) {
+      conditions.push(notInArray(posts.userId, hidden));
     }
 
     const rows = await db
@@ -311,5 +318,99 @@ export class CommunityRepository {
       .where(and(eq(posts.id, postId), isNull(posts.deletedAt)))
       .returning({ id: posts.id });
     return updated.length > 0;
+  }
+
+  // Posts hidden both ways: people the viewer blocked, and people who blocked
+  // the viewer.
+  async getHiddenAuthorIds(userId: string): Promise<string[]> {
+    if (!this.connection) return [];
+    const { db } = this.connection;
+
+    const [iBlocked, blockedMe] = await Promise.all([
+      db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, userId)),
+      db.select({ id: blocks.blockerId }).from(blocks).where(eq(blocks.blockedId, userId)),
+    ]);
+
+    return [...new Set([...iBlocked, ...blockedMe].map((row) => row.id))];
+  }
+
+  async blockUser(blockerId: string, blockedId: string): Promise<void> {
+    if (!this.connection) {
+      throw new Error('Community persistence is not configured');
+    }
+    await this.ensureUser(blockerId);
+    await this.ensureUser(blockedId);
+    await this.connection.db.insert(blocks).values({ blockerId, blockedId }).onConflictDoNothing();
+  }
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    if (!this.connection) return;
+    await this.connection.db
+      .delete(blocks)
+      .where(and(eq(blocks.blockerId, blockerId), eq(blocks.blockedId, blockedId)));
+  }
+
+  async listBlocked(
+    blockerId: string,
+  ): Promise<{ userId: string; name: string; blockedAt: string }[]> {
+    if (!this.connection) return [];
+    const rows = await this.connection.db
+      .select({ blockedId: blocks.blockedId, createdAt: blocks.createdAt })
+      .from(blocks)
+      .where(eq(blocks.blockerId, blockerId))
+      .orderBy(desc(blocks.createdAt));
+
+    return Promise.all(
+      rows.map(async (row) => {
+        const author = await this.getAuthor(row.blockedId);
+        return {
+          userId: row.blockedId,
+          name: author.authorName,
+          blockedAt: row.createdAt.toISOString(),
+        };
+      }),
+    );
+  }
+
+  async postAuthorId(postId: string): Promise<string | null> {
+    if (!this.connection) return null;
+    const [row] = await this.connection.db
+      .select({ userId: posts.userId })
+      .from(posts)
+      .where(and(eq(posts.id, postId), isNull(posts.deletedAt)))
+      .limit(1);
+    return row?.userId ?? null;
+  }
+
+  // Records the report and returns how many distinct people have now reported
+  // this post (used to decide when to send it to human review).
+  async reportPost(
+    reporterId: string,
+    postId: string,
+    reason: string,
+    note: string | null,
+  ): Promise<number> {
+    if (!this.connection) {
+      throw new Error('Community persistence is not configured');
+    }
+    await this.ensureUser(reporterId);
+    await this.connection.db
+      .insert(reports)
+      .values({ reporterId, postId, reason, note })
+      .onConflictDoNothing();
+
+    const [row] = await this.connection.db
+      .select({ value: count() })
+      .from(reports)
+      .where(eq(reports.postId, postId));
+    return row?.value ?? 0;
+  }
+
+  async flagForReview(postId: string): Promise<void> {
+    if (!this.connection) return;
+    await this.connection.db
+      .update(posts)
+      .set({ moderationStatus: 'review', updatedAt: new Date() })
+      .where(and(eq(posts.id, postId), isNull(posts.deletedAt)));
   }
 }

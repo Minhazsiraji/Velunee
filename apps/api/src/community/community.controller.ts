@@ -3,6 +3,9 @@ import type { AuthenticatedUser } from '@velunee/auth-core';
 import {
   createPostSchema,
   reactionKindSchema,
+  reportPostSchema,
+  type BlockedUsersResponse,
+  type BlockResponse,
   type CommunityFeedResponse,
   type CreatePostInput,
   type CreatePostResponse,
@@ -10,6 +13,8 @@ import {
   type ModerationQueueResponse,
   type ReactionKind,
   type ReactionState,
+  type ReportPostInput,
+  type ReportResponse,
 } from '@velunee/contracts';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -34,6 +39,37 @@ export class CommunityController {
     input: CreatePostInput,
   ): Promise<CreatePostResponse> {
     return this.communityService.createPost(user.id, input.caption);
+  }
+
+  @Post('posts/:postId/report')
+  async reportPost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('postId') postId: string,
+    @Body(new ZodValidationPipe(reportPostSchema))
+    input: ReportPostInput,
+  ): Promise<ReportResponse> {
+    return this.communityService.reportPost(user.id, postId, input);
+  }
+
+  @Get('blocks')
+  async listBlocked(@CurrentUser() user: AuthenticatedUser): Promise<BlockedUsersResponse> {
+    return this.communityService.listBlocked(user.id);
+  }
+
+  @Post('posts/:postId/block-author')
+  async blockPostAuthor(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('postId') postId: string,
+  ): Promise<BlockResponse> {
+    return this.communityService.blockPostAuthor(user.id, postId);
+  }
+
+  @Delete('users/:userId/block')
+  async unblockUser(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('userId') userId: string,
+  ): Promise<BlockResponse> {
+    return this.communityService.unblockUser(user.id, userId);
   }
 
   @Get('moderation/queue')
