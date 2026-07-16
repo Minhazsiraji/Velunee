@@ -114,7 +114,13 @@ export class LearnService {
           requestId,
           locale: profile.language,
           context: buildLearnPrompt(context, input.mode),
-          messages: [{ role: 'user', content: input.question }],
+          messages: [
+            ...(input.history ?? []).map((turn) => ({
+              role: turn.role,
+              content: turn.content,
+            })),
+            { role: 'user' as const, content: input.question },
+          ],
         });
         if (result.text.trim().length > 0) {
           answer = result.text.trim();

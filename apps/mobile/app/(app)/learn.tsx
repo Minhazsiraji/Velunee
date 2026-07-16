@@ -55,6 +55,17 @@ const STATUS_LABEL: Record<StudyStatus, string> = {
   mastered: 'Mastered',
 };
 
+interface LessonTurn {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  followUp?: string | null;
+}
+
+function turnId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function label(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -89,11 +100,33 @@ export default function LearnScreen(): React.JSX.Element {
   const [mode, setMode] = useState<LearnMode>('explain');
   const [profileVisible, setProfileVisible] = useState(false);
   const [topicVisible, setTopicVisible] = useState(false);
+  const [turns, setTurns] = useState<LessonTurn[]>([]);
 
-  function teachMe(): void {
-    const q = question.trim();
-    if (!q) return;
-    ask.mutate({ question: q, mode });
+  const lastAssistantId =
+    [...turns].reverse().find((turn) => turn.role === 'assistant')?.id ?? null;
+
+  function send(text: string): void {
+    const q = text.trim();
+    if (!q || ask.isPending) return;
+    const history = turns.map((turn) => ({ role: turn.role, content: turn.content })).slice(-20);
+    setTurns((prev) => [...prev, { id: turnId(), role: 'user', content: q }]);
+    setQuestion('');
+    ask.mutate(
+      { question: q, mode, history },
+      {
+        onSuccess: (data) => {
+          setTurns((prev) => [
+            ...prev,
+            { id: turnId(), role: 'assistant', content: data.answer, followUp: data.followUp },
+          ]);
+        },
+      },
+    );
+  }
+
+  function startOver(): void {
+    setTurns([]);
+    ask.reset();
   }
 
   const grade = profile.data?.profile.grade;
@@ -142,7 +175,9 @@ export default function LearnScreen(): React.JSX.Element {
             <TextInput
               value={question}
               onChangeText={setQuestion}
-              placeholder="e.g. Explain photosynthesis"
+              placeholder={
+                turns.length > 0 ? 'Reply, or ask something new' : 'e.g. Explain photosynthesis'
+              }
               placeholderTextColor={colors.textMuted}
               multiline
               maxLength={600}
@@ -161,9 +196,9 @@ export default function LearnScreen(): React.JSX.Element {
             </View>
 
             <PrimaryButton
-              label="Teach me"
+              label={turns.length > 0 ? 'Send' : 'Teach me'}
               icon="school"
-              onPress={teachMe}
+              onPress={() => send(question)}
               isLoading={ask.isPending}
               style={styles.askButton}
             />
@@ -173,19 +208,51 @@ export default function LearnScreen(): React.JSX.Element {
                 {ask.error instanceof Error ? ask.error.message : 'Please try again.'}
               </Text>
             ) : null}
-
-            {ask.data ? (
-              <View style={styles.answer}>
-                <Text style={styles.answerText}>{ask.data.answer}</Text>
-                {ask.data.followUp ? (
-                  <View style={styles.followUp}>
-                    <Ionicons name="arrow-forward-circle" size={16} color={colors.primaryLight} />
-                    <Text style={styles.followUpText}>{ask.data.followUp}</Text>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
           </View>
+
+          {turns.length > 0 ? (
+            <View style={styles.thread}>
+              <View style={styles.threadHeader}>
+                <Text style={styles.sectionTitle}>This lesson</Text>
+                <Pressable accessibilityRole="button" hitSlop={8} onPress={startOver}>
+                  <Text style={styles.startOver}>Start over</Text>
+                </Pressable>
+              </View>
+
+              {turns.map((turn) =>
+                turn.role === 'user' ? (
+                  <View key={turn.id} style={styles.userTurn}>
+                    <Text style={styles.userTurnText}>{turn.content}</Text>
+                  </View>
+                ) : (
+                  <View key={turn.id} style={styles.assistantTurn}>
+                    <Text style={styles.answerText}>{turn.content}</Text>
+                    {turn.followUp && turn.id === lastAssistantId ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Continue with this suggestion"
+                        android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
+                        disabled={ask.isPending}
+                        onPress={() => send(turn.followUp ?? '')}
+                        style={styles.followUp}
+                      >
+                        <Ionicons
+                          name="arrow-forward-circle"
+                          size={18}
+                          color={colors.primaryLight}
+                        />
+                        <Text style={styles.followUpText}>{turn.followUp}</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ),
+              )}
+
+              {ask.isPending ? (
+                <ActivityIndicator color={colors.primaryLight} style={styles.turnLoader} />
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>My study topics</Text>
@@ -509,16 +576,45 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.white },
   askButton: { marginTop: 2 },
   errorText: { color: colors.danger, fontSize: 13 },
-  answer: {
-    marginTop: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    gap: 10,
-  },
   answerText: { color: colors.text, fontSize: 15, lineHeight: 22 },
-  followUp: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  followUp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceElevated,
+  },
   followUpText: { flex: 1, color: colors.primaryLight, fontSize: 14, lineHeight: 20 },
+  thread: { gap: 12 },
+  threadHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  startOver: { color: colors.primaryLight, fontSize: 13, fontWeight: '700' },
+  userTurn: {
+    alignSelf: 'flex-end',
+    maxWidth: '88%',
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    borderBottomRightRadius: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  userTurnText: { color: colors.white, fontSize: 14, lineHeight: 20 },
+  assistantTurn: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+  },
+  turnLoader: { marginVertical: 8 },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',

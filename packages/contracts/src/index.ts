@@ -1040,6 +1040,15 @@ export const updateLearnerProfileSchema = z
 export const learnAskRequestSchema = z.object({
   question: z.string().trim().min(1).max(600),
   mode: learnModeSchema.default('explain'),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(4000),
+      }),
+    )
+    .max(20)
+    .optional(),
 });
 
 export const learnAskResponseSchema = z.object({
