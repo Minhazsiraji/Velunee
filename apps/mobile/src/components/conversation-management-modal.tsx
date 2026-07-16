@@ -73,7 +73,8 @@ export function ConversationManagementModal({
                 accessibilityRole="button"
                 accessibilityLabel="Rename conversation"
                 onPress={() => setMode('rename')}
-                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
+                style={styles.action}
               >
                 <View style={styles.actionIcon}>
                   <Ionicons name="pencil" size={20} color={colors.primaryLight} />
@@ -88,7 +89,8 @@ export function ConversationManagementModal({
                 accessibilityRole="button"
                 accessibilityLabel="Delete conversation"
                 onPress={() => setMode('delete')}
-                style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(255, 156, 174, 0.10)' }}
+                style={styles.action}
               >
                 <View style={[styles.actionIcon, styles.actionIconDanger]}>
                   <Ionicons name="trash" size={20} color={colors.danger} />
@@ -102,7 +104,8 @@ export function ConversationManagementModal({
               <Pressable
                 accessibilityRole="button"
                 onPress={close}
-                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
+                style={styles.cancelButton}
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
@@ -137,7 +140,7 @@ export function ConversationManagementModal({
                   accessibilityRole="button"
                   disabled={isBusy}
                   onPress={() => setMode('menu')}
-                  style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+                  style={styles.secondaryButton}
                 >
                   <Text style={styles.secondaryButtonText}>Back</Text>
                 </Pressable>
@@ -145,11 +148,11 @@ export function ConversationManagementModal({
                   accessibilityRole="button"
                   disabled={!trimmedTitle || isBusy}
                   onPress={() => void onRename(trimmedTitle)}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed && styles.pressed,
-                    (!trimmedTitle || isBusy) && styles.disabled,
-                  ]}
+                  style={
+                    !trimmedTitle || isBusy
+                      ? [styles.primaryButton, styles.disabled]
+                      : styles.primaryButton
+                  }
                 >
                   {isBusy ? (
                     <ActivityIndicator size="small" color={colors.white} />
@@ -177,7 +180,7 @@ export function ConversationManagementModal({
                   accessibilityRole="button"
                   disabled={isBusy}
                   onPress={() => setMode('menu')}
-                  style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}
+                  style={styles.secondaryButton}
                 >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
@@ -185,11 +188,7 @@ export function ConversationManagementModal({
                   accessibilityRole="button"
                   disabled={isBusy}
                   onPress={() => void onDelete()}
-                  style={({ pressed }) => [
-                    styles.deleteButton,
-                    pressed && styles.pressed,
-                    isBusy && styles.disabled,
-                  ]}
+                  style={isBusy ? [styles.deleteButton, styles.disabled] : styles.deleteButton}
                 >
                   {isBusy ? (
                     <ActivityIndicator size="small" color={colors.white} />

@@ -207,7 +207,7 @@ export default function ConversationsScreen(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+          style={styles.headerButton}
         >
           <Ionicons name="arrow-back" size={23} color={colors.text} />
         </Pressable>
@@ -222,11 +222,7 @@ export default function ConversationsScreen(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel="Start a new conversation"
           onPress={startNewConversation}
-          style={({ pressed }) => [
-            styles.headerButton,
-            styles.newButton,
-            pressed && styles.pressed,
-          ]}
+          style={[styles.headerButton, styles.newButton]}
         >
           <Ionicons name="create-outline" size={22} color={colors.primaryLight} />
         </Pressable>
@@ -252,7 +248,9 @@ export default function ConversationsScreen(): React.JSX.Element {
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, conversations.length === 0 && styles.emptyList]}
+          contentContainerStyle={
+            conversations.length === 0 ? [styles.list, styles.emptyList] : styles.list
+          }
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -269,12 +267,13 @@ export default function ConversationsScreen(): React.JSX.Element {
                 accessibilityRole="button"
                 accessibilityLabel={`Open conversation: ${item.title}`}
                 disabled={openingId !== null}
+                android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
                 onPress={() => void openConversation(item)}
-                style={({ pressed }) => [
-                  styles.conversationCard,
-                  pressed && styles.pressed,
-                  openingId !== null && !isOpening && styles.disabled,
-                ]}
+                style={
+                  openingId !== null && !isOpening
+                    ? [styles.conversationCard, styles.disabled]
+                    : styles.conversationCard
+                }
               >
                 <View style={styles.conversationIcon}>
                   <Ionicons
@@ -298,11 +297,11 @@ export default function ConversationsScreen(): React.JSX.Element {
                       disabled={openingId !== null || isManaging}
                       hitSlop={10}
                       onPress={() => setSelectedConversation(item)}
-                      style={({ pressed }) => [
-                        styles.manageButton,
-                        pressed && styles.pressed,
-                        (openingId !== null || isManaging) && styles.disabled,
-                      ]}
+                      style={
+                        openingId !== null || isManaging
+                          ? [styles.manageButton, styles.disabled]
+                          : styles.manageButton
+                      }
                     >
                       {isOpening ? (
                         <ActivityIndicator size="small" color={colors.primaryMuted} />
@@ -338,7 +337,8 @@ export default function ConversationsScreen(): React.JSX.Element {
               <Pressable
                 accessibilityRole="button"
                 onPress={startNewConversation}
-                style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(255, 255, 255, 0.15)' }}
+                style={styles.startButton}
               >
                 <Ionicons name="add" size={20} color={colors.white} />
 
