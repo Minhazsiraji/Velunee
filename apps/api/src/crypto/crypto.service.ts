@@ -72,4 +72,18 @@ export class CryptoService {
       throw new Error('Unable to decrypt encrypted field');
     }
   }
+
+  /**
+   * Decrypt without throwing. Returns null when the field cannot be decrypted —
+   * most commonly rows written with a previous FIELD_ENCRYPTION_KEY after a key
+   * rotation. Read paths that fan over many rows use this so one undecryptable
+   * legacy row degrades gracefully instead of failing the whole request.
+   */
+  tryDecrypt(encryptedText: string): string | null {
+    try {
+      return this.decrypt(encryptedText);
+    } catch {
+      return null;
+    }
+  }
 }

@@ -154,11 +154,16 @@ export class ChatRepository {
         return [];
       }
 
+      const content = this.crypto.tryDecrypt(message.contentEncrypted);
+      if (content === null) {
+        return [];
+      }
+
       return [
         {
           id: message.id,
           role: message.role,
-          content: this.crypto.decrypt(message.contentEncrypted),
+          content,
           inputMode: message.inputMode,
           createdAt: message.createdAt.toISOString(),
         },
@@ -213,10 +218,12 @@ export class ChatRepository {
         const lastMessage = visibleMessages.at(-1);
 
         const firstUserContent = firstUserMessage
-          ? this.crypto.decrypt(firstUserMessage.contentEncrypted)
+          ? (this.crypto.tryDecrypt(firstUserMessage.contentEncrypted) ?? '')
           : '';
 
-        const lastContent = lastMessage ? this.crypto.decrypt(lastMessage.contentEncrypted) : '';
+        const lastContent = lastMessage
+          ? (this.crypto.tryDecrypt(lastMessage.contentEncrypted) ?? '')
+          : '';
 
         const generatedTitle =
           firstUserContent.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New conversation';
@@ -286,11 +293,16 @@ export class ChatRepository {
         return [];
       }
 
+      const content = this.crypto.tryDecrypt(message.contentEncrypted);
+      if (content === null) {
+        return [];
+      }
+
       return [
         {
           id: message.id,
           role: message.role,
-          content: this.crypto.decrypt(message.contentEncrypted),
+          content,
           inputMode: message.inputMode,
           createdAt: message.createdAt.toISOString(),
         },

@@ -58,17 +58,26 @@ export class MemoryRepository {
       .where(and(eq(memories.userId, userId), isNull(memories.deletedAt)))
       .orderBy(desc(memories.createdAt));
 
-    return rows.map((row) => ({
-      id: row.id,
-      type: row.type as MemoryType,
-      content: this.crypto.decrypt(row.contentEncrypted),
-      enabled: row.enabled,
-      allowedFeatures: row.allowedFeatures,
-      sourceMessageId: row.sourceMessageId,
-      lastUsedAt: row.lastUsedAt,
-      expiresAt: row.expiresAt,
-      createdAt: row.createdAt,
-    }));
+    return rows.flatMap<MemoryRow>((row) => {
+      const content = this.crypto.tryDecrypt(row.contentEncrypted);
+      if (content === null) {
+        return [];
+      }
+
+      return [
+        {
+          id: row.id,
+          type: row.type as MemoryType,
+          content,
+          enabled: row.enabled,
+          allowedFeatures: row.allowedFeatures,
+          sourceMessageId: row.sourceMessageId,
+          lastUsedAt: row.lastUsedAt,
+          expiresAt: row.expiresAt,
+          createdAt: row.createdAt,
+        },
+      ];
+    });
   }
 
   async create(
@@ -159,7 +168,7 @@ export class MemoryRepository {
     return {
       id: row.id,
       type: row.type as MemoryType,
-      content: this.crypto.decrypt(row.contentEncrypted),
+      content: this.crypto.tryDecrypt(row.contentEncrypted) ?? '',
       enabled: row.enabled,
       allowedFeatures: row.allowedFeatures,
       sourceMessageId: row.sourceMessageId,
