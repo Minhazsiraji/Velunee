@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
   },
   manageButton: {
     width: 30,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
     borderRadius: 14,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surface,
   },
   conversationContent: {
     flex: 1,
