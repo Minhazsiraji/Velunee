@@ -238,6 +238,7 @@ function Dashboard({
           onPress={() => router.push('./chat')}
         />
         <QuickAction icon="wallet" label="Add expense" onPress={() => router.push('./balance')} />
+        <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
         <QuickAction icon="camera" label="Photo advice" onPress={() => router.push('/vision')} />
       </View>
     </ScrollView>

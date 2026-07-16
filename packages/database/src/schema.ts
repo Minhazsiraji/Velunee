@@ -25,6 +25,7 @@ export const billing = pgSchema('billing');
 export const operations = pgSchema('operations');
 export const audit = pgSchema('audit');
 export const finance = pgSchema('finance');
+export const style = pgSchema('style');
 
 export const messageRole = pgEnum('message_role', ['user', 'assistant', 'system', 'tool']);
 export const inputMode = pgEnum('input_mode', ['text', 'voice', 'image']);
@@ -433,6 +434,55 @@ export const recurringBills = finance.table(
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (table) => [index('recurring_bills_user_idx').on(table.userId)],
+);
+
+export const wardrobeCategory = pgEnum('wardrobe_category', [
+  'top',
+  'bottom',
+  'dress',
+  'outerwear',
+  'shoes',
+  'accessory',
+]);
+export const garmentWarmth = pgEnum('garment_warmth', ['light', 'medium', 'warm']);
+export const garmentFormality = pgEnum('garment_formality', ['casual', 'smart', 'formal']);
+
+export const wardrobeItems = style.table(
+  'wardrobe_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 80 }).notNull(),
+    category: wardrobeCategory('category').notNull(),
+    color: varchar('color', { length: 40 }).notNull().default('neutral'),
+    warmth: garmentWarmth('warmth').notNull().default('medium'),
+    formality: garmentFormality('formality').notNull().default('casual'),
+    notes: varchar('notes', { length: 240 }),
+    timesWorn: integer('times_worn').notNull().default(0),
+    lastWornOn: date('last_worn_on'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('wardrobe_items_user_idx').on(table.userId, table.category)],
+);
+
+export const outfits = style.table(
+  'outfits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 80 }).notNull(),
+    itemIds: jsonb('item_ids').$type<string[]>().notNull().default([]),
+    occasion: varchar('occasion', { length: 40 }).notNull().default('casual'),
+    isFavorite: boolean('is_favorite').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('outfits_user_idx').on(table.userId)],
 );
 
 export const securityEvents = audit.table(
