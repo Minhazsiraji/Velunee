@@ -8,6 +8,7 @@ import {
   moneyTransactions,
   recurringBills,
   savingsGoals,
+  savingsLedger,
   users,
   type DatabaseConnection,
 } from '@velunee/database';
@@ -783,5 +784,83 @@ export class BalanceRepository {
       )
       .returning({ id: fixedCosts.id });
     return updated.length > 0;
+  }
+
+  // Savings ledger — one banked row per completed pay cycle. Reads fail soft so
+  // Balance keeps working before the savings_ledger migration is applied.
+  async latestLedgerCycleStart(userId: string): Promise<string | null> {
+    if (!this.connection) return null;
+    try {
+      const [row] = await this.connection.db
+        .select({ cycleStart: savingsLedger.cycleStart })
+        .from(savingsLedger)
+        .where(eq(savingsLedger.userId, userId))
+        .orderBy(desc(savingsLedger.cycleStart))
+        .limit(1);
+      return row?.cycleStart ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async sumNetSaved(userId: string): Promise<number> {
+    if (!this.connection) return 0;
+    try {
+      const [row] = await this.connection.db
+        .select({ total: sql<string>`coalesce(sum(${savingsLedger.netSavedMinor}), 0)` })
+        .from(savingsLedger)
+        .where(eq(savingsLedger.userId, userId));
+      return Number(row?.total ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  async lastLedgerEntry(
+    userId: string,
+  ): Promise<{ cycleStart: string; netSavedMinor: number; savingsTargetMinor: number } | null> {
+    if (!this.connection) return null;
+    try {
+      const [row] = await this.connection.db
+        .select({
+          cycleStart: savingsLedger.cycleStart,
+          netSavedMinor: savingsLedger.netSavedMinor,
+          savingsTargetMinor: savingsLedger.savingsTargetMinor,
+        })
+        .from(savingsLedger)
+        .where(eq(savingsLedger.userId, userId))
+        .orderBy(desc(savingsLedger.cycleStart))
+        .limit(1);
+      return row ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async insertLedgerEntry(
+    userId: string,
+    input: { cycleStart: string; netSavedMinor: number; savingsTargetMinor: number },
+  ): Promise<void> {
+    if (!this.connection) return;
+    // Fail soft: banking runs during an overview read, so a write problem (e.g.
+    // migration not yet applied) must never break the overview.
+    try {
+      await this.ensureUser(userId);
+      await this.connection.db
+        .insert(savingsLedger)
+        .values({ userId, ...input })
+        .onConflictDoNothing();
+    } catch {
+      // ignore — the cycle will be banked on a later load once writable.
+    }
+  }
+
+  async earliestTransactionDate(userId: string): Promise<string | null> {
+    if (!this.connection) return null;
+    const [row] = await this.connection.db
+      .select({ earliest: sql<string | null>`min(${moneyTransactions.occurredOn})` })
+      .from(moneyTransactions)
+      .where(and(eq(moneyTransactions.userId, userId), isNull(moneyTransactions.deletedAt)));
+    return row?.earliest ?? null;
   }
 }

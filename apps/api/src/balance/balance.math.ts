@@ -30,7 +30,7 @@ export function previousMonthOf(month: string): string {
 
 const CYCLE_LENGTH_DAYS = 30;
 
-function addDaysIso(iso: string, days: number): string {
+export function addDaysIso(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }

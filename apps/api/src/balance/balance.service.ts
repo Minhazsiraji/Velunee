@@ -38,6 +38,7 @@ import type {
 } from '@velunee/contracts';
 import { isoDateOnlySchema, monthKeySchema } from '@velunee/contracts';
 import {
+  addDaysIso,
   computeAffordability,
   computeMoneyWeather,
   computeOverviewNumbers,
@@ -448,6 +449,46 @@ export class BalanceService {
     return deltas.sort((a, b) => Math.abs(b.deltaPercent) - Math.abs(a.deltaPercent)).slice(0, 2);
   }
 
+  // Bank the net saved (income - spending) for each pay cycle that has fully
+  // completed since the last banked one. Runs lazily on overview loads.
+  private async finalizeSavings(
+    userId: string,
+    profile: MoneyProfileRow,
+    currentWindow: MonthWindow,
+  ): Promise<void> {
+    if (!profile.incomeDay || profile.configuredAt === null) return;
+
+    const currentStart = currentWindow.from;
+    const latest = await this.repository.latestLedgerCycleStart(userId);
+
+    let cursor: string;
+    if (latest) {
+      cursor = addDaysIso(latest, 30);
+    } else {
+      const earliest = await this.repository.earliestTransactionDate(userId);
+      if (!earliest) return;
+      cursor = resolveMonthWindow(undefined, earliest, profile.incomeDay).from;
+    }
+
+    let guard = 0;
+    while (cursor < currentStart && guard < 24) {
+      const from = cursor;
+      const to = addDaysIso(cursor, 29);
+      const [extraIncome, spent] = await Promise.all([
+        this.repository.sumByKind(userId, 'income', from, to),
+        this.repository.sumByKind(userId, 'expense', from, to),
+      ]);
+      const netSavedMinor = profile.monthlyIncomeMinor + extraIncome - spent;
+      await this.repository.insertLedgerEntry(userId, {
+        cycleStart: from,
+        netSavedMinor,
+        savingsTargetMinor: profile.savingsTargetMinor,
+      });
+      cursor = addDaysIso(cursor, 30);
+      guard += 1;
+    }
+  }
+
   async getOverview(
     userId: string,
     options: { month?: string; today?: string },
@@ -587,6 +628,22 @@ export class BalanceService {
       `Safe to spend today = daily limit − everyday spending today ${formatMinor(currency, variableSpentTodayMinor)} = ${formatMinor(currency, numbers.safeToSpendTodayMinor)}`,
     ];
 
+    await this.finalizeSavings(userId, profile, window);
+    const [netSavedTotal, lastLedger] = await Promise.all([
+      this.repository.sumNetSaved(userId),
+      this.repository.lastLedgerEntry(userId),
+    ]);
+    // What's saved so far this cycle = income minus everything spent.
+    const thisCycleSavedMinor = numbers.incomeMinor - spentMinor;
+    const savings = {
+      netBalanceMinor: netSavedTotal + thisCycleSavedMinor,
+      thisCycleSavedMinor,
+      goalMinor: profile.savingsTargetMinor,
+      lastCycleExtraMinor: lastLedger
+        ? Math.max(0, lastLedger.netSavedMinor - lastLedger.savingsTargetMinor)
+        : null,
+    };
+
     return {
       month: window.month,
       currency,
@@ -613,6 +670,7 @@ export class BalanceService {
         averageDailySpendMinor: numbers.averageDailySpendMinor,
         projectedMonthEndBalanceMinor: numbers.projectedMonthEndBalanceMinor,
       },
+      savings,
       topCategories,
       budgets,
       upcomingBills,

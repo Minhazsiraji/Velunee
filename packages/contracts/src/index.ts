@@ -477,6 +477,15 @@ export const balanceOverviewResponseSchema = z.object({
     averageDailySpendMinor: minorAmountSchema,
     projectedMonthEndBalanceMinor: z.number().int(),
   }),
+  savings: z.object({
+    // Running net savings balance: banked cycles + what's saved so far this cycle.
+    netBalanceMinor: z.number().int(),
+    // This cycle's income minus spending so far.
+    thisCycleSavedMinor: z.number().int(),
+    goalMinor: minorAmountSchema,
+    // Extra saved above the goal in the most recently completed cycle (or null).
+    lastCycleExtraMinor: z.number().int().nullable(),
+  }),
   topCategories: z
     .array(
       z.object({

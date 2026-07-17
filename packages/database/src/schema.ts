@@ -456,6 +456,21 @@ export const fixedCosts = finance.table(
   (table) => [index('fixed_costs_user_idx').on(table.userId)],
 );
 
+export const savingsLedger = finance.table(
+  'savings_ledger',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    cycleStart: date('cycle_start').notNull(),
+    netSavedMinor: bigint('net_saved_minor', { mode: 'number' }).notNull(),
+    savingsTargetMinor: bigint('savings_target_minor', { mode: 'number' }).notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('savings_ledger_user_idx').on(table.userId)],
+);
+
 export const wardrobeCategory = pgEnum('wardrobe_category', [
   'top',
   'bottom',

@@ -274,6 +274,25 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
         <StatCard label="Savings goal" value={formatMinor(currency, totals.savingsTargetMinor)} />
       </View>
 
+      <View style={styles.savingsCard}>
+        <Text style={styles.savingsLabel}>NET SAVINGS BALANCE</Text>
+        <Text style={styles.savingsValue}>
+          {formatMinor(currency, data.savings.netBalanceMinor)}
+        </Text>
+        <Text style={styles.savingsHint}>
+          Saved {formatMinor(currency, data.savings.thisCycleSavedMinor)} this cycle · goal{' '}
+          {formatMinor(currency, data.savings.goalMinor)}
+        </Text>
+        {data.savings.lastCycleExtraMinor !== null && data.savings.lastCycleExtraMinor > 0 ? (
+          <View style={styles.savingsBadge}>
+            <Text style={styles.savingsBadgeText}>
+              🎉 Last cycle you saved {formatMinor(currency, data.savings.lastCycleExtraMinor)}{' '}
+              above your goal
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
       {data.safetyDays !== null ? (
         <Text style={styles.safetyText}>
           {`Your savings could cover about ${data.safetyDays} ${data.safetyDays === 1 ? 'day' : 'days'} of spending if income paused.`}
@@ -1247,6 +1266,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 14,
+  },
+  savingsCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginTop: 14,
+  },
+  savingsLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  savingsValue: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  savingsHint: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  savingsBadge: {
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  savingsBadgeText: {
+    color: colors.primaryLight,
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 19,
   },
   statCard: {
     flex: 1,
