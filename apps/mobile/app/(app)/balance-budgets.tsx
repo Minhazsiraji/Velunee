@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -62,6 +63,17 @@ export default function BalanceBudgetsScreen(): React.JSX.Element {
     }
   }
 
+  function confirmDelete(categoryId: string, name: string): void {
+    Alert.alert('Remove budget', `Stop tracking a monthly budget for ${name}?`, [
+      { text: 'Keep', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => setBudget.mutate({ categoryId, limitMinor: 0 }),
+      },
+    ]);
+  }
+
   const isLoading = budgetsQuery.isLoading || categoriesQuery.isLoading;
 
   return (
@@ -94,14 +106,11 @@ export default function BalanceBudgetsScreen(): React.JSX.Element {
           {budgets.map((budget) => {
             const category = categories.find((item) => item.id === budget.categoryId);
             return (
-              <Pressable
-                key={budget.categoryId}
-                accessibilityRole="button"
-                onPress={() => (category ? openEditor(category, budget.limitMinor) : undefined)}
-                style={styles.budgetCard}
-              >
+              <View key={budget.categoryId} style={styles.budgetCard}>
                 <View style={styles.budgetHeader}>
-                  <Text style={styles.budgetName}>{budget.name}</Text>
+                  <Text style={styles.budgetName} numberOfLines={1}>
+                    {budget.name}
+                  </Text>
                   <Text
                     style={[
                       styles.budgetUsage,
@@ -110,6 +119,24 @@ export default function BalanceBudgetsScreen(): React.JSX.Element {
                   >
                     {budget.usedPercent}%
                   </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${budget.name} budget`}
+                    hitSlop={8}
+                    onPress={() => (category ? openEditor(category, budget.limitMinor) : undefined)}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="pencil" size={16} color={colors.primaryLight} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${budget.name} budget`}
+                    hitSlop={8}
+                    onPress={() => confirmDelete(budget.categoryId, budget.name)}
+                    style={styles.iconButton}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                  </Pressable>
                 </View>
                 <View style={styles.progressTrack}>
                   <View
@@ -124,7 +151,7 @@ export default function BalanceBudgetsScreen(): React.JSX.Element {
                   {formatMinor(currency, budget.spentMinor)} of{' '}
                   {formatMinor(currency, budget.limitMinor)}
                 </Text>
-              </Pressable>
+              </View>
             );
           })}
 
@@ -234,20 +261,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
     padding: 14,
     marginTop: 10,
   },
   budgetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
     marginBottom: 8,
   },
   budgetName: {
+    flex: 1,
     color: colors.text,
     fontSize: 14,
     fontWeight: '700',
+  },
+  iconButton: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
   },
   budgetUsage: {
     color: colors.textSecondary,
