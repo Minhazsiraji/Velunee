@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -105,6 +106,18 @@ export default function LearnScreen(): React.JSX.Element {
   const lastAssistantId =
     [...turns].reverse().find((turn) => turn.role === 'assistant')?.id ?? null;
 
+  // Group turns into Q&A exchanges (user + its reply), then show newest first
+  // so the latest exchange sits at the top, right under the input.
+  const exchanges: { user: LessonTurn; assistant: LessonTurn | null }[] = [];
+  for (const turn of turns) {
+    if (turn.role === 'user') {
+      exchanges.push({ user: turn, assistant: null });
+    } else if (exchanges.length > 0) {
+      exchanges[exchanges.length - 1].assistant = turn;
+    }
+  }
+  const orderedExchanges = [...exchanges].reverse();
+
   function send(text: string): void {
     const q = text.trim();
     if (!q || ask.isPending) return;
@@ -121,6 +134,7 @@ export default function LearnScreen(): React.JSX.Element {
       .slice(-20);
     setTurns((prev) => [...prev, { id: turnId(), role: 'user', content: q }]);
     setQuestion('');
+    Keyboard.dismiss();
     ask.mutate(
       { question: q, mode, history },
       {
@@ -229,38 +243,38 @@ export default function LearnScreen(): React.JSX.Element {
                 </Pressable>
               </View>
 
-              {turns.map((turn) =>
-                turn.role === 'user' ? (
-                  <View key={turn.id} style={styles.userTurn}>
-                    <Text style={styles.userTurnText}>{turn.content}</Text>
+              {orderedExchanges.map((exchange) => (
+                <View key={exchange.user.id} style={styles.exchange}>
+                  <View style={styles.userTurn}>
+                    <Text style={styles.userTurnText}>{exchange.user.content}</Text>
                   </View>
-                ) : (
-                  <View key={turn.id} style={styles.assistantTurn}>
-                    <Text style={styles.answerText}>{turn.content}</Text>
-                    {turn.followUp && turn.id === lastAssistantId ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Continue with this suggestion"
-                        android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
-                        disabled={ask.isPending}
-                        onPress={() => send('Yes, let’s do that.')}
-                        style={styles.followUp}
-                      >
-                        <Ionicons
-                          name="arrow-forward-circle"
-                          size={18}
-                          color={colors.primaryLight}
-                        />
-                        <Text style={styles.followUpText}>{turn.followUp}</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ),
-              )}
 
-              {ask.isPending ? (
-                <ActivityIndicator color={colors.primaryLight} style={styles.turnLoader} />
-              ) : null}
+                  {exchange.assistant ? (
+                    <View style={styles.assistantTurn}>
+                      <Text style={styles.answerText}>{exchange.assistant.content}</Text>
+                      {exchange.assistant.followUp && exchange.assistant.id === lastAssistantId ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Continue with this suggestion"
+                          android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
+                          disabled={ask.isPending}
+                          onPress={() => send('Yes, let’s do that.')}
+                          style={styles.followUp}
+                        >
+                          <Ionicons
+                            name="arrow-forward-circle"
+                            size={18}
+                            color={colors.primaryLight}
+                          />
+                          <Text style={styles.followUpText}>{exchange.assistant.followUp}</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ) : ask.isPending ? (
+                    <ActivityIndicator color={colors.primaryLight} style={styles.turnLoader} />
+                  ) : null}
+                </View>
+              ))}
             </View>
           ) : null}
 
@@ -600,6 +614,7 @@ const styles = StyleSheet.create({
   },
   followUpText: { flex: 1, color: colors.primaryLight, fontSize: 14, lineHeight: 20 },
   thread: { gap: 12 },
+  exchange: { gap: 8 },
   threadHeader: {
     flexDirection: 'row',
     alignItems: 'center',
