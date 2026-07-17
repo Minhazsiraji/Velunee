@@ -286,6 +286,38 @@ export const balanceProfileResponseSchema = z.object({
   profile: balanceProfileSchema,
 });
 
+// Itemized fixed costs — named monthly commitments (rent, utilities, EMI…).
+// Their total is reserved upfront so they never reduce the daily limit.
+export const fixedCostSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  amountMinor: minorAmountSchema,
+  createdAt: z.string().datetime(),
+});
+
+export const fixedCostsResponseSchema = z.object({
+  fixedCosts: z.array(fixedCostSchema),
+  totalMinor: minorAmountSchema,
+});
+
+export const fixedCostResponseSchema = z.object({
+  fixedCost: fixedCostSchema,
+});
+
+export const createFixedCostSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  amountMinor: positiveMinorAmountSchema,
+});
+
+export const updateFixedCostSchema = z
+  .object({
+    name: z.string().trim().min(1).max(60).optional(),
+    amountMinor: positiveMinorAmountSchema.optional(),
+  })
+  .refine((value) => value.name !== undefined || value.amountMinor !== undefined, {
+    message: 'Provide a field to update',
+  });
+
 export const balanceCategorySchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(60),
@@ -606,6 +638,11 @@ export type SystemConfig = z.infer<typeof systemConfigSchema>;
 export type BalanceProfile = z.infer<typeof balanceProfileSchema>;
 export type UpdateBalanceProfileInput = z.infer<typeof updateBalanceProfileSchema>;
 export type BalanceProfileResponse = z.infer<typeof balanceProfileResponseSchema>;
+export type FixedCost = z.infer<typeof fixedCostSchema>;
+export type FixedCostsResponse = z.infer<typeof fixedCostsResponseSchema>;
+export type FixedCostResponse = z.infer<typeof fixedCostResponseSchema>;
+export type CreateFixedCostInput = z.infer<typeof createFixedCostSchema>;
+export type UpdateFixedCostInput = z.infer<typeof updateFixedCostSchema>;
 export type BalanceCategory = z.infer<typeof balanceCategorySchema>;
 export type BalanceCategoriesResponse = z.infer<typeof balanceCategoriesResponseSchema>;
 export type CreateBalanceCategoryInput = z.infer<typeof createBalanceCategorySchema>;

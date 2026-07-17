@@ -437,6 +437,21 @@ export const recurringBills = finance.table(
   (table) => [index('recurring_bills_user_idx').on(table.userId)],
 );
 
+export const fixedCosts = finance.table(
+  'fixed_costs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 60 }).notNull(),
+    amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [index('fixed_costs_user_idx').on(table.userId)],
+);
+
 export const wardrobeCategory = pgEnum('wardrobe_category', [
   'top',
   'bottom',

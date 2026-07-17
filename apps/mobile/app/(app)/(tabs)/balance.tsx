@@ -402,6 +402,11 @@ function Dashboard({ data, onOpenAdd, onOpenBill }: DashboardProps): React.JSX.E
 
       <View style={styles.linksRow}>
         <QuickLink
+          icon="repeat"
+          label="Fixed costs"
+          onPress={() => router.push('/balance-fixed-costs')}
+        />
+        <QuickLink
           icon="list"
           label="Transactions"
           onPress={() => router.push('/balance-transactions')}
@@ -1267,11 +1272,14 @@ const styles = StyleSheet.create({
   },
   linksRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 14,
   },
   quickLink: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '30%',
+    minWidth: 92,
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: 14,

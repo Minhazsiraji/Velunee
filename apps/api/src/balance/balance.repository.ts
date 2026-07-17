@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { BalancePaymentMethod, BalanceTransactionKind } from '@velunee/contracts';
 import {
+  fixedCosts,
   moneyBudgets,
   moneyCategories,
   moneyProfiles,
@@ -44,6 +45,13 @@ export interface TransactionRow {
 export interface CategoryTotalRow {
   categoryId: string | null;
   totalMinor: number;
+}
+
+export interface FixedCostRow {
+  id: string;
+  name: string;
+  amountMinor: number;
+  createdAt: Date;
 }
 
 export interface DayTotalRow {
@@ -617,6 +625,103 @@ export class BalanceRepository {
         ),
       )
       .returning({ id: recurringBills.id });
+    return updated.length > 0;
+  }
+
+  // Fail-soft on reads: if the fixed_costs migration hasn't been applied yet,
+  // return empty/zero so the rest of Balance keeps working (writes still throw).
+  async listFixedCosts(userId: string): Promise<FixedCostRow[]> {
+    if (!this.connection) return [];
+    try {
+      return await this.connection.db
+        .select({
+          id: fixedCosts.id,
+          name: fixedCosts.name,
+          amountMinor: fixedCosts.amountMinor,
+          createdAt: fixedCosts.createdAt,
+        })
+        .from(fixedCosts)
+        .where(and(eq(fixedCosts.userId, userId), isNull(fixedCosts.deletedAt)))
+        .orderBy(asc(fixedCosts.createdAt));
+    } catch {
+      return [];
+    }
+  }
+
+  async sumFixedCosts(userId: string): Promise<number> {
+    if (!this.connection) return 0;
+    try {
+      const [row] = await this.connection.db
+        .select({ total: sql<string>`coalesce(sum(${fixedCosts.amountMinor}), 0)` })
+        .from(fixedCosts)
+        .where(and(eq(fixedCosts.userId, userId), isNull(fixedCosts.deletedAt)));
+      return Number(row?.total ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  async insertFixedCost(
+    userId: string,
+    input: { name: string; amountMinor: number },
+  ): Promise<FixedCostRow> {
+    if (!this.connection) {
+      throw new Error(NOT_CONFIGURED);
+    }
+    await this.ensureUser(userId);
+    const [row] = await this.connection.db
+      .insert(fixedCosts)
+      .values({ userId, ...input })
+      .returning({ id: fixedCosts.id, createdAt: fixedCosts.createdAt });
+    if (!row) {
+      throw new Error('Fixed cost could not be created');
+    }
+    return {
+      id: row.id,
+      name: input.name,
+      amountMinor: input.amountMinor,
+      createdAt: row.createdAt,
+    };
+  }
+
+  async updateFixedCost(
+    userId: string,
+    id: string,
+    patch: { name?: string; amountMinor?: number },
+  ): Promise<FixedCostRow | null> {
+    if (!this.connection) {
+      throw new Error(NOT_CONFIGURED);
+    }
+    const set: Record<string, unknown> = {};
+    if (patch.name !== undefined) set.name = patch.name;
+    if (patch.amountMinor !== undefined) set.amountMinor = patch.amountMinor;
+
+    const [row] = await this.connection.db
+      .update(fixedCosts)
+      .set(set)
+      .where(
+        and(eq(fixedCosts.id, id), eq(fixedCosts.userId, userId), isNull(fixedCosts.deletedAt)),
+      )
+      .returning({
+        id: fixedCosts.id,
+        name: fixedCosts.name,
+        amountMinor: fixedCosts.amountMinor,
+        createdAt: fixedCosts.createdAt,
+      });
+    return row ?? null;
+  }
+
+  async softDeleteFixedCost(userId: string, id: string): Promise<boolean> {
+    if (!this.connection) {
+      throw new Error(NOT_CONFIGURED);
+    }
+    const updated = await this.connection.db
+      .update(fixedCosts)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(eq(fixedCosts.id, id), eq(fixedCosts.userId, userId), isNull(fixedCosts.deletedAt)),
+      )
+      .returning({ id: fixedCosts.id });
     return updated.length > 0;
   }
 }

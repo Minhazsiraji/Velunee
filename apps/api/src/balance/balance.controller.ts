@@ -6,6 +6,8 @@ import {
   createBalanceCategorySchema,
   createBalanceTransactionSchema,
   updateBalanceTransactionSchema,
+  createFixedCostSchema,
+  updateFixedCostSchema,
   createRecurringBillSchema,
   createSavingsGoalSchema,
   parseSpendingSchema,
@@ -19,6 +21,10 @@ import {
   type BalanceDeletedResponse,
   type BalanceOverviewResponse,
   type BalanceProfileResponse,
+  type FixedCostResponse,
+  type FixedCostsResponse,
+  type CreateFixedCostInput,
+  type UpdateFixedCostInput,
   type BalanceReportResponse,
   type BalanceTransactionResponse,
   type BalanceTransactionsResponse,
@@ -186,6 +192,38 @@ export class BalanceController {
     @Param('goalId') goalId: string,
   ): Promise<BalanceDeletedResponse> {
     return this.balanceService.deleteGoal(user.id, goalId);
+  }
+
+  @Get('fixed-costs')
+  async listFixedCosts(@CurrentUser() user: AuthenticatedUser): Promise<FixedCostsResponse> {
+    return this.balanceService.listFixedCosts(user.id);
+  }
+
+  @Post('fixed-costs')
+  async createFixedCost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body(new ZodValidationPipe(createFixedCostSchema))
+    input: CreateFixedCostInput,
+  ): Promise<FixedCostResponse> {
+    return this.balanceService.createFixedCost(user.id, input);
+  }
+
+  @Patch('fixed-costs/:fixedCostId')
+  async updateFixedCost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('fixedCostId') fixedCostId: string,
+    @Body(new ZodValidationPipe(updateFixedCostSchema))
+    input: UpdateFixedCostInput,
+  ): Promise<FixedCostResponse> {
+    return this.balanceService.updateFixedCost(user.id, fixedCostId, input);
+  }
+
+  @Delete('fixed-costs/:fixedCostId')
+  async deleteFixedCost(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('fixedCostId') fixedCostId: string,
+  ): Promise<BalanceDeletedResponse> {
+    return this.balanceService.deleteFixedCost(user.id, fixedCostId);
   }
 
   @Get('bills')

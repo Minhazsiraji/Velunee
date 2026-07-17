@@ -9,6 +9,8 @@ import {
   balanceReportResponseSchema,
   balanceTransactionResponseSchema,
   balanceTransactionsResponseSchema,
+  fixedCostResponseSchema,
+  fixedCostsResponseSchema,
   parseSpendingResponseSchema,
   recurringBillResponseSchema,
   recurringBillsResponseSchema,
@@ -26,6 +28,10 @@ import {
   type BalanceTransactionsResponse,
   type CreateBalanceCategoryInput,
   type CreateBalanceTransactionInput,
+  type CreateFixedCostInput,
+  type UpdateFixedCostInput,
+  type FixedCostResponse,
+  type FixedCostsResponse,
   type CreateRecurringBillInput,
   type CreateSavingsGoalInput,
   type ParseSpendingResponse,
@@ -174,6 +180,37 @@ export async function contributeToGoal(
 
 export async function deleteGoal(goalId: string): Promise<BalanceDeletedResponse> {
   const payload = await apiRequest<unknown>(`/balance/goals/${goalId}`, { method: 'DELETE' });
+  return balanceDeletedResponseSchema.parse(payload);
+}
+
+export async function loadFixedCosts(): Promise<FixedCostsResponse> {
+  const payload = await apiRequest<unknown>('/balance/fixed-costs');
+  return fixedCostsResponseSchema.parse(payload);
+}
+
+export async function createFixedCost(input: CreateFixedCostInput): Promise<FixedCostResponse> {
+  const payload = await apiRequest<unknown>('/balance/fixed-costs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return fixedCostResponseSchema.parse(payload);
+}
+
+export async function updateFixedCost(
+  fixedCostId: string,
+  input: UpdateFixedCostInput,
+): Promise<FixedCostResponse> {
+  const payload = await apiRequest<unknown>(`/balance/fixed-costs/${fixedCostId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+  return fixedCostResponseSchema.parse(payload);
+}
+
+export async function deleteFixedCost(fixedCostId: string): Promise<BalanceDeletedResponse> {
+  const payload = await apiRequest<unknown>(`/balance/fixed-costs/${fixedCostId}`, {
+    method: 'DELETE',
+  });
   return balanceDeletedResponseSchema.parse(payload);
 }
 

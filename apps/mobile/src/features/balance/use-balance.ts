@@ -6,19 +6,24 @@ import type {
   SetBalanceBudgetInput,
   UpdateBalanceProfileInput,
   UpdateBalanceTransactionInput,
+  CreateFixedCostInput,
+  UpdateFixedCostInput,
 } from '@velunee/contracts';
 
 import {
   checkAffordability,
   contributeToGoal,
   createBill,
+  createFixedCost,
   createGoal,
   createTransaction,
   deleteBill,
+  deleteFixedCost,
   deleteGoal,
   deleteTransaction,
   loadBudgets,
   loadCategories,
+  loadFixedCosts,
   loadGoals,
   loadOverview,
   loadProfile,
@@ -26,6 +31,7 @@ import {
   loadTransactions,
   parseSpending,
   setBudget,
+  updateFixedCost,
   updateProfile,
   updateTransaction,
 } from './api';
@@ -66,6 +72,38 @@ export function useUpdateBalanceProfile() {
   const invalidate = useInvalidateBalance();
   return useMutation({
     mutationFn: (input: UpdateBalanceProfileInput) => updateProfile(input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useFixedCosts() {
+  return useQuery({
+    queryKey: [...balanceKey, 'fixed-costs'],
+    queryFn: () => loadFixedCosts(),
+  });
+}
+
+export function useCreateFixedCost() {
+  const invalidate = useInvalidateBalance();
+  return useMutation({
+    mutationFn: (input: CreateFixedCostInput) => createFixedCost(input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateFixedCost() {
+  const invalidate = useInvalidateBalance();
+  return useMutation({
+    mutationFn: (vars: { fixedCostId: string; input: UpdateFixedCostInput }) =>
+      updateFixedCost(vars.fixedCostId, vars.input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteFixedCost() {
+  const invalidate = useInvalidateBalance();
+  return useMutation({
+    mutationFn: (fixedCostId: string) => deleteFixedCost(fixedCostId),
     onSuccess: invalidate,
   });
 }

@@ -19,6 +19,11 @@ import type {
   CreateBalanceCategoryInput,
   CreateBalanceTransactionInput,
   UpdateBalanceTransactionInput,
+  CreateFixedCostInput,
+  UpdateFixedCostInput,
+  FixedCost,
+  FixedCostResponse,
+  FixedCostsResponse,
   CreateRecurringBillInput,
   CreateSavingsGoalInput,
   ParseSpendingInput,
@@ -49,6 +54,7 @@ import { parseSpendingText } from './balance.parser';
 import {
   BalanceRepository,
   type CategoryRow,
+  type FixedCostRow,
   type GoalRow,
   type MoneyProfileRow,
   type TransactionRow,
@@ -414,18 +420,32 @@ export class BalanceService {
     const profile = await this.profileOrDefault(userId);
     const currency = profile.currencyCode;
 
-    const [extraIncomeMinor, spentMinor, todayTotals, categories, categoryTotals, bills, goals] =
-      await Promise.all([
-        this.repository.sumByKind(userId, 'income', window.from, window.to),
-        this.repository.sumByKind(userId, 'expense', window.from, window.to),
-        window.isCurrentMonth
-          ? this.repository.spentByCategory(userId, window.today, window.today)
-          : Promise.resolve([]),
-        this.repository.listCategories(userId),
-        this.repository.spentByCategory(userId, window.from, window.to),
-        this.repository.listBills(userId),
-        this.repository.listGoals(userId),
-      ]);
+    const [
+      extraIncomeMinor,
+      spentMinor,
+      todayTotals,
+      categories,
+      categoryTotals,
+      bills,
+      goals,
+      fixedCostsTotalMinor,
+    ] = await Promise.all([
+      this.repository.sumByKind(userId, 'income', window.from, window.to),
+      this.repository.sumByKind(userId, 'expense', window.from, window.to),
+      window.isCurrentMonth
+        ? this.repository.spentByCategory(userId, window.today, window.today)
+        : Promise.resolve([]),
+      this.repository.listCategories(userId),
+      this.repository.spentByCategory(userId, window.from, window.to),
+      this.repository.listBills(userId),
+      this.repository.listGoals(userId),
+      this.repository.sumFixedCosts(userId),
+    ]);
+
+    // Itemized fixed costs (when the user has added any) are the planned fixed
+    // total reserved upfront; otherwise fall back to the single profile estimate.
+    const fixedEstimateMinor =
+      fixedCostsTotalMinor > 0 ? fixedCostsTotalMinor : profile.fixedExpensesMinor;
 
     const fixedCategoryIds = new Set(
       categories.filter((category) => category.isFixed).map((category) => category.id),
@@ -447,7 +467,7 @@ export class BalanceService {
       monthlyIncomeMinor: profile.monthlyIncomeMinor,
       extraIncomeMinor,
       spentMinor,
-      fixedEstimateMinor: profile.fixedExpensesMinor,
+      fixedEstimateMinor,
       fixedSpentMinor,
       variableSpentTodayMinor,
       savingsTargetMinor: profile.savingsTargetMinor,
@@ -512,7 +532,7 @@ export class BalanceService {
 
     const calculation = [
       `Income = monthly income ${formatMinor(currency, profile.monthlyIncomeMinor)} + extra income recorded ${formatMinor(currency, extraIncomeMinor)} = ${formatMinor(currency, numbers.incomeMinor)}`,
-      `Fixed costs reserved = the larger of your estimate ${formatMinor(currency, profile.fixedExpensesMinor)} and fixed-category spending ${formatMinor(currency, fixedSpentMinor)} = ${formatMinor(currency, numbers.fixedReservedMinor)}`,
+      `Fixed costs reserved = the larger of your planned fixed costs ${formatMinor(currency, fixedEstimateMinor)} and fixed-category spending ${formatMinor(currency, fixedSpentMinor)} = ${formatMinor(currency, numbers.fixedReservedMinor)}`,
       `Everyday spending = all expenses ${formatMinor(currency, spentMinor)} − fixed-category spending ${formatMinor(currency, fixedSpentMinor)} = ${formatMinor(currency, numbers.variableSpentMinor)}`,
       `Remaining = income − savings target ${formatMinor(currency, profile.savingsTargetMinor)} − fixed costs reserved − everyday spending = ${formatMinor(currency, numbers.remainingMinor)}`,
       window.daysRemaining > 0
@@ -700,6 +720,54 @@ export class BalanceService {
     const deleted = await this.repository.softDeleteBill(userId, billId);
     if (!deleted) {
       throw new NotFoundException('Bill not found');
+    }
+    return { deleted: true };
+  }
+
+  private toFixedCostContract(row: FixedCostRow): FixedCost {
+    return {
+      id: row.id,
+      name: row.name,
+      amountMinor: row.amountMinor,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  async listFixedCosts(userId: string): Promise<FixedCostsResponse> {
+    const rows = await this.repository.listFixedCosts(userId);
+    return {
+      fixedCosts: rows.map((row) => this.toFixedCostContract(row)),
+      totalMinor: rows.reduce((total, row) => total + row.amountMinor, 0),
+    };
+  }
+
+  async createFixedCost(userId: string, input: CreateFixedCostInput): Promise<FixedCostResponse> {
+    const row = await this.repository.insertFixedCost(userId, {
+      name: input.name,
+      amountMinor: input.amountMinor,
+    });
+    return { fixedCost: this.toFixedCostContract(row) };
+  }
+
+  async updateFixedCost(
+    userId: string,
+    id: string,
+    input: UpdateFixedCostInput,
+  ): Promise<FixedCostResponse> {
+    const row = await this.repository.updateFixedCost(userId, id, {
+      name: input.name,
+      amountMinor: input.amountMinor,
+    });
+    if (!row) {
+      throw new NotFoundException('Fixed cost not found');
+    }
+    return { fixedCost: this.toFixedCostContract(row) };
+  }
+
+  async deleteFixedCost(userId: string, id: string): Promise<BalanceDeletedResponse> {
+    const deleted = await this.repository.softDeleteFixedCost(userId, id);
+    if (!deleted) {
+      throw new NotFoundException('Fixed cost not found');
     }
     return { deleted: true };
   }
