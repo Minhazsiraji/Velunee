@@ -28,10 +28,62 @@ export function previousMonthOf(month: string): string {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
 }
 
+const CYCLE_LENGTH_DAYS = 30;
+
+function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+function diffDaysIso(aIso: string, bIso: string): number {
+  const [ay, am, ad] = aIso.split('-').map(Number) as [number, number, number];
+  const [by, bm, bd] = bIso.split('-').map(Number) as [number, number, number];
+  return Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)) / 86_400_000);
+}
+
+// A pay-period window anchored on the user's salary/income day: the cycle runs
+// from the most recent income day (on or before today) for CYCLE_LENGTH_DAYS.
+// Keeps the same MonthWindow shape (daysInMonth = cycle length).
+function resolvePayCycleWindow(todayIso: string, incomeDay: number): MonthWindow {
+  const year = Number(todayIso.slice(0, 4));
+  const month = Number(todayIso.slice(5, 7));
+  const day = Number(todayIso.slice(8, 10));
+
+  const startDate =
+    day >= incomeDay
+      ? new Date(Date.UTC(year, month - 1, incomeDay))
+      : new Date(Date.UTC(year, month - 2, incomeDay));
+  const from = startDate.toISOString().slice(0, 10);
+  const to = addDaysIso(from, CYCLE_LENGTH_DAYS - 1);
+
+  const daysElapsed = Math.min(CYCLE_LENGTH_DAYS, Math.max(1, diffDaysIso(todayIso, from) + 1));
+  const daysRemaining = Math.max(0, CYCLE_LENGTH_DAYS - daysElapsed + 1);
+
+  return {
+    month: from.slice(0, 7),
+    from,
+    to,
+    today: todayIso,
+    daysInMonth: CYCLE_LENGTH_DAYS,
+    daysElapsed,
+    daysRemaining,
+    isCurrentMonth: true,
+  };
+}
+
 // `today` lets the client supply its local date so day boundaries follow the
-// user's timezone instead of the server's.
-export function resolveMonthWindow(month?: string, today?: string): MonthWindow {
+// user's timezone instead of the server's. When `incomeDay` is set and no
+// explicit month is requested, the window follows the user's pay cycle instead
+// of the calendar month.
+export function resolveMonthWindow(
+  month?: string,
+  today?: string,
+  incomeDay?: number | null,
+): MonthWindow {
   const todayIso = today ?? isoToday();
+  if (!month && incomeDay && incomeDay >= 1 && incomeDay <= 28) {
+    return resolvePayCycleWindow(todayIso, incomeDay);
+  }
   const resolvedMonth = month ?? todayIso.slice(0, 7);
   const daysInMonth = daysInMonthOf(resolvedMonth);
   const from = `${resolvedMonth}-01`;

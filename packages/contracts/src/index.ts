@@ -268,6 +268,7 @@ export const balanceProfileSchema = z.object({
   monthlyIncomeMinor: minorAmountSchema,
   fixedExpensesMinor: minorAmountSchema,
   savingsTargetMinor: minorAmountSchema,
+  incomeDay: z.number().int().min(1).max(28).nullable(),
   isConfigured: z.boolean(),
 });
 
@@ -277,6 +278,7 @@ export const updateBalanceProfileSchema = z
     monthlyIncomeMinor: minorAmountSchema.optional(),
     fixedExpensesMinor: minorAmountSchema.optional(),
     savingsTargetMinor: minorAmountSchema.optional(),
+    incomeDay: z.number().int().min(1).max(28).nullable().optional(),
   })
   .refine((value) => Object.values(value).some((v) => v !== undefined), {
     message: 'Provide at least one field to update',

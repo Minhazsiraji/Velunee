@@ -68,6 +68,7 @@ const DEFAULT_PROFILE: MoneyProfileRow = {
   monthlyIncomeMinor: 0,
   fixedExpensesMinor: 0,
   savingsTargetMinor: 0,
+  incomeDay: null,
   configuredAt: null,
 };
 
@@ -112,6 +113,7 @@ export class BalanceService {
       monthlyIncomeMinor: row.monthlyIncomeMinor,
       fixedExpensesMinor: row.fixedExpensesMinor,
       savingsTargetMinor: row.savingsTargetMinor,
+      incomeDay: row.incomeDay,
       isConfigured: row.configuredAt !== null,
     };
   }
@@ -136,6 +138,7 @@ export class BalanceService {
       ...(input.savingsTargetMinor !== undefined
         ? { savingsTargetMinor: input.savingsTargetMinor }
         : {}),
+      ...(input.incomeDay !== undefined ? { incomeDay: input.incomeDay } : {}),
     });
     return this.getProfile(userId);
   }
@@ -206,9 +209,11 @@ export class BalanceService {
     userId: string,
     options: { month?: string; today?: string; cursor?: string },
   ): Promise<BalanceTransactionsResponse> {
+    const profile = await this.profileOrDefault(userId);
     const window = resolveMonthWindow(
       this.parseMonth(options.month),
       this.parseToday(options.today),
+      profile.incomeDay,
     );
     const [{ rows, nextCursor }, categoryNames, fixedCostNames] = await Promise.all([
       this.repository.listTransactions(userId, {
@@ -447,11 +452,12 @@ export class BalanceService {
     userId: string,
     options: { month?: string; today?: string },
   ): Promise<BalanceOverviewResponse> {
+    const profile = await this.profileOrDefault(userId);
     const window = resolveMonthWindow(
       this.parseMonth(options.month),
       this.parseToday(options.today),
+      profile.incomeDay,
     );
-    const profile = await this.profileOrDefault(userId);
     const currency = profile.currencyCode;
 
     const [
@@ -775,7 +781,8 @@ export class BalanceService {
   }
 
   async listFixedCosts(userId: string): Promise<FixedCostsResponse> {
-    const window = resolveMonthWindow();
+    const profile = await this.profileOrDefault(userId);
+    const window = resolveMonthWindow(undefined, undefined, profile.incomeDay);
     const [rows, paid] = await Promise.all([
       this.repository.listFixedCosts(userId),
       this.repository.paidByFixedCost(userId, window.from, window.to),

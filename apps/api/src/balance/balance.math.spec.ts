@@ -24,6 +24,33 @@ describe('resolveMonthWindow', () => {
     expect(window.isCurrentMonth).toBe(true);
   });
 
+  it('follows the pay cycle from the salary day when today is on/after it', () => {
+    const window = resolveMonthWindow(undefined, '2026-07-20', 5);
+
+    expect(window.from).toBe('2026-07-05');
+    expect(window.to).toBe('2026-08-03');
+    expect(window.daysInMonth).toBe(30);
+    expect(window.daysElapsed).toBe(16);
+    expect(window.daysRemaining).toBe(15);
+    expect(window.isCurrentMonth).toBe(true);
+  });
+
+  it('uses the previous salary day when today is before this month’s salary day', () => {
+    const window = resolveMonthWindow(undefined, '2026-07-03', 5);
+
+    expect(window.from).toBe('2026-06-05');
+    expect(window.to).toBe('2026-07-04');
+    expect(window.daysElapsed).toBe(29);
+    expect(window.daysRemaining).toBe(2);
+  });
+
+  it('ignores the salary day when an explicit month is requested', () => {
+    const window = resolveMonthWindow('2026-07', '2026-07-20', 5);
+
+    expect(window.from).toBe('2026-07-01');
+    expect(window.to).toBe('2026-07-31');
+  });
+
   it('treats a past month as fully elapsed', () => {
     const window = resolveMonthWindow('2026-06', '2026-07-14');
 

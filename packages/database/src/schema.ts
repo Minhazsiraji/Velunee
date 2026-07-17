@@ -342,6 +342,7 @@ export const moneyProfiles = finance.table('money_profiles', {
   monthlyIncomeMinor: bigint('monthly_income_minor', { mode: 'number' }).notNull().default(0),
   fixedExpensesMinor: bigint('fixed_expenses_minor', { mode: 'number' }).notNull().default(0),
   savingsTargetMinor: bigint('savings_target_minor', { mode: 'number' }).notNull().default(0),
+  incomeDay: integer('income_day'),
   configuredAt: timestamp('configured_at', { withTimezone: true }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

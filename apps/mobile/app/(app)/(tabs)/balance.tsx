@@ -120,6 +120,7 @@ function SetupForm(): React.JSX.Element {
   const [income, setIncome] = useState('');
   const [fixed, setFixed] = useState('');
   const [savings, setSavings] = useState('');
+  const [salaryDay, setSalaryDay] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function handleSave(): void {
@@ -134,12 +135,18 @@ function SetupForm(): React.JSX.Element {
       setError('Amounts should be numbers like 25000 or 1,250.50.');
       return;
     }
+    const dayNum = salaryDay.trim() ? Number(salaryDay.trim()) : null;
+    if (dayNum !== null && (!Number.isInteger(dayNum) || dayNum < 1 || dayNum > 28)) {
+      setError('Salary day should be a day of the month from 1 to 28.');
+      return;
+    }
     setError(null);
     updateProfile.mutate(
       {
         monthlyIncomeMinor: incomeMinor,
         fixedExpensesMinor: fixedMinor,
         savingsTargetMinor: savingsMinor,
+        incomeDay: dayNum,
       },
       {
         onError: (mutationError) => {
@@ -182,6 +189,13 @@ function SetupForm(): React.JSX.Element {
         keyboardType="numeric"
         value={savings}
         onChangeText={setSavings}
+      />
+      <FormField
+        label="SALARY / INCOME DAY (OPTIONAL, 1–28)"
+        placeholder="e.g. 5 — your budget month starts here"
+        keyboardType="numeric"
+        value={salaryDay}
+        onChangeText={setSalaryDay}
         errorText={error}
       />
 
@@ -947,6 +961,7 @@ function EditPlanModal({
   const [income, setIncome] = useState('');
   const [fixed, setFixed] = useState('');
   const [savings, setSavings] = useState('');
+  const [salaryDay, setSalaryDay] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -954,6 +969,9 @@ function EditPlanModal({
       setIncome(minorToMajorText(profile.data.profile.monthlyIncomeMinor));
       setFixed(minorToMajorText(profile.data.profile.fixedExpensesMinor));
       setSavings(minorToMajorText(profile.data.profile.savingsTargetMinor));
+      setSalaryDay(
+        profile.data.profile.incomeDay != null ? String(profile.data.profile.incomeDay) : '',
+      );
       setError(null);
     }
   }, [visible, profile.data]);
@@ -975,12 +993,18 @@ function EditPlanModal({
       setError('Amounts should be numbers like 25000 or 1,250.50.');
       return;
     }
+    const dayNum = salaryDay.trim() ? Number(salaryDay.trim()) : null;
+    if (dayNum !== null && (!Number.isInteger(dayNum) || dayNum < 1 || dayNum > 28)) {
+      setError('Salary day should be a day of the month from 1 to 28.');
+      return;
+    }
     setError(null);
     updateProfile.mutate(
       {
         monthlyIncomeMinor: incomeMinor,
         fixedExpensesMinor: fixedMinor,
         savingsTargetMinor: savingsMinor,
+        incomeDay: dayNum,
       },
       {
         onSuccess: () => close(),
@@ -1040,6 +1064,13 @@ function EditPlanModal({
                 keyboardType="numeric"
                 value={savings}
                 onChangeText={setSavings}
+              />
+              <FormField
+                label="SALARY / INCOME DAY (1–28)"
+                placeholder="e.g. 5 — your budget month starts here"
+                keyboardType="numeric"
+                value={salaryDay}
+                onChangeText={setSalaryDay}
                 errorText={error}
               />
 

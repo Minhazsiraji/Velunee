@@ -19,6 +19,7 @@ export interface MoneyProfileRow {
   monthlyIncomeMinor: number;
   fixedExpensesMinor: number;
   savingsTargetMinor: number;
+  incomeDay: number | null;
   configuredAt: Date | null;
 }
 
@@ -110,6 +111,7 @@ export class BalanceRepository {
         monthlyIncomeMinor: moneyProfiles.monthlyIncomeMinor,
         fixedExpensesMinor: moneyProfiles.fixedExpensesMinor,
         savingsTargetMinor: moneyProfiles.savingsTargetMinor,
+        incomeDay: moneyProfiles.incomeDay,
         configuredAt: moneyProfiles.configuredAt,
       })
       .from(moneyProfiles)
