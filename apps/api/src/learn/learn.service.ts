@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import type { AIProvider } from '@velunee/ai-core';
 import type {
   CreateStudyTopicInput,
@@ -7,6 +13,8 @@ import type {
   LearnDeletedResponse,
   LearnerProfile,
   LearnerProfileResponse,
+  SaveLessonInput,
+  SavedLesson,
   StudyTopic,
   StudyTopicResponse,
   StudyTopicsResponse,
@@ -144,6 +152,24 @@ export class LearnService {
       model,
       requestId,
     };
+  }
+
+  /**
+   * Lesson persistence is scaffolded but DISABLED to avoid storage cost.
+   * To enable: add a `lessons` table + migration, implement persistence here,
+   * wire a controller route + mobile "Save lesson" action, and set
+   * LEARN_LESSONS_ENABLED=true. Until then this fails closed and stores nothing.
+   */
+  private get lessonsEnabled(): boolean {
+    return process.env.LEARN_LESSONS_ENABLED === 'true';
+  }
+
+  async saveLesson(_userId: string, _input: SaveLessonInput): Promise<SavedLesson> {
+    throw new ServiceUnavailableException(
+      this.lessonsEnabled
+        ? 'Lesson saving is enabled but not yet implemented'
+        : 'Lesson saving is not enabled yet',
+    );
   }
 
   private toTopicContract(row: StudyTopicRow): StudyTopic {

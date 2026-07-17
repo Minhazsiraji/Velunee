@@ -108,7 +108,17 @@ export default function LearnScreen(): React.JSX.Element {
   function send(text: string): void {
     const q = text.trim();
     if (!q || ask.isPending) return;
-    const history = turns.map((turn) => ({ role: turn.role, content: turn.content })).slice(-20);
+    // Include the assistant's follow-up offer in its history content so a short
+    // acceptance ("Yes, let's do that.") has something concrete to act on.
+    const history = turns
+      .map((turn) => ({
+        role: turn.role,
+        content:
+          turn.role === 'assistant' && turn.followUp
+            ? `${turn.content}\n\n${turn.followUp}`
+            : turn.content,
+      }))
+      .slice(-20);
     setTurns((prev) => [...prev, { id: turnId(), role: 'user', content: q }]);
     setQuestion('');
     ask.mutate(
@@ -233,7 +243,7 @@ export default function LearnScreen(): React.JSX.Element {
                         accessibilityLabel="Continue with this suggestion"
                         android_ripple={{ color: 'rgba(180, 150, 255, 0.10)' }}
                         disabled={ask.isPending}
-                        onPress={() => send(turn.followUp ?? '')}
+                        onPress={() => send('Yes, let’s do that.')}
                         style={styles.followUp}
                       >
                         <Ionicons

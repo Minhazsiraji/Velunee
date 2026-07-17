@@ -1092,6 +1092,32 @@ export const learnDeletedResponseSchema = z.object({
   deleted: z.literal(true),
 });
 
+// --- Lesson saving (persistence) — SCHEMA KEPT READY BUT FEATURE DISABLED ---
+// The conversational lesson thread lives only in-session today. These schemas
+// are the contract for persisting it later. Enabling requires a `lessons`
+// table + migration, a controller route, a mobile "Save lesson" action, and
+// LEARN_LESSONS_ENABLED=true. No storage is used while disabled.
+export const savedLessonTurnSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().max(4000),
+});
+
+export const saveLessonSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  turns: z.array(savedLessonTurnSchema).min(1).max(60),
+});
+
+export const savedLessonSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  turns: z.array(savedLessonTurnSchema),
+  createdAt: z.string().datetime(),
+});
+
+export const savedLessonsResponseSchema = z.object({
+  lessons: z.array(savedLessonSchema),
+});
+
 export type LearnerLevel = z.infer<typeof learnerLevelSchema>;
 export type ExplanationStyle = z.infer<typeof explanationStyleSchema>;
 export type StudyStatus = z.infer<typeof studyStatusSchema>;
@@ -1101,6 +1127,9 @@ export type LearnerProfileResponse = z.infer<typeof learnerProfileResponseSchema
 export type UpdateLearnerProfileInput = z.infer<typeof updateLearnerProfileSchema>;
 export type LearnAskRequestInput = z.infer<typeof learnAskRequestSchema>;
 export type LearnAskResponse = z.infer<typeof learnAskResponseSchema>;
+export type SaveLessonInput = z.infer<typeof saveLessonSchema>;
+export type SavedLesson = z.infer<typeof savedLessonSchema>;
+export type SavedLessonsResponse = z.infer<typeof savedLessonsResponseSchema>;
 export type StudyTopic = z.infer<typeof studyTopicSchema>;
 export type StudyTopicsResponse = z.infer<typeof studyTopicsResponseSchema>;
 export type CreateStudyTopicInput = z.infer<typeof createStudyTopicSchema>;
