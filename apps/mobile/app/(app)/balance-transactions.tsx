@@ -113,9 +113,12 @@ export default function BalanceTransactionsScreen(): React.JSX.Element {
             </View>
             <View style={styles.rowInfo}>
               <Text style={styles.rowTitle}>
-                {item.categoryName ?? (item.kind === 'income' ? 'Income' : 'Expense')}
+                {item.fixedCostName ??
+                  item.categoryName ??
+                  (item.kind === 'income' ? 'Income' : 'Expense')}
               </Text>
               <Text style={styles.rowSubtitle} numberOfLines={1}>
+                {item.fixedCostName ? 'Fixed cost · ' : ''}
                 {item.occurredOn}
                 {item.note ? ` · ${item.note}` : ''}
               </Text>

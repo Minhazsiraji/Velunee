@@ -292,6 +292,7 @@ export const fixedCostSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   amountMinor: minorAmountSchema,
+  paidMinor: minorAmountSchema,
   createdAt: z.string().datetime(),
 });
 
@@ -351,6 +352,8 @@ export const balanceTransactionSchema = z.object({
   currency: currencyCodeSchema,
   categoryId: z.string().uuid().nullable(),
   categoryName: z.string().nullable(),
+  fixedCostId: z.string().uuid().nullable(),
+  fixedCostName: z.string().nullable(),
   note: z.string().nullable(),
   paymentMethod: balancePaymentMethodSchema,
   occurredOn: isoDateOnlySchema,
@@ -361,6 +364,7 @@ export const createBalanceTransactionSchema = z.object({
   kind: balanceTransactionKindSchema.default('expense'),
   amountMinor: positiveMinorAmountSchema,
   categoryId: z.string().uuid().optional(),
+  fixedCostId: z.string().uuid().optional(),
   note: z.string().trim().max(240).optional(),
   paymentMethod: balancePaymentMethodSchema.default('cash'),
   occurredOn: isoDateOnlySchema.optional(),
@@ -373,6 +377,7 @@ export const updateBalanceTransactionSchema = z
     kind: balanceTransactionKindSchema.optional(),
     amountMinor: positiveMinorAmountSchema.optional(),
     categoryId: z.string().uuid().nullable().optional(),
+    fixedCostId: z.string().uuid().nullable().optional(),
     note: z.string().trim().max(240).nullable().optional(),
     paymentMethod: balancePaymentMethodSchema.optional(),
     occurredOn: isoDateOnlySchema.optional(),

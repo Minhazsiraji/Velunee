@@ -373,6 +373,9 @@ export const moneyTransactions = finance.table(
     categoryId: uuid('category_id').references(() => moneyCategories.id, {
       onDelete: 'set null',
     }),
+    fixedCostId: uuid('fixed_cost_id').references(() => fixedCosts.id, {
+      onDelete: 'set null',
+    }),
     note: varchar('note', { length: 240 }),
     paymentMethod: paymentMethod('payment_method').notNull().default('cash'),
     occurredOn: date('occurred_on').notNull(),

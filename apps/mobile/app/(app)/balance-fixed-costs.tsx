@@ -99,7 +99,12 @@ export default function BalanceFixedCostsScreen(): React.JSX.Element {
             <View style={styles.rowIcon}>
               <Ionicons name="repeat" size={18} color={colors.primaryLight} />
             </View>
-            <Text style={styles.rowName}>{item.name}</Text>
+            <View style={styles.rowInfo}>
+              <Text style={styles.rowName}>{item.name}</Text>
+              <Text style={styles.rowPaid}>
+                Paid {formatMinor(currency, item.paidMinor)} this month
+              </Text>
+            </View>
             <Text style={styles.rowAmount}>{formatMinor(currency, item.amountMinor)}</Text>
             <Pressable
               accessibilityRole="button"
@@ -392,11 +397,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 10,
   },
-  rowName: {
+  rowInfo: {
     flex: 1,
+  },
+  rowName: {
     color: colors.text,
     fontSize: 15,
     fontWeight: '600',
+  },
+  rowPaid: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
   },
   rowAmount: {
     color: colors.text,

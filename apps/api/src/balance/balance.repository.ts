@@ -11,7 +11,7 @@ import {
   users,
   type DatabaseConnection,
 } from '@velunee/database';
-import { and, asc, desc, eq, gte, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '../database/database.constants';
 
 export interface MoneyProfileRow {
@@ -36,6 +36,7 @@ export interface TransactionRow {
   amountMinor: number;
   currencyCode: string;
   categoryId: string | null;
+  fixedCostId: string | null;
   note: string | null;
   paymentMethod: BalancePaymentMethod;
   occurredOn: string;
@@ -203,6 +204,7 @@ export class BalanceRepository {
       amountMinor: number;
       currencyCode: string;
       categoryId: string | null;
+      fixedCostId: string | null;
       note: string | null;
       paymentMethod: BalancePaymentMethod;
       occurredOn: string;
@@ -248,6 +250,7 @@ export class BalanceRepository {
         amountMinor: moneyTransactions.amountMinor,
         currencyCode: moneyTransactions.currencyCode,
         categoryId: moneyTransactions.categoryId,
+        fixedCostId: moneyTransactions.fixedCostId,
         note: moneyTransactions.note,
         paymentMethod: moneyTransactions.paymentMethod,
         occurredOn: moneyTransactions.occurredOn,
@@ -275,6 +278,7 @@ export class BalanceRepository {
       kind?: BalanceTransactionKind;
       amountMinor?: number;
       categoryId?: string | null;
+      fixedCostId?: string | null;
       note?: string | null;
       paymentMethod?: BalancePaymentMethod;
       occurredOn?: string;
@@ -288,6 +292,7 @@ export class BalanceRepository {
     if (patch.kind !== undefined) set.kind = patch.kind;
     if (patch.amountMinor !== undefined) set.amountMinor = patch.amountMinor;
     if (patch.categoryId !== undefined) set.categoryId = patch.categoryId;
+    if (patch.fixedCostId !== undefined) set.fixedCostId = patch.fixedCostId;
     if (patch.note !== undefined) set.note = patch.note;
     if (patch.paymentMethod !== undefined) set.paymentMethod = patch.paymentMethod;
     if (patch.occurredOn !== undefined) set.occurredOn = patch.occurredOn;
@@ -298,6 +303,7 @@ export class BalanceRepository {
       amountMinor: moneyTransactions.amountMinor,
       currencyCode: moneyTransactions.currencyCode,
       categoryId: moneyTransactions.categoryId,
+      fixedCostId: moneyTransactions.fixedCostId,
       note: moneyTransactions.note,
       paymentMethod: moneyTransactions.paymentMethod,
       occurredOn: moneyTransactions.occurredOn,
@@ -384,6 +390,8 @@ export class BalanceRepository {
           eq(moneyTransactions.userId, userId),
           eq(moneyTransactions.kind, 'expense'),
           isNull(moneyTransactions.deletedAt),
+          // Fixed-cost payments are tracked separately, not as spending categories.
+          isNull(moneyTransactions.fixedCostId),
           gte(moneyTransactions.occurredOn, from),
           lte(moneyTransactions.occurredOn, to),
         ),
@@ -394,6 +402,56 @@ export class BalanceRepository {
       categoryId: row.categoryId,
       totalMinor: Number(row.totalMinor),
     }));
+  }
+
+  // Total spent this window that is tagged to a fixed-cost item (drawn from the
+  // reserved fixed pool, excluded from the daily discretionary limit).
+  async sumFixedLinkedSpent(userId: string, from: string, to: string): Promise<number> {
+    if (!this.connection) return 0;
+    const [row] = await this.connection.db
+      .select({ total: sql<string>`coalesce(sum(${moneyTransactions.amountMinor}), 0)` })
+      .from(moneyTransactions)
+      .where(
+        and(
+          eq(moneyTransactions.userId, userId),
+          eq(moneyTransactions.kind, 'expense'),
+          isNull(moneyTransactions.deletedAt),
+          isNotNull(moneyTransactions.fixedCostId),
+          gte(moneyTransactions.occurredOn, from),
+          lte(moneyTransactions.occurredOn, to),
+        ),
+      );
+    return Number(row?.total ?? 0);
+  }
+
+  // Amount paid per fixed-cost item within the window (for "paid X of Y").
+  async paidByFixedCost(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<Array<{ fixedCostId: string; paidMinor: number }>> {
+    if (!this.connection) return [];
+    const rows = await this.connection.db
+      .select({
+        fixedCostId: moneyTransactions.fixedCostId,
+        totalMinor: sql<string>`coalesce(sum(${moneyTransactions.amountMinor}), 0)`,
+      })
+      .from(moneyTransactions)
+      .where(
+        and(
+          eq(moneyTransactions.userId, userId),
+          eq(moneyTransactions.kind, 'expense'),
+          isNull(moneyTransactions.deletedAt),
+          isNotNull(moneyTransactions.fixedCostId),
+          gte(moneyTransactions.occurredOn, from),
+          lte(moneyTransactions.occurredOn, to),
+        ),
+      )
+      .groupBy(moneyTransactions.fixedCostId);
+
+    return rows.flatMap((row) =>
+      row.fixedCostId ? [{ fixedCostId: row.fixedCostId, paidMinor: Number(row.totalMinor) }] : [],
+    );
   }
 
   async spentByDay(userId: string, from: string, to: string): Promise<DayTotalRow[]> {

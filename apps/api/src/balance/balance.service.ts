@@ -167,6 +167,7 @@ export class BalanceService {
   private toTransactionContract(
     row: TransactionRow,
     categoryNames: Map<string, string>,
+    fixedCostNames: Map<string, string>,
   ): BalanceTransaction {
     return {
       id: row.id,
@@ -175,6 +176,8 @@ export class BalanceService {
       currency: row.currencyCode,
       categoryId: row.categoryId,
       categoryName: row.categoryId ? (categoryNames.get(row.categoryId) ?? null) : null,
+      fixedCostId: row.fixedCostId,
+      fixedCostName: row.fixedCostId ? (fixedCostNames.get(row.fixedCostId) ?? null) : null,
       note: row.note,
       paymentMethod: row.paymentMethod,
       occurredOn: row.occurredOn,
@@ -187,6 +190,18 @@ export class BalanceService {
     return new Map(categories.map((category) => [category.id, category.name]));
   }
 
+  private async fixedCostNameMap(userId: string): Promise<Map<string, string>> {
+    const rows = await this.repository.listFixedCosts(userId);
+    return new Map(rows.map((row) => [row.id, row.name]));
+  }
+
+  private async assertFixedCostExists(userId: string, fixedCostId: string): Promise<void> {
+    const rows = await this.repository.listFixedCosts(userId);
+    if (!rows.some((row) => row.id === fixedCostId)) {
+      throw new BadRequestException('Unknown fixed cost');
+    }
+  }
+
   async listTransactions(
     userId: string,
     options: { month?: string; today?: string; cursor?: string },
@@ -195,7 +210,7 @@ export class BalanceService {
       this.parseMonth(options.month),
       this.parseToday(options.today),
     );
-    const [{ rows, nextCursor }, categoryNames] = await Promise.all([
+    const [{ rows, nextCursor }, categoryNames, fixedCostNames] = await Promise.all([
       this.repository.listTransactions(userId, {
         from: window.from,
         to: window.to,
@@ -203,10 +218,13 @@ export class BalanceService {
         limit: TRANSACTIONS_PAGE_SIZE,
       }),
       this.categoryNameMap(userId),
+      this.fixedCostNameMap(userId),
     ]);
 
     return {
-      transactions: rows.map((row) => this.toTransactionContract(row, categoryNames)),
+      transactions: rows.map((row) =>
+        this.toTransactionContract(row, categoryNames, fixedCostNames),
+      ),
       nextCursor,
     };
   }
@@ -221,20 +239,28 @@ export class BalanceService {
         throw new BadRequestException('Unknown category');
       }
     }
+    if (input.fixedCostId) {
+      await this.assertFixedCostExists(userId, input.fixedCostId);
+    }
 
     const profile = await this.profileOrDefault(userId);
     const row = await this.repository.insertTransaction(userId, {
       kind: input.kind,
       amountMinor: input.amountMinor,
       currencyCode: profile.currencyCode,
-      categoryId: input.categoryId ?? null,
+      // A fixed-cost payment isn't a spending category.
+      categoryId: input.fixedCostId ? null : (input.categoryId ?? null),
+      fixedCostId: input.fixedCostId ?? null,
       note: input.note?.length ? input.note : null,
       paymentMethod: input.paymentMethod,
       occurredOn: input.occurredOn ?? resolveMonthWindow().today,
     });
 
-    const categoryNames = await this.categoryNameMap(userId);
-    return { transaction: this.toTransactionContract(row, categoryNames) };
+    const [categoryNames, fixedCostNames] = await Promise.all([
+      this.categoryNameMap(userId),
+      this.fixedCostNameMap(userId),
+    ]);
+    return { transaction: this.toTransactionContract(row, categoryNames, fixedCostNames) };
   }
 
   async updateTransaction(
@@ -248,11 +274,16 @@ export class BalanceService {
         throw new BadRequestException('Unknown category');
       }
     }
+    if (input.fixedCostId) {
+      await this.assertFixedCostExists(userId, input.fixedCostId);
+    }
 
     const row = await this.repository.updateTransaction(userId, transactionId, {
       kind: input.kind,
       amountMinor: input.amountMinor,
-      categoryId: input.categoryId,
+      // Tagging a fixed cost clears the spending category, and vice versa.
+      categoryId: input.fixedCostId ? null : input.categoryId,
+      fixedCostId: input.fixedCostId,
       note: input.note === undefined ? undefined : input.note?.length ? input.note : null,
       paymentMethod: input.paymentMethod,
       occurredOn: input.occurredOn,
@@ -261,8 +292,11 @@ export class BalanceService {
       throw new NotFoundException('Transaction not found');
     }
 
-    const categoryNames = await this.categoryNameMap(userId);
-    return { transaction: this.toTransactionContract(row, categoryNames) };
+    const [categoryNames, fixedCostNames] = await Promise.all([
+      this.categoryNameMap(userId),
+      this.fixedCostNameMap(userId),
+    ]);
+    return { transaction: this.toTransactionContract(row, categoryNames, fixedCostNames) };
   }
 
   async deleteTransaction(userId: string, transactionId: string): Promise<BalanceDeletedResponse> {
@@ -429,6 +463,7 @@ export class BalanceService {
       bills,
       goals,
       fixedCostsTotalMinor,
+      fixedLinkedSpentMinor,
     ] = await Promise.all([
       this.repository.sumByKind(userId, 'income', window.from, window.to),
       this.repository.sumByKind(userId, 'expense', window.from, window.to),
@@ -440,6 +475,7 @@ export class BalanceService {
       this.repository.listBills(userId),
       this.repository.listGoals(userId),
       this.repository.sumFixedCosts(userId),
+      this.repository.sumFixedLinkedSpent(userId, window.from, window.to),
     ]);
 
     // Itemized fixed costs (when the user has added any) are the planned fixed
@@ -459,7 +495,11 @@ export class BalanceService {
     const sumAll = (rows: Array<{ categoryId: string | null; totalMinor: number }>): number =>
       rows.reduce((total, row) => total + row.totalMinor, 0);
 
-    const fixedSpentMinor = sumFixed(categoryTotals);
+    // Fixed spending = spending in fixed categories PLUS payments tagged to a
+    // fixed-cost item. Both are excluded from the daily discretionary limit.
+    // (spentByCategory already excludes fixed-cost-tagged payments, so today's
+    // variable figure needs no extra adjustment.)
+    const fixedSpentMinor = sumFixed(categoryTotals) + fixedLinkedSpentMinor;
     const spentTodayMinor = sumAll(todayTotals);
     const variableSpentTodayMinor = spentTodayMinor - sumFixed(todayTotals);
 
@@ -724,19 +764,25 @@ export class BalanceService {
     return { deleted: true };
   }
 
-  private toFixedCostContract(row: FixedCostRow): FixedCost {
+  private toFixedCostContract(row: FixedCostRow, paidMinor: number): FixedCost {
     return {
       id: row.id,
       name: row.name,
       amountMinor: row.amountMinor,
+      paidMinor,
       createdAt: row.createdAt.toISOString(),
     };
   }
 
   async listFixedCosts(userId: string): Promise<FixedCostsResponse> {
-    const rows = await this.repository.listFixedCosts(userId);
+    const window = resolveMonthWindow();
+    const [rows, paid] = await Promise.all([
+      this.repository.listFixedCosts(userId),
+      this.repository.paidByFixedCost(userId, window.from, window.to),
+    ]);
+    const paidMap = new Map(paid.map((entry) => [entry.fixedCostId, entry.paidMinor]));
     return {
-      fixedCosts: rows.map((row) => this.toFixedCostContract(row)),
+      fixedCosts: rows.map((row) => this.toFixedCostContract(row, paidMap.get(row.id) ?? 0)),
       totalMinor: rows.reduce((total, row) => total + row.amountMinor, 0),
     };
   }
@@ -746,7 +792,7 @@ export class BalanceService {
       name: input.name,
       amountMinor: input.amountMinor,
     });
-    return { fixedCost: this.toFixedCostContract(row) };
+    return { fixedCost: this.toFixedCostContract(row, 0) };
   }
 
   async updateFixedCost(
@@ -761,7 +807,7 @@ export class BalanceService {
     if (!row) {
       throw new NotFoundException('Fixed cost not found');
     }
-    return { fixedCost: this.toFixedCostContract(row) };
+    return { fixedCost: this.toFixedCostContract(row, 0) };
   }
 
   async deleteFixedCost(userId: string, id: string): Promise<BalanceDeletedResponse> {

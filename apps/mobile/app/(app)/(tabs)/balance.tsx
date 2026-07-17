@@ -23,6 +23,7 @@ import {
   useBalanceCategories,
   useBalanceOverview,
   useBalanceProfile,
+  useFixedCosts,
   useCheckAffordability,
   useCreateBill,
   useCreateTransaction,
@@ -598,21 +599,24 @@ function AddEntryModal({
   onClose: () => void;
 }): React.JSX.Element {
   const categories = useBalanceCategories();
+  const fixedCosts = useFixedCosts();
   const createTransaction = useCreateTransaction();
   const parseSpending = useParseSpending();
 
   const [quickText, setQuickText] = useState('');
-  const [kind, setKind] = useState<'expense' | 'income'>('expense');
+  const [mode, setMode] = useState<'expense' | 'income' | 'fixed'>('expense');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [fixedCostId, setFixedCostId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function reset(): void {
     setQuickText('');
-    setKind('expense');
+    setMode('expense');
     setAmount('');
     setCategoryId(null);
+    setFixedCostId(null);
     setNote('');
     setError(null);
   }
@@ -660,12 +664,17 @@ function AddEntryModal({
       setError('Enter an amount like 250 or 1,250.50.');
       return;
     }
+    if (mode === 'fixed' && !fixedCostId) {
+      setError('Pick which fixed cost this payment covers.');
+      return;
+    }
     setError(null);
     try {
       await createTransaction.mutateAsync({
-        kind,
+        kind: mode === 'income' ? 'income' : 'expense',
         amountMinor,
-        categoryId: kind === 'expense' && categoryId ? categoryId : undefined,
+        categoryId: mode === 'expense' && categoryId ? categoryId : undefined,
+        fixedCostId: mode === 'fixed' && fixedCostId ? fixedCostId : undefined,
         note: note.trim() ? note.trim() : undefined,
         paymentMethod: 'cash',
       });
@@ -722,17 +731,17 @@ function AddEntryModal({
             <Text style={styles.orDivider}>or enter manually</Text>
 
             <View style={styles.kindRow}>
-              {(['expense', 'income'] as const).map((value) => (
+              {(['expense', 'income', 'fixed'] as const).map((value) => (
                 <Pressable
                   key={value}
                   accessibilityRole="button"
-                  onPress={() => setKind(value)}
-                  style={[styles.kindChip, kind === value ? styles.kindChipActive : null]}
+                  onPress={() => setMode(value)}
+                  style={[styles.kindChip, mode === value ? styles.kindChipActive : null]}
                 >
                   <Text
-                    style={[styles.kindChipText, kind === value ? styles.kindChipTextActive : null]}
+                    style={[styles.kindChipText, mode === value ? styles.kindChipTextActive : null]}
                   >
-                    {value === 'expense' ? 'Expense' : 'Income'}
+                    {value === 'expense' ? 'Expense' : value === 'income' ? 'Income' : 'Fixed'}
                   </Text>
                 </Pressable>
               ))}
@@ -746,7 +755,7 @@ function AddEntryModal({
               onChangeText={setAmount}
             />
 
-            {kind === 'expense' ? (
+            {mode === 'expense' ? (
               <View style={styles.chipWrap}>
                 {(categories.data?.categories ?? []).map((category) => (
                   <Pressable
@@ -773,6 +782,39 @@ function AddEntryModal({
               </View>
             ) : null}
 
+            {mode === 'fixed' ? (
+              (fixedCosts.data?.fixedCosts.length ?? 0) > 0 ? (
+                <View style={styles.chipWrap}>
+                  {(fixedCosts.data?.fixedCosts ?? []).map((item) => (
+                    <Pressable
+                      key={item.id}
+                      accessibilityRole="button"
+                      onPress={() =>
+                        setFixedCostId((current) => (current === item.id ? null : item.id))
+                      }
+                      style={[
+                        styles.categoryChip,
+                        fixedCostId === item.id ? styles.categoryChipActive : null,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          fixedCostId === item.id ? styles.categoryChipTextActive : null,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.fixedHint}>
+                  Add your fixed costs first (Balance → Fixed costs), then record payments here.
+                </Text>
+              )
+            ) : null}
+
             <FormField
               label="NOTE (OPTIONAL)"
               placeholder="Lunch with colleagues"
@@ -782,7 +824,13 @@ function AddEntryModal({
             />
 
             <PrimaryButton
-              label={kind === 'expense' ? 'Add expense' : 'Add income'}
+              label={
+                mode === 'income'
+                  ? 'Add income'
+                  : mode === 'fixed'
+                    ? 'Record fixed payment'
+                    : 'Add expense'
+              }
               onPress={() => void handleManualAdd()}
               isLoading={isSaving}
               style={styles.modalButton}
@@ -1412,6 +1460,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 16,
+  },
+  fixedHint: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 14,
   },
   categoryChip: {
     borderRadius: 999,
