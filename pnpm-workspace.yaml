@@ -9,3 +9,6 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - '@google/genai@2.11.0'
+  - expo-application@57.0.2
+  - expo-constants@57.0.6
+  - expo-notifications@57.0.6

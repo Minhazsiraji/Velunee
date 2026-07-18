@@ -1,7 +1,15 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { useReminders } from '@/features/notifications/use-reminders';
 import { useAuth } from '@/providers/auth-provider';
+
+// Rendered only when authenticated, so reminder scheduling runs with a valid
+// session (and never on the auth screens).
+function ReminderSync(): null {
+  useReminders();
+  return null;
+}
 
 export default function AppLayout(): React.JSX.Element {
   const { isLoading, isAuthenticated } = useAuth();
@@ -18,7 +26,12 @@ export default function AppLayout(): React.JSX.Element {
     return <Redirect href="/(auth)/welcome" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <ReminderSync />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
