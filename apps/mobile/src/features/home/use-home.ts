@@ -21,6 +21,8 @@ export function useHomeOverview() {
       });
     },
     staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
   });
 }
 
