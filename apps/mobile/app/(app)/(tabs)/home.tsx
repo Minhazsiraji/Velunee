@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { getLocales } from 'expo-localization';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  AppState,
   Modal,
   Pressable,
   RefreshControl,
@@ -18,8 +20,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { HomeCardPreferences, HomeOverviewResponse, PlannerTask } from '@velunee/contracts';
 
 import { PrimaryButton } from '@/components/primary-button';
+import { useAccountOverview } from '@/features/account/use-account';
 import { useHomeOverview, useUpdateHomeCards } from '@/features/home/use-home';
-import { usePlannerDay } from '@/features/planner/use-planner';
+import {
+  buildTaskTimings,
+  selectBestTaskTiming,
+  tomorrowIso,
+  type TaskTiming,
+} from '@/features/home/task-lifecycle';
+import { useDeleteTask, usePlannerDay, useUpdateTask } from '@/features/planner/use-planner';
+import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
 const CARD_LABELS: Record<keyof HomeCardPreferences, string> = {
@@ -32,8 +42,27 @@ const CARD_LABELS: Record<keyof HomeCardPreferences, string> = {
 
 export default function HomeScreen(): React.JSX.Element {
   const overview = useHomeOverview();
+  const account = useAccountOverview();
+  const auth = useAuth();
   const router = useRouter();
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const refreshClock = (): void => setNow(new Date());
+    const timer = setInterval(refreshClock, 30_000);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      refreshClock();
+      void overview.refetch();
+      void account.refetch();
+    });
+
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, [account.refetch, overview.refetch]);
 
   function renderBody(): React.JSX.Element {
     if (overview.isLoading) {
@@ -64,6 +93,12 @@ export default function HomeScreen(): React.JSX.Element {
       <Dashboard
         data={overview.data}
         updatedAt={overview.dataUpdatedAt}
+        now={now}
+        greetingName={resolveGreetingName(
+          account.data?.profile.displayName,
+          auth.user?.user_metadata,
+          auth.isAnonymous ? null : auth.user?.email,
+        )}
         refreshing={overview.isRefetching}
         onRefresh={() => void overview.refetch()}
       />
@@ -110,34 +145,81 @@ export default function HomeScreen(): React.JSX.Element {
 function Dashboard({
   data,
   updatedAt,
+  now,
+  greetingName,
   refreshing,
   onRefresh,
 }: {
   data: HomeOverviewResponse;
   updatedAt: number;
+  now: Date;
+  greetingName: string | null;
   refreshing: boolean;
   onRefresh: () => void;
 }): React.JSX.Element {
   const router = useRouter();
   const planner = usePlannerDay();
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const [briefExplained, setBriefExplained] = useState(false);
+  const [overdueTask, setOverdueTask] = useState<PlannerTask | null>(null);
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
   const isNarrow = width < 340;
 
-  const nextTask = planner.data
-    ? ([...planner.data.overdue, ...planner.data.tasks].find((task) => task.status === 'todo') ??
-      null)
-    : null;
-  const brief = buildDailyBrief(data, nextTask);
-  const bestAction = buildBestAction(data, nextTask);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void planner.refetch();
+    });
+    return () => subscription.remove();
+  }, [planner.refetch]);
+
+  const taskTimings = planner.data
+    ? buildTaskTimings([...planner.data.overdue, ...planner.data.tasks], now)
+    : [];
+  const bestTaskTiming = selectBestTaskTiming(taskTimings);
+  const staleOverdue = taskTimings.filter((timing) => timing.state === 'stale-overdue');
+  const plannerSignal = bestTaskTiming ?? staleOverdue[0] ?? null;
+  const brief = buildDailyBrief(data, bestTaskTiming, staleOverdue.length);
+  const bestAction = buildBestAction(data, bestTaskTiming);
   const liveSignals = [
     data.weather ? 'Weather' : null,
-    nextTask ? 'Planner' : null,
+    plannerSignal ? 'Planner' : null,
     data.upcomingBill ? 'Bills' : null,
     data.balance ? 'Balance' : null,
   ].filter((signal): signal is string => Boolean(signal));
   const connectedCount = liveSignals.length;
+
+  async function resolveOverdue(action: 'complete' | 'tomorrow' | 'skip'): Promise<void> {
+    if (!overdueTask) return;
+
+    try {
+      if (action === 'complete') {
+        await updateTask.mutateAsync({ taskId: overdueTask.id, patch: { status: 'done' } });
+      } else if (action === 'tomorrow') {
+        await updateTask.mutateAsync({
+          taskId: overdueTask.id,
+          patch: { dueOn: tomorrowIso(now) },
+        });
+      } else {
+        await deleteTask.mutateAsync(overdueTask.id);
+      }
+      setOverdueTask(null);
+    } catch (error) {
+      Alert.alert(
+        'Could not update task',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
+  }
+
+  function openBestAction(): void {
+    if (bestAction.timing?.state === 'recent-overdue') {
+      setOverdueTask(bestAction.timing.task);
+      return;
+    }
+    router.push(bestAction.route);
+  }
 
   return (
     <ScrollView
@@ -146,16 +228,19 @@ function Dashboard({
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          onRefresh={onRefresh}
+          onRefresh={() => {
+            onRefresh();
+            void planner.refetch();
+          }}
           tintColor={colors.primaryLight}
         />
       }
     >
       <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
-        {data.greeting.title}
+        {homeGreeting(now, greetingName)}
       </Text>
       <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
-        {data.greeting.subtitle ?? formatHomeDate(new Date())}
+        {data.greeting.subtitle ?? formatHomeDate(now)}
       </Text>
 
       <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
@@ -205,11 +290,13 @@ function Dashboard({
               fullWidth={isNarrow}
             />
           ) : null}
-          {nextTask ? (
+          {plannerSignal ? (
             <ContextTile
-              icon="time-outline"
-              label={nextTask.scheduledTime ? taskTime(nextTask) : 'Today'}
-              value={nextTask.title}
+              icon={
+                plannerSignal.state.includes('overdue') ? 'alert-circle-outline' : 'time-outline'
+              }
+              label={taskSignalLabel(plannerSignal, staleOverdue.length)}
+              value={plannerSignal.task.title}
               onPress={() => router.push('/planner')}
               fullWidth={isNarrow}
             />
@@ -283,7 +370,7 @@ function Dashboard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
-        onPress={() => router.push(bestAction.route)}
+        onPress={openBestAction}
         style={({ pressed }) => [styles.nextActionCard, pressed ? styles.pressed : null]}
       >
         <View style={styles.nextActionHeader}>
@@ -359,8 +446,42 @@ function Dashboard({
           </Text>
         </Pressable>
       ) : null}
+      <OverdueTaskModal
+        task={overdueTask}
+        pending={updateTask.isPending || deleteTask.isPending}
+        onClose={() => setOverdueTask(null)}
+        onResolve={(action) => void resolveOverdue(action)}
+      />
     </ScrollView>
   );
+}
+
+function cleanFirstName(value: string | null | undefined): string | null {
+  const first = value
+    ?.trim()
+    .split(/\s+/)[0]
+    ?.replace(/[^\p{L}\p{N}'-]/gu, '');
+  if (!first) return null;
+  return `${first.charAt(0).toLocaleUpperCase()}${first.slice(1)}`;
+}
+
+function resolveGreetingName(
+  profileName: string | null | undefined,
+  metadata: Record<string, unknown> | undefined,
+  email: string | null | undefined,
+): string | null {
+  const metadataName = ['display_name', 'full_name', 'name']
+    .map((key) => metadata?.[key])
+    .find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  const emailName = email?.split('@')[0]?.replace(/[._-]+/g, ' ');
+  return cleanFirstName(profileName) ?? cleanFirstName(metadataName) ?? cleanFirstName(emailName);
+}
+
+function homeGreeting(now: Date, name: string | null): string {
+  const hour = now.getHours();
+  const greeting =
+    hour < 5 ? 'Hello' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  return name ? `${greeting}, ${name}` : greeting;
 }
 
 function taskTime(task: PlannerTask): string {
@@ -370,6 +491,27 @@ function taskTime(task: PlannerTask): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function overdueMinutes(timing: TaskTiming): number {
+  return Math.max(1, Math.abs(timing.minutesFromNow ?? 0));
+}
+
+function taskSignalLabel(timing: TaskTiming, staleOverdueCount: number): string {
+  switch (timing.state) {
+    case 'due-now':
+      return 'Due now';
+    case 'recent-overdue':
+      return `${overdueMinutes(timing)} min overdue`;
+    case 'stale-overdue':
+      return `${staleOverdueCount} overdue ${staleOverdueCount === 1 ? 'task' : 'tasks'}`;
+    case 'preparing':
+      return 'Prepare now';
+    case 'upcoming':
+      return taskTime(timing.task);
+    case 'untimed':
+      return 'Today';
+  }
 }
 
 function formatHomeDate(date: Date): string {
@@ -460,7 +602,11 @@ function billDueLabel(dueInDays: number): string {
   return `Due in ${dueInDays} days`;
 }
 
-function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | null): string {
+function buildDailyBrief(
+  data: HomeOverviewResponse,
+  taskTiming: TaskTiming | null,
+  staleOverdueCount: number,
+): string {
   const parts: string[] = [];
 
   if (data.weather) {
@@ -480,15 +626,21 @@ function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | nul
     }
   }
 
-  if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
+  if (taskTiming?.state === 'due-now') {
+    parts.push(`“${taskTiming.task.title}” is due now.`);
+  } else if (taskTiming?.state === 'recent-overdue') {
+    parts.push(`“${taskTiming.task.title}” is ${overdueMinutes(taskTiming)} minutes overdue.`);
+  } else if (taskTiming?.state === 'preparing') {
+    parts.push(`Prepare now for “${taskTiming.task.title}” at ${taskTime(taskTiming.task)}.`);
+  } else if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
     parts.push(
       `${data.upcomingBill.name} is ${billDueLabel(data.upcomingBill.dueInDays).toLowerCase()}.`,
     );
-  } else if (nextTask) {
+  } else if (taskTiming) {
     parts.push(
-      nextTask.scheduledTime
-        ? `Next: “${nextTask.title}” at ${taskTime(nextTask)}.`
-        : `Next: “${nextTask.title}”.`,
+      taskTiming.task.scheduledTime
+        ? `Next: “${taskTiming.task.title}” at ${taskTime(taskTiming.task)}.`
+        : `Next: “${taskTiming.task.title}”.`,
     );
   } else if (data.upcomingBill) {
     parts.push(
@@ -503,20 +655,82 @@ function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | nul
     );
   }
 
+  if (staleOverdueCount > 0) {
+    parts.push(
+      `${staleOverdueCount} older ${staleOverdueCount === 1 ? 'task needs' : 'tasks need'} review.`,
+    );
+  }
+
   return parts.length > 0
     ? parts.join(' ')
     : 'Add a plan, Balance details or location access and Velunee will connect your day here.';
 }
 
-function buildBestAction(
-  data: HomeOverviewResponse,
-  nextTask: PlannerTask | null,
-): {
+interface BestAction {
   title: string;
   body: string;
   label: string;
   route: '/planner' | './balance' | '/style' | './chat';
-} {
+  timing: TaskTiming | null;
+}
+
+function taskBestAction(data: HomeOverviewResponse, timing: TaskTiming): BestAction {
+  const weatherNudge = weatherActionNudge(data);
+  const taskTitle = taskActionTitle(timing.task.title);
+
+  if (timing.state === 'recent-overdue') {
+    return {
+      title: `${taskTitle} is overdue`,
+      body: `${overdueMinutes(timing)} minutes overdue. Did you complete it? Tap to complete, reschedule, or skip.`,
+      label: 'Review overdue task',
+      route: '/planner',
+      timing,
+    };
+  }
+
+  if (timing.state === 'due-now') {
+    return {
+      title: `Due now: ${taskTitle}`,
+      body: ['Start now or open Planner to update it.', weatherNudge].filter(Boolean).join(' '),
+      label: 'Open Planner',
+      route: '/planner',
+      timing,
+    };
+  }
+
+  if (timing.state === 'preparing') {
+    return {
+      title: taskTitle,
+      body: [`Due at ${taskTime(timing.task)}. Start preparing now.`, weatherNudge]
+        .filter(Boolean)
+        .join(' '),
+      label: 'Open Planner',
+      route: '/planner',
+      timing,
+    };
+  }
+
+  const preparationTime = taskPreparationTime(timing.task);
+  const guidance = timing.task.scheduledTime
+    ? `It is scheduled for ${taskTime(timing.task)}${
+        preparationTime ? `; start preparing at ${preparationTime}` : ''
+      }.`
+    : 'Make this your next focus and mark it complete in Planner.';
+
+  return {
+    title: taskTitle,
+    body: [guidance, weatherNudge].filter(Boolean).join(' '),
+    label: 'Open Planner',
+    route: '/planner',
+    timing,
+  };
+}
+
+function buildBestAction(data: HomeOverviewResponse, taskTiming: TaskTiming | null): BestAction {
+  if (taskTiming && ['recent-overdue', 'due-now', 'preparing'].includes(taskTiming.state)) {
+    return taskBestAction(data, taskTiming);
+  }
+
   if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
     return {
       title: `Prepare ${data.upcomingBill.name}`,
@@ -525,25 +739,11 @@ function buildBestAction(
       ).toLowerCase()}. Check your plan before other spending.`,
       label: 'Review Balance',
       route: './balance',
+      timing: null,
     };
   }
 
-  if (nextTask) {
-    const preparationTime = taskPreparationTime(nextTask);
-    const weatherNudge = weatherActionNudge(data);
-    const guidance = nextTask.scheduledTime
-      ? `It is scheduled for ${taskTime(nextTask)}${
-          preparationTime ? `; start preparing at ${preparationTime}` : ''
-        }.`
-      : 'Make this your next focus and mark it complete in Planner.';
-
-    return {
-      title: taskActionTitle(nextTask.title),
-      body: [guidance, weatherNudge].filter(Boolean).join(' '),
-      label: 'Open Planner',
-      route: '/planner',
-    };
-  }
+  if (taskTiming) return taskBestAction(data, taskTiming);
 
   if (data.weather?.advice) {
     return {
@@ -551,6 +751,7 @@ function buildBestAction(
       body: data.weather.advice,
       label: 'What should I wear?',
       route: '/style',
+      timing: null,
     };
   }
 
@@ -565,6 +766,7 @@ function buildBestAction(
         )} today.`,
       label: 'Review Balance',
       route: './balance',
+      timing: null,
     };
   }
 
@@ -575,7 +777,96 @@ function buildBestAction(
       'Tell Velunee what is on your mind and choose a useful next step.',
     label: 'Ask Velunee',
     route: './chat',
+    timing: null,
   };
+}
+
+function OverdueTaskModal({
+  task,
+  pending,
+  onClose,
+  onResolve,
+}: {
+  task: PlannerTask | null;
+  pending: boolean;
+  onClose: () => void;
+  onResolve: (action: 'complete' | 'tomorrow' | 'skip') => void;
+}): React.JSX.Element {
+  return (
+    <Modal
+      visible={task !== null}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalRoot}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <View style={styles.overdueModalHeading}>
+              <Ionicons name="time-outline" size={20} color={colors.primaryLight} />
+              <Text style={styles.modalTitle}>Review overdue task</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              disabled={pending}
+              hitSlop={10}
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.overdueModalTask} numberOfLines={2} ellipsizeMode="tail">
+            {task?.title}
+          </Text>
+          <Text style={styles.modalHint}>
+            Tell Velunee what happened so your Daily Brief can move to the right next action.
+          </Text>
+
+          <View style={styles.overdueActions}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => onResolve('complete')}
+              style={({ pressed }) => [
+                styles.overdueAction,
+                styles.overdueActionPrimary,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons name="checkmark-circle-outline" size={19} color={colors.white} />
+              <Text style={styles.overdueActionPrimaryText}>Mark completed</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => onResolve('tomorrow')}
+              style={({ pressed }) => [styles.overdueAction, pressed ? styles.pressed : null]}
+            >
+              <Ionicons name="calendar-outline" size={19} color={colors.primaryLight} />
+              <Text style={styles.overdueActionText}>Reschedule for tomorrow</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => onResolve('skip')}
+              style={({ pressed }) => [styles.overdueAction, pressed ? styles.pressed : null]}
+            >
+              <Ionicons name="play-skip-forward-outline" size={19} color={colors.textSecondary} />
+              <Text style={styles.overdueActionText}>Skip this task</Text>
+            </Pressable>
+          </View>
+
+          {pending ? <ActivityIndicator color={colors.primaryLight} /> : null}
+          <Text style={styles.overdueHistoryNote}>
+            Skipped tasks leave the active plan but remain in your account history.
+          </Text>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 function ContextTile({
@@ -1203,6 +1494,56 @@ const styles = StyleSheet.create({
   modalHint: {
     color: colors.textSecondary,
     fontSize: 13,
+    lineHeight: 19,
+  },
+  overdueModalHeading: {
+    minWidth: 0,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  overdueModalTask: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 27,
+  },
+  overdueActions: {
+    gap: 9,
+    marginTop: 2,
+  },
+  overdueAction: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+  },
+  overdueActionPrimary: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  overdueActionText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  overdueActionPrimaryText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  overdueHistoryNote: {
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+    textAlign: 'center',
   },
   settingRow: {
     flexDirection: 'row',
