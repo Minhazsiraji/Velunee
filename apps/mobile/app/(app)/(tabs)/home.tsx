@@ -140,39 +140,42 @@ function Dashboard({
         />
       }
     >
-      <Text style={styles.greeting}>{data.greeting.title}</Text>
+      <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
+        {data.greeting.title}
+      </Text>
       {data.greeting.subtitle ? (
-        <Text style={styles.subtitle}>{data.greeting.subtitle}</Text>
+        <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+          {data.greeting.subtitle}
+        </Text>
       ) : null}
 
       <View style={styles.briefCard}>
         <View style={styles.briefAccent} />
         <View style={styles.briefHeader}>
-          <View style={styles.briefTitleRow}>
-            <View style={styles.briefIcon}>
-              <Ionicons name="sparkles" size={18} color={colors.white} />
-            </View>
-            <View>
-              <Text style={styles.briefEyebrow}>VELUNEE DAILY BRIEF</Text>
-              <Text style={styles.briefTitle}>What matters today</Text>
-            </View>
+          <View style={styles.briefIcon}>
+            <Ionicons name="sparkles" size={18} color={colors.white} />
           </View>
-          {connectedCount > 0 ? (
-            <View style={styles.connectedPill}>
-              <View style={styles.connectedDot} />
-              <Text style={styles.connectedText}>{connectedCount} connected</Text>
+          <View style={styles.briefHeaderCopy}>
+            <View style={styles.briefEyebrowRow}>
+              <Text style={styles.briefEyebrow}>VELUNEE DAILY BRIEF</Text>
+              {connectedCount > 0 ? (
+                <View style={styles.connectedPill}>
+                  <View style={styles.connectedDot} />
+                  <Text style={styles.connectedText}>{connectedCount} connected</Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
+            <Text style={styles.briefTitle} numberOfLines={1} ellipsizeMode="tail">
+              What matters today
+            </Text>
+          </View>
         </View>
 
-        <Text style={styles.briefSummary}>{brief}</Text>
+        <Text style={styles.briefSummary} numberOfLines={3} ellipsizeMode="tail">
+          {brief}
+        </Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.contextRail}
-          style={styles.contextScroller}
-        >
+        <View style={styles.contextGrid}>
           {data.weather ? (
             <ContextTile
               icon="rainy-outline"
@@ -190,30 +193,39 @@ function Dashboard({
               onPress={() => router.push('/planner')}
             />
           ) : null}
-          {data.upcomingBill ? (
-            <ContextTile
-              icon="receipt-outline"
-              label={billDueLabel(data.upcomingBill.dueInDays)}
-              value={`${data.upcomingBill.name} · ${formatMinor(
-                data.upcomingBill.currency,
-                data.upcomingBill.amountMinor,
-              )}`}
-              onPress={() => router.push('./balance')}
-            />
-          ) : null}
-          {data.balance ? (
-            <ContextTile
-              icon="wallet-outline"
-              label="Safe to spend"
-              value={
-                data.balance.isConfigured
-                  ? formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)
-                  : 'Set up Balance'
-              }
-              onPress={() => router.push('./balance')}
-            />
-          ) : null}
-        </ScrollView>
+        </View>
+
+        {data.upcomingBill || data.balance ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Review upcoming bill and daily spending"
+            onPress={() => router.push('./balance')}
+            style={({ pressed }) => [styles.moneySignal, pressed ? styles.pressed : null]}
+          >
+            {data.upcomingBill ? (
+              <MoneySignalLine
+                icon="receipt-outline"
+                label={billDueLabel(data.upcomingBill.dueInDays)}
+                value={`${data.upcomingBill.name} · ${formatMinor(
+                  data.upcomingBill.currency,
+                  data.upcomingBill.amountMinor,
+                )}`}
+              />
+            ) : null}
+            {data.upcomingBill && data.balance ? <View style={styles.moneySignalDivider} /> : null}
+            {data.balance ? (
+              <MoneySignalLine
+                icon="wallet-outline"
+                label="Daily spend"
+                value={
+                  data.balance.isConfigured
+                    ? formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)
+                    : 'Set up Balance'
+                }
+              />
+            ) : null}
+          </Pressable>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -249,8 +261,10 @@ function Dashboard({
           </View>
           <View style={styles.nextActionCopy}>
             <Text style={styles.nextActionEyebrow}>BEST NEXT ACTION</Text>
-            <Text style={styles.nextActionTitle}>{bestAction.title}</Text>
-            <Text style={styles.nextActionBody} numberOfLines={2}>
+            <Text style={styles.nextActionTitle} numberOfLines={1} ellipsizeMode="tail">
+              {bestAction.title}
+            </Text>
+            <Text style={styles.nextActionBody} numberOfLines={2} ellipsizeMode="tail">
               {bestAction.body}
             </Text>
           </View>
@@ -287,7 +301,7 @@ function Dashboard({
             <Text style={styles.cardLabel}>Continue where you left off</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </View>
-          <Text style={styles.cardValue} numberOfLines={1}>
+          <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
             {data.recentConversation.title}
           </Text>
         </Pressable>
@@ -462,14 +476,38 @@ function ContextTile({
         <View style={styles.contextIcon}>
           <Ionicons name={icon} size={15} color={colors.primaryLight} />
         </View>
-        <Text style={styles.contextTileLabel} numberOfLines={1}>
+        <Text style={styles.contextTileLabel} numberOfLines={1} ellipsizeMode="tail">
           {label}
         </Text>
       </View>
-      <Text style={styles.contextTileValue} numberOfLines={1}>
+      <Text style={styles.contextTileValue} numberOfLines={1} ellipsizeMode="tail">
         {value}
       </Text>
     </Pressable>
+  );
+}
+
+function MoneySignalLine({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+}): React.JSX.Element {
+  return (
+    <View style={styles.moneySignalLine}>
+      <View style={styles.moneySignalLabel}>
+        <Ionicons name={icon} size={14} color={colors.primaryLight} />
+        <Text style={styles.moneySignalLabelText} numberOfLines={1} ellipsizeMode="tail">
+          {label}
+        </Text>
+      </View>
+      <Text style={styles.moneySignalValue} numberOfLines={1} ellipsizeMode="tail">
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -492,7 +530,9 @@ function QuickAction({
       <View style={styles.quickIcon}>
         <Ionicons name={icon} size={20} color={colors.primaryLight} />
       </View>
-      <Text style={styles.quickLabel}>{label}</Text>
+      <Text style={styles.quickLabel} numberOfLines={1} ellipsizeMode="tail">
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -642,14 +682,18 @@ const styles = StyleSheet.create({
   briefHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 10,
   },
-  briefTitleRow: {
+  briefHeaderCopy: {
     flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  briefEyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   briefIcon: {
     width: 34,
@@ -660,25 +704,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   briefEyebrow: {
+    flexShrink: 1,
     color: colors.primaryLight,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
   briefTitle: {
+    minWidth: 0,
     color: colors.text,
     fontSize: 17,
     fontWeight: '800',
-    marginTop: 2,
   },
   connectedPill: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'rgba(15, 11, 31, 0.52)',
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
   },
   connectedDot: {
     width: 6,
@@ -697,15 +743,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '500',
   },
-  contextScroller: {
-    marginHorizontal: -15,
-  },
-  contextRail: {
-    paddingHorizontal: 15,
+  contextGrid: {
+    flexDirection: 'row',
     gap: 8,
   },
   contextTile: {
-    width: 126,
+    flex: 1,
+    minWidth: 0,
     minHeight: 58,
     backgroundColor: 'rgba(15, 11, 31, 0.58)',
     borderColor: colors.borderSoft,
@@ -737,10 +781,55 @@ const styles = StyleSheet.create({
     letterSpacing: 0.35,
   },
   contextTileValue: {
+    minWidth: 0,
     color: colors.text,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
+  },
+  moneySignal: {
+    backgroundColor: 'rgba(15, 11, 31, 0.58)',
+    borderColor: colors.borderSoft,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 7,
+  },
+  moneySignalLine: {
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  moneySignalLabel: {
+    width: 104,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  moneySignalLabelText: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.textSecondary,
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.35,
+  },
+  moneySignalValue: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  moneySignalDivider: {
+    height: 1,
+    marginLeft: 104,
+    backgroundColor: colors.borderSoft,
   },
   pressed: {
     opacity: 0.72,
