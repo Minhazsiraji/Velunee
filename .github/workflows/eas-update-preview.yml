@@ -50,12 +50,12 @@ jobs:
       - name: Verify mobile types
         run: pnpm --filter @velunee/mobile typecheck
 
-      - name: Publish Life Engine Home to preview
+      - name: Publish Velunee update to preview
         working-directory: apps/mobile
         run: >-
           eas update
           --channel preview
           --environment preview
           --platform android
-          --message "Life Engine Home (${GITHUB_SHA::7})"
+          --message "Velunee preview (${GITHUB_SHA::7})"
           --non-interactive
