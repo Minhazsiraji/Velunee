@@ -176,6 +176,7 @@ function Dashboard({
   const deleteTask = useDeleteTask();
   const [briefExplained, setBriefExplained] = useState(false);
   const [overdueTask, setOverdueTask] = useState<PlannerTask | null>(null);
+  const [rescheduleTask, setRescheduleTask] = useState<PlannerTask | null>(null);
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
@@ -257,6 +258,39 @@ function Dashboard({
       return;
     }
     router.push(bestAction.route);
+  }
+
+  async function completeBestTask(): Promise<void> {
+    if (!bestAction.timing || updateTask.isPending) return;
+
+    try {
+      await updateTask.mutateAsync({
+        taskId: bestAction.timing.task.id,
+        patch: { status: 'done' },
+      });
+    } catch (error) {
+      Alert.alert(
+        'Could not complete task',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
+  }
+
+  async function rescheduleForTomorrow(): Promise<void> {
+    if (!rescheduleTask || updateTask.isPending) return;
+
+    try {
+      await updateTask.mutateAsync({
+        taskId: rescheduleTask.id,
+        patch: { dueOn: tomorrowIso(now) },
+      });
+      setRescheduleTask(null);
+    } catch (error) {
+      Alert.alert(
+        'Could not reschedule task',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
   }
 
   return (
@@ -415,13 +449,13 @@ function Dashboard({
           ) : null}
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
-          onPress={openBestAction}
-          style={({ pressed }) => [styles.nextActionCard, pressed ? styles.pressed : null]}
-        >
-          <View style={styles.nextActionHeader}>
+        <View style={styles.nextActionCard}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
+            onPress={openBestAction}
+            style={({ pressed }) => [styles.nextActionHeader, pressed ? styles.pressed : null]}
+          >
             <View style={styles.nextActionIcon}>
               <Ionicons name="navigate" size={18} color={colors.primaryLight} />
             </View>
@@ -437,9 +471,46 @@ function Dashboard({
             <View style={styles.nextActionAccessory}>
               <Ionicons name="arrow-forward" size={17} color={colors.white} />
             </View>
-          </View>
-          <Text style={styles.nextActionLink}>{bestAction.label}</Text>
-        </Pressable>
+          </Pressable>
+          {bestAction.timing ? (
+            <View style={styles.nextActionControls}>
+              <BestActionControl
+                icon="checkmark-circle-outline"
+                label="Complete"
+                accessibilityLabel={`Mark ${bestAction.timing.task.title} completed`}
+                primary
+                pending={updateTask.isPending}
+                onPress={() => void completeBestTask()}
+              />
+              <BestActionControl
+                icon="calendar-outline"
+                label="Reschedule"
+                accessibilityLabel={`Reschedule ${bestAction.timing.task.title}`}
+                disabled={updateTask.isPending}
+                onPress={() => setRescheduleTask(bestAction.timing?.task ?? null)}
+              />
+              <BestActionControl
+                icon="open-outline"
+                label="Planner"
+                accessibilityLabel={`Open Planner for ${bestAction.timing.task.title}`}
+                disabled={updateTask.isPending}
+                onPress={() => router.push('/planner')}
+              />
+            </View>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bestAction.label}
+              onPress={openBestAction}
+              style={({ pressed }) => [
+                styles.nextActionLinkButton,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Text style={styles.nextActionLink}>{bestAction.label}</Text>
+            </Pressable>
+          )}
+        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -505,6 +576,16 @@ function Dashboard({
         pending={updateTask.isPending || deleteTask.isPending}
         onClose={() => setOverdueTask(null)}
         onResolve={(action) => void resolveOverdue(action)}
+      />
+      <RescheduleTaskModal
+        task={rescheduleTask}
+        pending={updateTask.isPending}
+        onClose={() => setRescheduleTask(null)}
+        onTomorrow={() => void rescheduleForTomorrow()}
+        onOpenPlanner={() => {
+          setRescheduleTask(null);
+          router.push('/planner');
+        }}
       />
     </>
   );
@@ -1022,6 +1103,134 @@ function OverdueTaskModal({
         </View>
       </View>
     </Modal>
+  );
+}
+
+function RescheduleTaskModal({
+  task,
+  pending,
+  onClose,
+  onTomorrow,
+  onOpenPlanner,
+}: {
+  task: PlannerTask | null;
+  pending: boolean;
+  onClose: () => void;
+  onTomorrow: () => void;
+  onOpenPlanner: () => void;
+}): React.JSX.Element {
+  return (
+    <Modal
+      visible={task !== null}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalRoot}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <View style={styles.overdueModalHeading}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primaryLight} />
+              <Text style={styles.modalTitle}>Reschedule task</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close reschedule options"
+              disabled={pending}
+              hitSlop={10}
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.overdueModalTask} numberOfLines={2} ellipsizeMode="tail">
+            {task?.title}
+          </Text>
+          <Text style={styles.modalHint}>
+            Move it to tomorrow at the same time, or open Planner to choose another date and time.
+          </Text>
+
+          <View style={styles.overdueActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reschedule for tomorrow at the same time"
+              disabled={pending}
+              onPress={onTomorrow}
+              style={({ pressed }) => [
+                styles.overdueAction,
+                styles.overdueActionPrimary,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons name="arrow-forward-circle-outline" size={19} color={colors.white} />
+              <Text style={styles.overdueActionPrimaryText}>Tomorrow, same time</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Planner to choose another date and time"
+              disabled={pending}
+              onPress={onOpenPlanner}
+              style={({ pressed }) => [styles.overdueAction, pressed ? styles.pressed : null]}
+            >
+              <Ionicons name="calendar-number-outline" size={19} color={colors.primaryLight} />
+              <Text style={styles.overdueActionText}>Choose in Planner</Text>
+            </Pressable>
+          </View>
+
+          {pending ? <ActivityIndicator color={colors.primaryLight} /> : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function BestActionControl({
+  icon,
+  label,
+  accessibilityLabel,
+  primary = false,
+  pending = false,
+  disabled = false,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  accessibilityLabel: string;
+  primary?: boolean;
+  pending?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}): React.JSX.Element {
+  const inactive = disabled || pending;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ busy: pending, disabled: inactive }}
+      disabled={inactive}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.nextActionControl,
+        primary ? styles.nextActionControlPrimary : null,
+        inactive ? styles.nextActionControlDisabled : null,
+        pressed ? styles.pressed : null,
+      ]}
+    >
+      {pending ? (
+        <ActivityIndicator size="small" color={colors.white} />
+      ) : (
+        <Ionicons name={icon} size={16} color={primary ? colors.white : colors.primaryLight} />
+      )}
+      <Text
+        style={primary ? styles.nextActionControlPrimaryText : styles.nextActionControlText}
+        numberOfLines={1}
+      >
+        {pending ? 'Saving…' : label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -1618,6 +1827,49 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 16,
+  },
+  nextActionControls: {
+    flexDirection: 'row',
+    gap: 7,
+    marginTop: 5,
+  },
+  nextActionControl: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+  },
+  nextActionControlPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  nextActionControlDisabled: {
+    opacity: 0.58,
+  },
+  nextActionControlText: {
+    flexShrink: 1,
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  nextActionControlPrimaryText: {
+    flexShrink: 1,
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  nextActionLinkButton: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    justifyContent: 'center',
   },
   nextActionLink: {
     color: colors.primaryLight,
