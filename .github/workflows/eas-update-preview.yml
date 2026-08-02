@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-02 Home trust states
+# Release trigger: 2026-08-02 notification tap navigation
 name: Publish Velunee preview OTA
 
 on:
