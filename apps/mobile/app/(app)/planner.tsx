@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -239,6 +240,26 @@ function AddTaskModal({
   const [time, setTime] = useState('');
   const [estimate, setEstimate] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // A native Modal renders in a separate Android window, which is not reliably
+  // resized by KeyboardAvoidingView. Track the real keyboard height so the task
+  // sheet and focused input always remain visible above it.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   function reset(): void {
     setTitle('');
@@ -278,12 +299,21 @@ function AddTaskModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.modalRoot}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.modalCard}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView style={[styles.modalRoot, { paddingBottom: keyboardHeight }]}>
+        <ScrollView
+          style={styles.modalScroll}
+          contentContainerStyle={styles.modalCard}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add a task</Text>
             <Pressable
@@ -298,10 +328,13 @@ function AddTaskModal({
 
           <Text style={styles.fieldLabel}>TASK</Text>
           <TextInput
+            autoFocus
             value={title}
             onChangeText={setTitle}
             placeholder="e.g. Buy groceries"
             placeholderTextColor={colors.textMuted}
+            returnKeyType="next"
+            selectionColor={colors.primaryLight}
             style={styles.input}
           />
 
@@ -352,7 +385,7 @@ function AddTaskModal({
             isLoading={create.isPending}
             style={styles.modalSave}
           />
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -445,6 +478,7 @@ const styles = StyleSheet.create({
   taskTitleDone: { color: colors.textMuted, textDecorationLine: 'line-through' },
   taskMeta: { color: colors.textSecondary, fontSize: 12 },
   modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(9, 6, 20, 0.7)' },
+  modalScroll: { flexGrow: 0, maxHeight: '100%' },
   modalCard: {
     backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: 24,
