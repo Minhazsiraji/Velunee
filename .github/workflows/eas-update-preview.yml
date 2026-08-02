@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_PUBLIC_SUPABASE_URL: https://hzumacmyzxdaqcrelobn.supabase.co
       EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_sEOnqDJ_7nySDFC-Nh2Wow_ca85ewKC
       EXPO_PUBLIC_API_URL: https://velunee-api.onrender.com/api/v1
@@ -37,13 +38,8 @@ jobs:
         with:
           node-version: 22.16.0
 
-      - name: Set up EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          eas-cache: false
-          packager: pnpm
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
