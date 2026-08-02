@@ -35,6 +35,13 @@ export interface ReminderPrefs {
   tasks: boolean;
 }
 
+interface ReminderNavigationData {
+  route: '/planner' | '/balance';
+  taskId?: string;
+  dueOn?: string;
+  billId?: string;
+}
+
 // Ask for notification permission (and set the Android channel). Returns whether
 // notifications are allowed.
 export async function ensureNotificationPermission(): Promise<boolean> {
@@ -63,9 +70,14 @@ function nextBillDueAt9am(dueDay: number, now: Date): Date {
   return clampedDate(now.getFullYear(), now.getMonth() + 1, dueDay, 9);
 }
 
-async function schedule(title: string, body: string, date: Date): Promise<void> {
+async function schedule(
+  title: string,
+  body: string,
+  date: Date,
+  data: ReminderNavigationData,
+): Promise<void> {
   await Notifications.scheduleNotificationAsync({
-    content: { title, body },
+    content: { title, body, data },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date,
@@ -95,6 +107,7 @@ export async function syncReminders(input: {
       content: {
         title: 'Plan your day',
         body: 'Open Velunee to see your tasks and set today up.',
+        data: { route: '/planner' },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -117,6 +130,7 @@ export async function syncReminders(input: {
         'Bill due soon',
         `${bill.name} (${formatMinor(input.currency, bill.amountMinor)}) is due ${soon}.`,
         when,
+        { route: '/balance', billId: bill.id },
       );
     }
   }
@@ -129,7 +143,11 @@ export async function syncReminders(input: {
       const [year, month, day] = task.dueOn.split('-').map(Number) as [number, number, number];
       const when = new Date(year, month - 1, day, hour, minute, 0, 0);
       if (when.getTime() <= now.getTime()) continue;
-      await schedule('Task reminder', task.title, when);
+      await schedule('Task reminder', task.title, when, {
+        route: '/planner',
+        taskId: task.id,
+        dueOn: task.dueOn,
+      });
     }
   }
 }
