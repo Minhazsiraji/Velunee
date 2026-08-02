@@ -44,6 +44,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared mobile packages
+        run: pnpm --filter @velunee/contracts --filter @velunee/ui build
+
       - name: Verify mobile types
         run: pnpm --filter @velunee/mobile typecheck
 
