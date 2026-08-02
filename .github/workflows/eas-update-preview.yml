@@ -1,3 +1,5 @@
+Checking formatting...
+All matched files use Prettier code style!
 name: Publish Velunee preview OTA
 
 on:
@@ -36,8 +38,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.16.0
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
 
       - name: Set up EAS
         uses: expo/expo-github-action@v8
