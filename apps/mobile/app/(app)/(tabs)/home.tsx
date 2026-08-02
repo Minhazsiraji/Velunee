@@ -222,7 +222,8 @@ function Dashboard({
   }
 
   return (
-    <ScrollView
+    <>
+      <ScrollView
       contentContainerStyle={[styles.list, isCompact ? styles.listCompact : null]}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -446,13 +447,14 @@ function Dashboard({
           </Text>
         </Pressable>
       ) : null}
+      </ScrollView>
       <OverdueTaskModal
         task={overdueTask}
         pending={updateTask.isPending || deleteTask.isPending}
         onClose={() => setOverdueTask(null)}
         onResolve={(action) => void resolveOverdue(action)}
       />
-    </ScrollView>
+    </>
   );
 }
 
