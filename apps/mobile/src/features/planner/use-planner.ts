@@ -1,45 +1,50 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateTaskInput, UpdateTaskInput } from '@velunee/contracts';
 
+import { todayIso } from '@/features/balance/format';
+
 import { createTask, deleteTask, loadPlannerDay, updateTask } from './api';
 
 const plannerKey = ['planner'] as const;
 
-function useInvalidatePlanner(): () => void {
+function useRefreshPlanner(): () => Promise<void> {
   const queryClient = useQueryClient();
-  return () => {
-    void queryClient.invalidateQueries({ queryKey: plannerKey });
-  };
+  return () =>
+    queryClient.invalidateQueries({
+      queryKey: plannerKey,
+      refetchType: 'all',
+    });
 }
 
 export function usePlannerDay(day?: string) {
+  const resolvedDay = day ?? todayIso();
   return useQuery({
-    queryKey: [...plannerKey, 'day', day ?? 'today'],
-    queryFn: () => loadPlannerDay(day),
+    queryKey: [...plannerKey, 'day', resolvedDay],
+    queryFn: () => loadPlannerDay(resolvedDay),
   });
 }
 
 export function useCreateTask() {
-  const invalidate = useInvalidatePlanner();
+  const refresh = useRefreshPlanner();
   return useMutation({
     mutationFn: (input: CreateTaskInput) => createTask(input),
-    onSuccess: invalidate,
+    onSuccess: refresh,
   });
 }
 
 export function useUpdateTask() {
-  const invalidate = useInvalidatePlanner();
+  const refresh = useRefreshPlanner();
   return useMutation({
     mutationFn: (input: { taskId: string; patch: UpdateTaskInput }) =>
       updateTask(input.taskId, input.patch),
-    onSuccess: invalidate,
+    onSuccess: refresh,
   });
 }
 
 export function useDeleteTask() {
-  const invalidate = useInvalidatePlanner();
+  const refresh = useRefreshPlanner();
   return useMutation({
     mutationFn: (taskId: string) => deleteTask(taskId),
-    onSuccess: invalidate,
+    onSuccess: refresh,
   });
 }
