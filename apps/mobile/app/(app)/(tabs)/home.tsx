@@ -28,6 +28,11 @@ import {
   tomorrowIso,
   type TaskTiming,
 } from '@/features/home/task-lifecycle';
+import {
+  deriveHomeTrustState,
+  isLikelyOfflineError,
+  type HomeTrustStatus,
+} from '@/features/home/trust-state';
 import { useDeleteTask, usePlannerDay, useUpdateTask } from '@/features/planner/use-planner';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
@@ -65,22 +70,25 @@ export default function HomeScreen(): React.JSX.Element {
   }, [account.refetch, overview.refetch]);
 
   function renderBody(): React.JSX.Element {
-    if (overview.isLoading) {
-      return (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primaryLight} />
-        </View>
-      );
+    if (overview.isLoading && !overview.data) {
+      return <HomeSkeleton />;
     }
 
-    if (overview.isError || !overview.data) {
+    if (!overview.data) {
+      const offline = isLikelyOfflineError(overview.error);
       return (
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={44} color={colors.textMuted} />
-          <Text style={styles.stateTitle}>Couldn&apos;t load your day</Text>
-          <Text style={styles.stateBody}>Check your connection and try again.</Text>
+          <Text style={styles.stateTitle}>
+            {offline ? 'You’re offline' : 'Couldn’t load your day'}
+          </Text>
+          <Text style={styles.stateBody}>
+            {offline
+              ? 'Reconnect to load your latest Daily Brief. Nothing old is being shown as live.'
+              : 'Your information is temporarily unavailable. Try again to load the latest version.'}
+          </Text>
           <PrimaryButton
-            label="Retry"
+            label={overview.isFetching ? 'Retrying…' : 'Retry'}
             variant="outline"
             onPress={() => void overview.refetch()}
             style={styles.retry}
@@ -99,8 +107,11 @@ export default function HomeScreen(): React.JSX.Element {
           auth.user?.user_metadata,
           auth.isAnonymous ? null : auth.user?.email,
         )}
-        refreshing={overview.isRefetching}
-        onRefresh={() => void overview.refetch()}
+        overviewError={overview.isRefetchError ? overview.error : null}
+        refreshing={overview.isRefetching || account.isRefetching}
+        onRefresh={async () => {
+          await Promise.allSettled([overview.refetch(), account.refetch()]);
+        }}
       />
     );
   }
@@ -147,6 +158,7 @@ function Dashboard({
   updatedAt,
   now,
   greetingName,
+  overviewError,
   refreshing,
   onRefresh,
 }: {
@@ -154,8 +166,9 @@ function Dashboard({
   updatedAt: number;
   now: Date;
   greetingName: string | null;
+  overviewError: unknown;
   refreshing: boolean;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
 }): React.JSX.Element {
   const router = useRouter();
   const planner = usePlannerDay();
@@ -163,6 +176,7 @@ function Dashboard({
   const deleteTask = useDeleteTask();
   const [briefExplained, setBriefExplained] = useState(false);
   const [overdueTask, setOverdueTask] = useState<PlannerTask | null>(null);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
   const isNarrow = width < 340;
@@ -189,13 +203,37 @@ function Dashboard({
     data.balance ? 'Balance' : null,
   ].filter((signal): signal is string => Boolean(signal));
   const connectedCount = liveSignals.length;
+  const updatedTimestamps = [updatedAt, planner.data ? planner.dataUpdatedAt : 0].filter(
+    (timestamp) => timestamp > 0,
+  );
+  const lastSuccessfulUpdate =
+    updatedTimestamps.length > 0 ? Math.min(...updatedTimestamps) : updatedAt;
+  const trustState = deriveHomeTrustState({
+    now: now.getTime(),
+    updatedAt: lastSuccessfulUpdate,
+    errors: [overviewError, planner.isError ? planner.error : null],
+  });
+  const signalsAreLive = trustState.status === 'fresh';
+
+  async function refreshAll(): Promise<void> {
+    if (pullRefreshing) return;
+    setPullRefreshing(true);
+    try {
+      await Promise.allSettled([onRefresh(), planner.refetch()]);
+    } finally {
+      setPullRefreshing(false);
+    }
+  }
 
   async function resolveOverdue(action: 'complete' | 'tomorrow' | 'skip'): Promise<void> {
     if (!overdueTask) return;
 
     try {
       if (action === 'complete') {
-        await updateTask.mutateAsync({ taskId: overdueTask.id, patch: { status: 'done' } });
+        await updateTask.mutateAsync({
+          taskId: overdueTask.id,
+          patch: { status: 'done' },
+        });
       } else if (action === 'tomorrow') {
         await updateTask.mutateAsync({
           taskId: overdueTask.id,
@@ -228,11 +266,8 @@ function Dashboard({
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              onRefresh();
-              void planner.refetch();
-            }}
+            refreshing={pullRefreshing || refreshing || planner.isRefetching}
+            onRefresh={() => void refreshAll()}
             tintColor={colors.primaryLight}
           />
         }
@@ -243,6 +278,13 @@ function Dashboard({
         <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
           {data.greeting.subtitle ?? formatHomeDate(now)}
         </Text>
+
+        <HomeTrustBanner
+          status={trustState.status}
+          updatedAt={lastSuccessfulUpdate}
+          refreshing={pullRefreshing || refreshing || planner.isRefetching}
+          onRetry={() => void refreshAll()}
+        />
 
         <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
           <View pointerEvents="none" style={styles.briefGlow} />
@@ -262,15 +304,19 @@ function Dashboard({
             {connectedCount > 0 ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${connectedCount} live signals. Show how this brief was created.`}
+                accessibilityLabel={`${connectedCount} ${
+                  signalsAreLive ? 'live' : 'saved'
+                } signals. Show how this brief was created.`}
                 accessibilityState={{ expanded: briefExplained }}
                 hitSlop={6}
                 onPress={() => setBriefExplained((current) => !current)}
                 style={({ pressed }) => [styles.connectedPill, pressed ? styles.pressed : null]}
               >
-                <View style={styles.connectedDot} />
+                <View
+                  style={[styles.connectedDot, !signalsAreLive ? styles.connectedDotSaved : null]}
+                />
                 <Text style={styles.connectedText} numberOfLines={1}>
-                  {connectedCount} live signals
+                  {connectedCount} {signalsAreLive ? 'live' : 'saved'} signals
                 </Text>
               </Pressable>
             ) : null}
@@ -361,9 +407,10 @@ function Dashboard({
           </Pressable>
           {briefExplained ? (
             <Text style={styles.whyAnswer}>
-              Using {liveSignals.join(', ')} · Updated {formatUpdatedTime(updatedAt)}. These signals
-              stay private to your account and are used only to prepare your brief. Control them
-              from Home options.
+              Using {liveSignals.join(', ')} ·{' '}
+              {signalsAreLive ? 'Updated' : 'Last successful update'}{' '}
+              {formatUpdatedTime(lastSuccessfulUpdate)}. These signals stay private to your account
+              and are used only to prepare your brief. Control them from Home options.
             </Text>
           ) : null}
         </View>
@@ -463,6 +510,95 @@ function Dashboard({
   );
 }
 
+function HomeSkeleton(): React.JSX.Element {
+  return (
+    <View
+      accessibilityLabel="Loading your latest Home information"
+      accessibilityRole="progressbar"
+      style={styles.skeletonList}
+    >
+      <View style={[styles.skeletonBlock, styles.skeletonGreeting]} />
+      <View style={[styles.skeletonBlock, styles.skeletonDate]} />
+      <View style={[styles.skeletonBlock, styles.skeletonBrief]} />
+      <View style={[styles.skeletonBlock, styles.skeletonAction]} />
+      <View style={[styles.skeletonBlock, styles.skeletonCta]} />
+      <View style={styles.skeletonQuickRow}>
+        <View style={[styles.skeletonBlock, styles.skeletonQuick]} />
+        <View style={[styles.skeletonBlock, styles.skeletonQuick]} />
+        <View style={[styles.skeletonBlock, styles.skeletonQuick]} />
+      </View>
+    </View>
+  );
+}
+
+function HomeTrustBanner({
+  status,
+  updatedAt,
+  refreshing,
+  onRetry,
+}: {
+  status: HomeTrustStatus;
+  updatedAt: number;
+  refreshing: boolean;
+  onRetry: () => void;
+}): React.JSX.Element | null {
+  if (status === 'fresh') return null;
+
+  const title =
+    status === 'offline'
+      ? refreshing
+        ? 'Trying to reconnect…'
+        : 'You’re offline'
+      : status === 'stale'
+        ? refreshing
+          ? 'Refreshing your day…'
+          : 'Information may be outdated'
+        : refreshing
+          ? 'Retrying the update…'
+          : 'Couldn’t refresh every signal';
+  const body =
+    status === 'offline'
+      ? `Showing saved information from ${formatUpdateAge(updatedAt)}. It is not marked as live.`
+      : status === 'stale'
+        ? `Last updated ${formatUpdateAge(updatedAt)}. Refresh before relying on time-sensitive information.`
+        : `Showing the last successful update from ${formatUpdateAge(updatedAt)}. Some information may be unavailable.`;
+
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={`${title}. ${body}`}
+      style={styles.trustBanner}
+    >
+      <Ionicons
+        name={status === 'offline' ? 'cloud-offline-outline' : 'time-outline'}
+        size={20}
+        color={colors.primaryLight}
+      />
+      <View style={styles.trustBannerCopy}>
+        <Text style={styles.trustBannerTitle}>{title}</Text>
+        <Text style={styles.trustBannerBody}>{body}</Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={refreshing ? 'Refreshing Home' : 'Refresh Home now'}
+        disabled={refreshing}
+        onPress={onRetry}
+        style={({ pressed }) => [
+          styles.trustRetry,
+          refreshing ? styles.trustRetryDisabled : null,
+          pressed ? styles.pressed : null,
+        ]}
+      >
+        {refreshing ? (
+          <ActivityIndicator size="small" color={colors.primaryLight} />
+        ) : (
+          <Text style={styles.trustRetryText}>Refresh</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
 function cleanFirstName(value: string | null | undefined): string | null {
   const first = value
     ?.trim()
@@ -536,6 +672,16 @@ function formatUpdatedTime(timestamp: number): string {
   }).format(new Date(timestamp));
 }
 
+function formatUpdateAge(timestamp: number): string {
+  if (timestamp <= 0) return 'an unknown time';
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  if (elapsedMinutes < 1) return 'just now';
+  if (elapsedMinutes < 60) return `${elapsedMinutes} min ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours} hr ago`;
+  return formatUpdatedTime(timestamp);
+}
+
 function formatConversationAge(value: string): string {
   const timestamp = new Date(value).getTime();
   const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
@@ -565,7 +711,10 @@ function taskPreparationTime(task: PlannerTask): string | null {
   const [hour, minute] = task.scheduledTime.split(':').map(Number) as [number, number];
   const preparation = new Date(2000, 0, 1, hour, minute);
   preparation.setMinutes(preparation.getMinutes() - 15);
-  return preparation.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return preparation.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 function taskActionTitle(title: string): string {
@@ -1057,6 +1206,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 8,
   },
+  skeletonList: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    gap: 10,
+    overflow: 'hidden',
+  },
+  skeletonBlock: {
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.borderSoft,
+    borderWidth: 1,
+    opacity: 0.72,
+  },
+  skeletonGreeting: {
+    width: '58%',
+    height: 30,
+    borderRadius: 10,
+  },
+  skeletonDate: {
+    width: '38%',
+    height: 15,
+    borderRadius: 7,
+  },
+  skeletonBrief: {
+    width: '100%',
+    height: 222,
+    borderRadius: 22,
+  },
+  skeletonAction: {
+    width: '100%',
+    height: 112,
+    borderRadius: 18,
+  },
+  skeletonCta: {
+    width: '100%',
+    height: 68,
+    borderRadius: 18,
+  },
+  skeletonQuickRow: {
+    flexDirection: 'row',
+    gap: 9,
+  },
+  skeletonQuick: {
+    width: 100,
+    height: 78,
+    borderRadius: 16,
+  },
   stateTitle: {
     color: colors.text,
     fontSize: 17,
@@ -1089,6 +1285,51 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textSecondary,
     fontSize: 14,
+  },
+  trustBanner: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  trustBannerCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  trustBannerTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  trustBannerBody: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  trustRetry: {
+    minWidth: 60,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 9,
+  },
+  trustRetryDisabled: {
+    opacity: 0.65,
+  },
+  trustRetryText: {
+    color: colors.primaryLight,
+    fontSize: 12,
+    fontWeight: '700',
   },
   briefCard: {
     backgroundColor: '#20192F',
@@ -1177,6 +1418,9 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: colors.primaryLight,
+  },
+  connectedDotSaved: {
+    backgroundColor: colors.textMuted,
   },
   connectedText: {
     flexShrink: 1,
