@@ -36,8 +36,12 @@ export default function TabsLayout(): React.JSX.Element {
           backgroundColor: colors.surface,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+        },
+        tabBarItemStyle: {
+          minWidth: 0,
+          paddingHorizontal: 0,
         },
         tabBarIcon: ({ color, size }) => (
           <Ionicons name={tabIcons[route.name] ?? 'ellipse'} color={color} size={size} />
