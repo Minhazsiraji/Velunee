@@ -13,11 +13,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { HomeCardPreferences, HomeOverviewResponse } from '@velunee/contracts';
+import type { HomeCardPreferences, HomeOverviewResponse, PlannerTask } from '@velunee/contracts';
 
 import { PrimaryButton } from '@/components/primary-button';
 import { formatMinor } from '@/features/balance/format';
 import { useHomeOverview, useUpdateHomeCards } from '@/features/home/use-home';
+import { usePlannerDay } from '@/features/planner/use-planner';
 import { colors } from '@/theme/colors';
 
 const CARD_LABELS: Record<keyof HomeCardPreferences, string> = {
@@ -114,6 +115,18 @@ function Dashboard({
   onRefresh: () => void;
 }): React.JSX.Element {
   const router = useRouter();
+  const planner = usePlannerDay();
+  const [briefExplained, setBriefExplained] = useState(false);
+
+  const nextTask = planner.data
+    ? ([...planner.data.overdue, ...planner.data.tasks].find((task) => task.status === 'todo') ??
+      null)
+    : null;
+  const brief = buildDailyBrief(data, nextTask);
+  const bestAction = buildBestAction(data, nextTask);
+  const connectedCount = [data.weather, nextTask, data.upcomingBill, data.balance].filter(
+    Boolean,
+  ).length;
 
   return (
     <ScrollView
@@ -132,12 +145,113 @@ function Dashboard({
         <Text style={styles.subtitle}>{data.greeting.subtitle}</Text>
       ) : null}
 
-      {data.suggestion ? (
-        <View style={[styles.card, styles.suggestionCard]}>
-          <Ionicons name="sparkles" size={18} color={colors.primaryLight} />
-          <Text style={styles.suggestionText}>{data.suggestion.message}</Text>
+      <View style={styles.briefCard}>
+        <View style={styles.briefHeader}>
+          <View style={styles.briefTitleRow}>
+            <View style={styles.briefIcon}>
+              <Ionicons name="sparkles" size={18} color={colors.white} />
+            </View>
+            <View>
+              <Text style={styles.briefEyebrow}>VELUNEE DAILY BRIEF</Text>
+              <Text style={styles.briefTitle}>What matters today</Text>
+            </View>
+          </View>
+          {connectedCount > 0 ? (
+            <View style={styles.connectedPill}>
+              <View style={styles.connectedDot} />
+              <Text style={styles.connectedText}>{connectedCount} connected</Text>
+            </View>
+          ) : null}
         </View>
-      ) : null}
+
+        <Text style={styles.briefSummary}>{brief}</Text>
+
+        <View style={styles.contextGrid}>
+          {data.weather ? (
+            <ContextTile
+              icon="rainy-outline"
+              label="Weather"
+              value={`${data.weather.temperatureC}°C${
+                data.weather.condition ? ` · ${data.weather.condition}` : ''
+              }`}
+            />
+          ) : null}
+          {nextTask ? (
+            <ContextTile
+              icon="time-outline"
+              label={nextTask.scheduledTime ? taskTime(nextTask) : 'Today'}
+              value={nextTask.title}
+              onPress={() => router.push('/planner')}
+            />
+          ) : null}
+          {data.upcomingBill ? (
+            <ContextTile
+              icon="receipt-outline"
+              label={billDueLabel(data.upcomingBill.dueInDays)}
+              value={`${data.upcomingBill.name} · ${formatMinor(
+                data.upcomingBill.currency,
+                data.upcomingBill.amountMinor,
+              )}`}
+              onPress={() => router.push('./balance')}
+            />
+          ) : null}
+          {data.balance ? (
+            <ContextTile
+              icon="wallet-outline"
+              label="Safe to spend"
+              value={
+                data.balance.isConfigured
+                  ? formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)
+                  : 'Set up Balance'
+              }
+              onPress={() => router.push('./balance')}
+            />
+          ) : null}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: briefExplained }}
+          onPress={() => setBriefExplained((current) => !current)}
+          style={styles.whyButton}
+        >
+          <Ionicons name="information-circle-outline" size={17} color={colors.primaryLight} />
+          <Text style={styles.whyText}>Why this brief?</Text>
+          <Ionicons
+            name={briefExplained ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={colors.textMuted}
+          />
+        </Pressable>
+        {briefExplained ? (
+          <Text style={styles.whyAnswer}>
+            Velunee connected today&apos;s weather, open plan, upcoming bill and available spending.
+            You control these topics from the Home options button.
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.nextActionCard}>
+        <View style={styles.nextActionHeader}>
+          <View style={styles.nextActionIcon}>
+            <Ionicons name="navigate" size={18} color={colors.primaryLight} />
+          </View>
+          <View style={styles.nextActionCopy}>
+            <Text style={styles.nextActionEyebrow}>BEST NEXT ACTION</Text>
+            <Text style={styles.nextActionTitle}>{bestAction.title}</Text>
+            <Text style={styles.nextActionBody}>{bestAction.body}</Text>
+          </View>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={bestAction.label}
+          onPress={() => router.push(bestAction.route)}
+          style={styles.nextActionButton}
+        >
+          <Text style={styles.nextActionButtonText}>{bestAction.label}</Text>
+          <Ionicons name="arrow-forward" size={17} color={colors.white} />
+        </Pressable>
+      </View>
 
       <Pressable
         accessibilityRole="button"
@@ -148,81 +262,10 @@ function Dashboard({
         <Ionicons name="git-compare-outline" size={20} color={colors.white} />
         <View style={styles.decideCtaText}>
           <Text style={styles.decideCtaTitle}>Help me decide</Text>
-          <Text style={styles.decideCtaBody}>
-            Wear, buy, go out? Velunee weighs your day and suggests a next step.
-          </Text>
+          <Text style={styles.decideCtaBody}>Compare a choice using today&apos;s context.</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.white} />
       </Pressable>
-
-      {data.weather ? (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="partly-sunny-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel}>Weather · {data.weather.locationName}</Text>
-          </View>
-          <Text style={styles.cardValue}>
-            {data.weather.temperatureC}°C
-            {data.weather.condition ? ` · ${data.weather.condition}` : ''}
-          </Text>
-          {data.weather.feelsLikeC !== null ? (
-            <Text style={styles.cardMeta}>Feels like {data.weather.feelsLikeC}°C</Text>
-          ) : null}
-          {data.weather.advice ? (
-            <Text style={styles.cardAdvice}>{data.weather.advice}</Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {data.balance ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open Velunee Balance"
-          onPress={() => router.push('./balance')}
-          style={styles.card}
-        >
-          <View style={styles.cardHeader}>
-            <Ionicons name="wallet-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel}>Safe to spend today</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </View>
-          {data.balance.isConfigured ? (
-            <>
-              <Text style={styles.cardValue}>
-                {formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)}
-              </Text>
-              <Text style={styles.cardMeta}>
-                {data.balance.daysRemaining} days left this month · daily limit{' '}
-                {formatMinor(data.balance.currency, data.balance.suggestedDailyLimitMinor)}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.cardMeta}>
-              Set up Velunee Balance to see how much you can safely spend today.
-            </Text>
-          )}
-        </Pressable>
-      ) : null}
-
-      {data.upcomingBill ? (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel}>Upcoming bill</Text>
-          </View>
-          <Text style={styles.cardValue}>
-            {data.upcomingBill.name} ·{' '}
-            {formatMinor(data.upcomingBill.currency, data.upcomingBill.amountMinor)}
-          </Text>
-          <Text style={styles.cardMeta}>
-            {data.upcomingBill.dueInDays === 0
-              ? 'Due today'
-              : data.upcomingBill.dueInDays === 1
-                ? 'Due tomorrow'
-                : `Due in ${data.upcomingBill.dueInDays} days`}
-          </Text>
-        </View>
-      ) : null}
 
       {data.recentConversation ? (
         <Pressable
@@ -255,6 +298,165 @@ function Dashboard({
         <QuickAction icon="calendar" label="Plan my day" onPress={() => router.push('/planner')} />
       </View>
     </ScrollView>
+  );
+}
+
+function taskTime(task: PlannerTask): string {
+  if (!task.scheduledTime) return 'Today';
+  const [hour, minute] = task.scheduledTime.split(':').map(Number) as [number, number];
+  return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function billDueLabel(dueInDays: number): string {
+  if (dueInDays === 0) return 'Due today';
+  if (dueInDays === 1) return 'Due tomorrow';
+  return `Due in ${dueInDays} days`;
+}
+
+function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | null): string {
+  const parts: string[] = [];
+
+  if (data.weather) {
+    const rainy =
+      /rain|drizzle|thunder|shower/i.test(data.weather.condition ?? '') ||
+      /rain|umbrella/i.test(data.weather.advice ?? '');
+    if (rainy) {
+      parts.push(`Rain may affect your day in ${data.weather.locationName}. Take an umbrella.`);
+    } else if (data.weather.advice) {
+      parts.push(data.weather.advice);
+    } else {
+      parts.push(
+        `It is ${data.weather.temperatureC}°C${
+          data.weather.condition ? ` and ${data.weather.condition.toLowerCase()}` : ''
+        } in ${data.weather.locationName}.`,
+      );
+    }
+  }
+
+  if (nextTask) {
+    parts.push(
+      nextTask.scheduledTime
+        ? `Your next task, “${nextTask.title}”, is at ${taskTime(nextTask)}.`
+        : `“${nextTask.title}” is on today’s plan.`,
+    );
+  }
+
+  if (data.upcomingBill) {
+    parts.push(
+      `${data.upcomingBill.name} is ${billDueLabel(data.upcomingBill.dueInDays).toLowerCase()}.`,
+    );
+  }
+
+  if (data.balance?.isConfigured) {
+    parts.push(
+      `You can safely spend ${formatMinor(
+        data.balance.currency,
+        data.balance.safeToSpendTodayMinor,
+      )} today.`,
+    );
+  }
+
+  return parts.length > 0
+    ? parts.join(' ')
+    : 'Add a plan, Balance details or location access and Velunee will connect your day here.';
+}
+
+function buildBestAction(
+  data: HomeOverviewResponse,
+  nextTask: PlannerTask | null,
+): {
+  title: string;
+  body: string;
+  label: string;
+  route: '/planner' | './balance' | '/style' | './chat';
+} {
+  if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
+    return {
+      title: `Prepare ${data.upcomingBill.name}`,
+      body: `${formatMinor(data.upcomingBill.currency, data.upcomingBill.amountMinor)} is ${billDueLabel(
+        data.upcomingBill.dueInDays,
+      ).toLowerCase()}. Check your plan before other spending.`,
+      label: 'Review Balance',
+      route: './balance',
+    };
+  }
+
+  if (nextTask) {
+    return {
+      title: nextTask.scheduledTime
+        ? `Be ready for ${taskTime(nextTask)}`
+        : 'Choose your first task',
+      body: `Focus on “${nextTask.title}” next. Velunee will keep the rest of your day visible.`,
+      label: 'Open Planner',
+      route: '/planner',
+    };
+  }
+
+  if (data.weather?.advice) {
+    return {
+      title: 'Get ready for the weather',
+      body: data.weather.advice,
+      label: 'What should I wear?',
+      route: '/style',
+    };
+  }
+
+  if (data.balance?.isConfigured) {
+    return {
+      title: 'Keep spending on track',
+      body:
+        data.suggestion?.message ??
+        `Stay within ${formatMinor(
+          data.balance.currency,
+          data.balance.safeToSpendTodayMinor,
+        )} today.`,
+      label: 'Review Balance',
+      route: './balance',
+    };
+  }
+
+  return {
+    title: 'Shape your day with Velunee',
+    body:
+      data.suggestion?.message ??
+      'Tell Velunee what is on your mind and choose a useful next step.',
+    label: 'Ask Velunee',
+    route: './chat',
+  };
+}
+
+function ContextTile({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: string;
+  onPress?: () => void;
+}): React.JSX.Element {
+  return (
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.contextTile, pressed && onPress ? styles.pressed : null]}
+    >
+      <View style={styles.contextTileHeader}>
+        <Ionicons name={icon} size={16} color={colors.primaryLight} />
+        <Text style={styles.contextTileLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        {onPress ? <Ionicons name="chevron-forward" size={13} color={colors.textMuted} /> : null}
+      </View>
+      <Text style={styles.contextTileValue} numberOfLines={2}>
+        {value}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -390,6 +592,187 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
   },
+  briefCard: {
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.primary,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 16,
+    gap: 14,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 5,
+  },
+  briefHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  briefTitleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  briefIcon: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+  },
+  briefEyebrow: {
+    color: colors.primaryLight,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  briefTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  connectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  connectedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primaryLight,
+  },
+  connectedText: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  briefSummary: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  contextGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  contextTile: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    minHeight: 68,
+    backgroundColor: colors.surface,
+    borderColor: colors.borderSoft,
+    borderWidth: 1,
+    borderRadius: 13,
+    padding: 10,
+    gap: 6,
+  },
+  contextTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  contextTileLabel: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.35,
+  },
+  contextTileValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+  pressed: {
+    opacity: 0.72,
+  },
+  whyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  whyText: {
+    color: colors.primaryLight,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  whyAnswer: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: -6,
+  },
+  nextActionCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    gap: 12,
+  },
+  nextActionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 11,
+  },
+  nextActionIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    backgroundColor: colors.surfaceElevated,
+  },
+  nextActionCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  nextActionEyebrow: {
+    color: colors.primaryLight,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.75,
+  },
+  nextActionTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  nextActionBody: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  nextActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  nextActionButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: '800',
+  },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.borderSoft,
@@ -397,19 +780,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 6,
-  },
-  suggestionCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-  },
-  suggestionText: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 14,
-    lineHeight: 20,
   },
   decideCta: {
     flexDirection: 'row',
