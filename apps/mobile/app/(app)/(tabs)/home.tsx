@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { getLocales } from 'expo-localization';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -17,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { HomeCardPreferences, HomeOverviewResponse, PlannerTask } from '@velunee/contracts';
 
 import { PrimaryButton } from '@/components/primary-button';
-import { formatMinor } from '@/features/balance/format';
 import { useHomeOverview, useUpdateHomeCards } from '@/features/home/use-home';
 import { usePlannerDay } from '@/features/planner/use-planner';
 import { colors } from '@/theme/colors';
@@ -63,6 +63,7 @@ export default function HomeScreen(): React.JSX.Element {
     return (
       <Dashboard
         data={overview.data}
+        updatedAt={overview.dataUpdatedAt}
         refreshing={overview.isRefetching}
         onRefresh={() => void overview.refetch()}
       />
@@ -108,10 +109,12 @@ export default function HomeScreen(): React.JSX.Element {
 
 function Dashboard({
   data,
+  updatedAt,
   refreshing,
   onRefresh,
 }: {
   data: HomeOverviewResponse;
+  updatedAt: number;
   refreshing: boolean;
   onRefresh: () => void;
 }): React.JSX.Element {
@@ -128,9 +131,13 @@ function Dashboard({
     : null;
   const brief = buildDailyBrief(data, nextTask);
   const bestAction = buildBestAction(data, nextTask);
-  const connectedCount = [data.weather, nextTask, data.upcomingBill, data.balance].filter(
-    Boolean,
-  ).length;
+  const liveSignals = [
+    data.weather ? 'Weather' : null,
+    nextTask ? 'Planner' : null,
+    data.upcomingBill ? 'Bills' : null,
+    data.balance ? 'Balance' : null,
+  ].filter((signal): signal is string => Boolean(signal));
+  const connectedCount = liveSignals.length;
 
   return (
     <ScrollView
@@ -147,13 +154,12 @@ function Dashboard({
       <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
         {data.greeting.title}
       </Text>
-      {data.greeting.subtitle ? (
-        <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
-          {data.greeting.subtitle}
-        </Text>
-      ) : null}
+      <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+        {data.greeting.subtitle ?? formatHomeDate(new Date())}
+      </Text>
 
       <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
+        <View pointerEvents="none" style={styles.briefGlow} />
         <View style={styles.briefAccent} />
         <View style={styles.briefHeader}>
           <View style={styles.briefIcon}>
@@ -168,12 +174,19 @@ function Dashboard({
             </Text>
           </View>
           {connectedCount > 0 ? (
-            <View style={styles.connectedPill}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${connectedCount} live signals. Show how this brief was created.`}
+              accessibilityState={{ expanded: briefExplained }}
+              hitSlop={6}
+              onPress={() => setBriefExplained((current) => !current)}
+              style={({ pressed }) => [styles.connectedPill, pressed ? styles.pressed : null]}
+            >
               <View style={styles.connectedDot} />
               <Text style={styles.connectedText} numberOfLines={1}>
-                {connectedCount} connected
+                {connectedCount} live signals
               </Text>
-            </View>
+            </Pressable>
           ) : null}
         </View>
 
@@ -206,7 +219,7 @@ function Dashboard({
         {data.upcomingBill || data.balance ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Review upcoming bill and daily spending"
+            accessibilityLabel="Review upcoming bill and safe-to-spend amount"
             onPress={() => router.push('./balance')}
             style={({ pressed }) => [styles.moneySignal, pressed ? styles.pressed : null]}
           >
@@ -214,7 +227,7 @@ function Dashboard({
               <MoneySignalLine
                 icon="receipt-outline"
                 label={billDueLabel(data.upcomingBill.dueInDays)}
-                value={`${data.upcomingBill.name} · ${formatMinor(
+                value={`${data.upcomingBill.name} · ${formatHomeMoney(
                   data.upcomingBill.currency,
                   data.upcomingBill.amountMinor,
                 )}`}
@@ -232,10 +245,10 @@ function Dashboard({
             {data.balance ? (
               <MoneySignalLine
                 icon="wallet-outline"
-                label="Daily spend"
+                label="Safe to spend today"
                 value={
                   data.balance.isConfigured
-                    ? formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)
+                    ? formatHomeMoney(data.balance.currency, data.balance.safeToSpendTodayMinor)
                     : 'Set up Balance'
                 }
                 stacked={isNarrow}
@@ -260,8 +273,9 @@ function Dashboard({
         </Pressable>
         {briefExplained ? (
           <Text style={styles.whyAnswer}>
-            Velunee connected today&apos;s weather, open plan, upcoming bill and available spending.
-            You control these topics from the Home options button.
+            Using {liveSignals.join(', ')} · Updated {formatUpdatedTime(updatedAt)}. These signals
+            stay private to your account and are used only to prepare your brief. Control them from
+            Home options.
           </Text>
         ) : null}
       </View>
@@ -306,26 +320,6 @@ function Dashboard({
         <Ionicons name="chevron-forward" size={18} color={colors.white} />
       </Pressable>
 
-      {data.recentConversation ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Continue your recent conversation"
-          onPress={() => router.push('./chat')}
-          style={styles.card}
-        >
-          <View style={styles.cardHeader}>
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel} numberOfLines={1} ellipsizeMode="tail">
-              Continue where you left off
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </View>
-          <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
-            {data.recentConversation.title}
-          </Text>
-        </Pressable>
-      ) : null}
-
       <Text style={styles.quickTitle}>Quick actions</Text>
       <ScrollView
         horizontal
@@ -342,6 +336,29 @@ function Dashboard({
         <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
         <QuickAction icon="calendar" label="Plan my day" onPress={() => router.push('/planner')} />
       </ScrollView>
+
+      {data.recentConversation ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Continue recent conversation: ${data.recentConversation.title}`}
+          onPress={() => router.push('./chat')}
+          style={styles.card}
+        >
+          <View style={styles.cardHeader}>
+            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
+            <Text style={styles.cardLabel} numberOfLines={1} ellipsizeMode="tail">
+              Recent conversation
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </View>
+          <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
+            {data.recentConversation.title}
+          </Text>
+          <Text style={styles.cardMeta} numberOfLines={1} ellipsizeMode="tail">
+            Continue your conversation · {formatConversationAge(data.recentConversation.updatedAt)}
+          </Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -353,6 +370,88 @@ function taskTime(task: PlannerTask): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+function formatHomeDate(date: Date): string {
+  return new Intl.DateTimeFormat(getLocales()[0]?.languageTag, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+}
+
+function formatUpdatedTime(timestamp: number): string {
+  return new Intl.DateTimeFormat(getLocales()[0]?.languageTag, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(timestamp));
+}
+
+function formatConversationAge(value: string): string {
+  const timestamp = new Date(value).getTime();
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  const locale = getLocales()[0]?.languageTag;
+
+  try {
+    const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    if (elapsedMinutes < 1) return 'just now';
+    if (elapsedMinutes < 60) return relative.format(-elapsedMinutes, 'minute');
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    if (elapsedHours < 24) return relative.format(-elapsedHours, 'hour');
+    const elapsedDays = Math.floor(elapsedHours / 24);
+    if (elapsedDays < 7) return relative.format(-elapsedDays, 'day');
+  } catch {
+    // Fall through to a locale-aware calendar date on limited Intl runtimes.
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: new Date(value).getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+  }).format(new Date(value));
+}
+
+function taskPreparationTime(task: PlannerTask): string | null {
+  if (!task.scheduledTime) return null;
+  const [hour, minute] = task.scheduledTime.split(':').map(Number) as [number, number];
+  const preparation = new Date(2000, 0, 1, hour, minute);
+  preparation.setMinutes(preparation.getMinutes() - 15);
+  return preparation.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+function taskActionTitle(title: string): string {
+  const action = title.trim().replace(/^(?:i\s+)?need\s+to\s+/i, '');
+  if (!action) return 'Open your next task';
+  return `${action.charAt(0).toUpperCase()}${action.slice(1)}`;
+}
+
+function weatherActionNudge(data: HomeOverviewResponse): string | null {
+  if (!data.weather) return null;
+  const rainy =
+    /rain|drizzle|thunder|shower/i.test(data.weather.condition ?? '') ||
+    /rain|umbrella/i.test(data.weather.advice ?? '');
+  if (!rainy) return null;
+  return 'Rain is possible, so take an umbrella.';
+}
+
+function formatHomeMoney(currency: string, amountMinor: number): string {
+  const locale = getLocales()[0]?.languageTag;
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amountMinor / 100);
+  } catch {
+    const amount = (amountMinor / 100).toLocaleString(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+    return `${currency} ${amount}`;
+  }
 }
 
 function billDueLabel(dueInDays: number): string {
@@ -397,7 +496,7 @@ function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | nul
     );
   } else if (data.balance?.isConfigured) {
     parts.push(
-      `${formatMinor(
+      `${formatHomeMoney(
         data.balance.currency,
         data.balance.safeToSpendTodayMinor,
       )} is safe to spend today.`,
@@ -421,7 +520,7 @@ function buildBestAction(
   if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
     return {
       title: `Prepare ${data.upcomingBill.name}`,
-      body: `${formatMinor(data.upcomingBill.currency, data.upcomingBill.amountMinor)} is ${billDueLabel(
+      body: `${formatHomeMoney(data.upcomingBill.currency, data.upcomingBill.amountMinor)} is ${billDueLabel(
         data.upcomingBill.dueInDays,
       ).toLowerCase()}. Check your plan before other spending.`,
       label: 'Review Balance',
@@ -430,11 +529,17 @@ function buildBestAction(
   }
 
   if (nextTask) {
+    const preparationTime = taskPreparationTime(nextTask);
+    const weatherNudge = weatherActionNudge(data);
+    const guidance = nextTask.scheduledTime
+      ? `It is scheduled for ${taskTime(nextTask)}${
+          preparationTime ? `; start preparing at ${preparationTime}` : ''
+        }.`
+      : 'Make this your next focus and mark it complete in Planner.';
+
     return {
-      title: nextTask.scheduledTime
-        ? `Be ready for ${taskTime(nextTask)}`
-        : 'Choose your first task',
-      body: `Focus on “${nextTask.title}” next. Velunee will keep the rest of your day visible.`,
+      title: taskActionTitle(nextTask.title),
+      body: [guidance, weatherNudge].filter(Boolean).join(' '),
       label: 'Open Planner',
       route: '/planner',
     };
@@ -454,7 +559,7 @@ function buildBestAction(
       title: 'Keep spending on track',
       body:
         data.suggestion?.message ??
-        `Stay within ${formatMinor(
+        `Stay within ${formatHomeMoney(
           data.balance.currency,
           data.balance.safeToSpendTodayMinor,
         )} today.`,
@@ -624,7 +729,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingTop: 8,
     paddingBottom: 9,
   },
@@ -638,14 +743,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   settingsButton: {
-    width: 36,
-    height: 36,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceElevated,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 21,
   },
   center: {
     flex: 1,
@@ -688,19 +793,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   briefCard: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: 'rgba(180, 150, 255, 0.34)',
+    backgroundColor: '#20192F',
+    borderColor: 'rgba(180, 150, 255, 0.22)',
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 15,
     paddingTop: 17,
     gap: 12,
     overflow: 'hidden',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowOpacity: 0.09,
+    shadowRadius: 16,
+    elevation: 3,
   },
   briefCardCompact: {
     paddingHorizontal: 12,
@@ -714,7 +819,16 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 2,
     borderBottomRightRadius: 2,
     backgroundColor: colors.primaryLight,
-    opacity: 0.75,
+    opacity: 0.58,
+  },
+  briefGlow: {
+    position: 'absolute',
+    top: -72,
+    right: -54,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(121, 87, 217, 0.09)',
   },
   briefHeader: {
     flexDirection: 'row',
@@ -748,12 +862,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   connectedPill: {
-    maxWidth: 86,
+    maxWidth: 94,
     flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(15, 11, 31, 0.52)',
+    backgroundColor: 'rgba(15, 11, 31, 0.66)',
+    borderColor: 'rgba(180, 150, 255, 0.13)',
+    borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 5,
@@ -767,7 +883,7 @@ const styles = StyleSheet.create({
   connectedText: {
     flexShrink: 1,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
   },
   briefSummary: {
@@ -787,7 +903,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: 58,
-    backgroundColor: 'rgba(15, 11, 31, 0.58)',
+    backgroundColor: 'rgba(15, 11, 31, 0.48)',
     borderColor: colors.borderSoft,
     borderWidth: 1,
     borderRadius: 14,
@@ -816,7 +932,7 @@ const styles = StyleSheet.create({
   contextTileLabel: {
     flex: 1,
     color: colors.textSecondary,
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.35,
@@ -829,7 +945,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   moneySignal: {
-    backgroundColor: 'rgba(15, 11, 31, 0.58)',
+    backgroundColor: 'rgba(15, 11, 31, 0.48)',
     borderColor: colors.borderSoft,
     borderWidth: 1,
     borderRadius: 14,
@@ -849,7 +965,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moneySignalLabel: {
-    width: 104,
+    width: 132,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
@@ -862,7 +978,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: colors.textSecondary,
-    fontSize: 9,
+    fontSize: 9.5,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.35,
@@ -882,7 +998,7 @@ const styles = StyleSheet.create({
   },
   moneySignalDivider: {
     height: 1,
-    marginLeft: 104,
+    marginLeft: 132,
     backgroundColor: colors.borderSoft,
   },
   moneySignalDividerNarrow: {
@@ -896,6 +1012,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
+    minHeight: 36,
   },
   whyText: {
     color: colors.primaryLight,
@@ -909,11 +1026,11 @@ const styles = StyleSheet.create({
     marginTop: -6,
   },
   nextActionCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
+    backgroundColor: '#1B1628',
+    borderColor: 'rgba(180, 150, 255, 0.2)',
     borderWidth: 1,
-    borderRadius: 17,
-    padding: 13,
+    borderRadius: 18,
+    padding: 14,
     gap: 5,
   },
   nextActionHeader: {
@@ -955,7 +1072,9 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 16,
   },
   nextActionLink: {
@@ -965,7 +1084,7 @@ const styles = StyleSheet.create({
     marginLeft: 44,
   },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#1B1628',
     borderColor: colors.borderSoft,
     borderWidth: 1,
     borderRadius: 16,
@@ -976,8 +1095,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.primary,
-    borderRadius: 17,
+    backgroundColor: '#6849C9',
+    borderRadius: 18,
     paddingHorizontal: 15,
     paddingVertical: 13,
   },
@@ -1023,8 +1142,8 @@ const styles = StyleSheet.create({
   },
   quickTitle: {
     color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     marginTop: 5,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -1034,8 +1153,8 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   quickAction: {
-    width: 96,
-    minHeight: 76,
+    width: 100,
+    minHeight: 78,
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.borderSoft,
