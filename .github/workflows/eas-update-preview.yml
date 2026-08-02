@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-02 planner task synchronization
+# Release trigger: 2026-08-02 Home trust states
 name: Publish Velunee preview OTA
 
 on:
