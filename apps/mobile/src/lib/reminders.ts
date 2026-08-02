@@ -35,7 +35,7 @@ export interface ReminderPrefs {
   tasks: boolean;
 }
 
-interface ReminderNavigationData {
+interface ReminderNavigationData extends Record<string, unknown> {
   route: '/planner' | '/balance';
   taskId?: string;
   dueOn?: string;
