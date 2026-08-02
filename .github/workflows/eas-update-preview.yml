@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-02 notification tap navigation
+# Release trigger: 2026-08-02 Home next-action controls
 name: Publish Velunee preview OTA
 
 on:
