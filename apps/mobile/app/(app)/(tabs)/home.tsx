@@ -146,6 +146,7 @@ function Dashboard({
       ) : null}
 
       <View style={styles.briefCard}>
+        <View style={styles.briefAccent} />
         <View style={styles.briefHeader}>
           <View style={styles.briefTitleRow}>
             <View style={styles.briefIcon}>
@@ -166,7 +167,12 @@ function Dashboard({
 
         <Text style={styles.briefSummary}>{brief}</Text>
 
-        <View style={styles.contextGrid}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.contextRail}
+          style={styles.contextScroller}
+        >
           {data.weather ? (
             <ContextTile
               icon="rainy-outline"
@@ -207,7 +213,7 @@ function Dashboard({
               onPress={() => router.push('./balance')}
             />
           ) : null}
-        </View>
+        </ScrollView>
 
         <Pressable
           accessibilityRole="button"
@@ -231,7 +237,12 @@ function Dashboard({
         ) : null}
       </View>
 
-      <View style={styles.nextActionCard}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
+        onPress={() => router.push(bestAction.route)}
+        style={({ pressed }) => [styles.nextActionCard, pressed ? styles.pressed : null]}
+      >
         <View style={styles.nextActionHeader}>
           <View style={styles.nextActionIcon}>
             <Ionicons name="navigate" size={18} color={colors.primaryLight} />
@@ -239,19 +250,16 @@ function Dashboard({
           <View style={styles.nextActionCopy}>
             <Text style={styles.nextActionEyebrow}>BEST NEXT ACTION</Text>
             <Text style={styles.nextActionTitle}>{bestAction.title}</Text>
-            <Text style={styles.nextActionBody}>{bestAction.body}</Text>
+            <Text style={styles.nextActionBody} numberOfLines={2}>
+              {bestAction.body}
+            </Text>
+          </View>
+          <View style={styles.nextActionAccessory}>
+            <Ionicons name="arrow-forward" size={17} color={colors.white} />
           </View>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={bestAction.label}
-          onPress={() => router.push(bestAction.route)}
-          style={styles.nextActionButton}
-        >
-          <Text style={styles.nextActionButtonText}>{bestAction.label}</Text>
-          <Ionicons name="arrow-forward" size={17} color={colors.white} />
-        </Pressable>
-      </View>
+        <Text style={styles.nextActionLink}>{bestAction.label}</Text>
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"
@@ -286,7 +294,11 @@ function Dashboard({
       ) : null}
 
       <Text style={styles.quickTitle}>Quick actions</Text>
-      <View style={styles.quickRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.quickRow}
+      >
         <QuickAction
           icon="chatbubble-ellipses"
           label="Ask Velunee"
@@ -296,7 +308,7 @@ function Dashboard({
         <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
         <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
         <QuickAction icon="calendar" label="Plan my day" onPress={() => router.push('/planner')} />
-      </View>
+      </ScrollView>
     </ScrollView>
   );
 }
@@ -324,7 +336,7 @@ function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | nul
       /rain|drizzle|thunder|shower/i.test(data.weather.condition ?? '') ||
       /rain|umbrella/i.test(data.weather.advice ?? '');
     if (rainy) {
-      parts.push(`Rain may affect your day in ${data.weather.locationName}. Take an umbrella.`);
+      parts.push('Rain may affect your day. Take an umbrella.');
     } else if (data.weather.advice) {
       parts.push(data.weather.advice);
     } else {
@@ -336,26 +348,26 @@ function buildDailyBrief(data: HomeOverviewResponse, nextTask: PlannerTask | nul
     }
   }
 
-  if (nextTask) {
-    parts.push(
-      nextTask.scheduledTime
-        ? `Your next task, “${nextTask.title}”, is at ${taskTime(nextTask)}.`
-        : `“${nextTask.title}” is on today’s plan.`,
-    );
-  }
-
-  if (data.upcomingBill) {
+  if (data.upcomingBill && data.upcomingBill.dueInDays <= 1) {
     parts.push(
       `${data.upcomingBill.name} is ${billDueLabel(data.upcomingBill.dueInDays).toLowerCase()}.`,
     );
-  }
-
-  if (data.balance?.isConfigured) {
+  } else if (nextTask) {
     parts.push(
-      `You can safely spend ${formatMinor(
+      nextTask.scheduledTime
+        ? `Next: “${nextTask.title}” at ${taskTime(nextTask)}.`
+        : `Next: “${nextTask.title}”.`,
+    );
+  } else if (data.upcomingBill) {
+    parts.push(
+      `${data.upcomingBill.name} is ${billDueLabel(data.upcomingBill.dueInDays).toLowerCase()}.`,
+    );
+  } else if (data.balance?.isConfigured) {
+    parts.push(
+      `${formatMinor(
         data.balance.currency,
         data.balance.safeToSpendTodayMinor,
-      )} today.`,
+      )} is safe to spend today.`,
     );
   }
 
@@ -447,13 +459,14 @@ function ContextTile({
       style={({ pressed }) => [styles.contextTile, pressed && onPress ? styles.pressed : null]}
     >
       <View style={styles.contextTileHeader}>
-        <Ionicons name={icon} size={16} color={colors.primaryLight} />
+        <View style={styles.contextIcon}>
+          <Ionicons name={icon} size={15} color={colors.primaryLight} />
+        </View>
         <Text style={styles.contextTileLabel} numberOfLines={1}>
           {label}
         </Text>
-        {onPress ? <Ionicons name="chevron-forward" size={13} color={colors.textMuted} /> : null}
       </View>
-      <Text style={styles.contextTileValue} numberOfLines={2}>
+      <Text style={styles.contextTileValue} numberOfLines={1}>
         {value}
       </Text>
     </Pressable>
@@ -476,7 +489,9 @@ function QuickAction({
       onPress={onPress}
       style={styles.quickAction}
     >
-      <Ionicons name={icon} size={22} color={colors.primaryLight} />
+      <View style={styles.quickIcon}>
+        <Ionicons name={icon} size={20} color={colors.primaryLight} />
+      </View>
       <Text style={styles.quickLabel}>{label}</Text>
     </Pressable>
   );
@@ -539,11 +554,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 9,
   },
   headerTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '700',
   },
   headerActions: {
@@ -551,9 +567,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   settingsButton: {
-    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: 18,
-    padding: 8,
   },
   center: {
     flex: 1,
@@ -579,12 +600,12 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
-    gap: 12,
+    paddingBottom: 24,
+    gap: 10,
   },
   greeting: {
     color: colors.text,
-    fontSize: 26,
+    fontSize: 25,
     fontWeight: '700',
     marginTop: 4,
   },
@@ -594,16 +615,29 @@ const styles = StyleSheet.create({
   },
   briefCard: {
     backgroundColor: colors.surfaceElevated,
-    borderColor: colors.primary,
+    borderColor: 'rgba(180, 150, 255, 0.34)',
     borderWidth: 1,
-    borderRadius: 22,
-    padding: 16,
-    gap: 14,
+    borderRadius: 20,
+    padding: 15,
+    paddingTop: 17,
+    gap: 12,
+    overflow: 'hidden',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
-    elevation: 5,
+    elevation: 4,
+  },
+  briefAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 34,
+    right: 34,
+    height: 2,
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+    backgroundColor: colors.primaryLight,
+    opacity: 0.75,
   },
   briefHeader: {
     flexDirection: 'row',
@@ -618,11 +652,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   briefIcon: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 11,
     backgroundColor: colors.primary,
   },
   briefEyebrow: {
@@ -633,7 +667,7 @@ const styles = StyleSheet.create({
   },
   briefTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     marginTop: 2,
   },
@@ -641,11 +675,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderColor: colors.border,
-    borderWidth: 1,
+    backgroundColor: 'rgba(15, 11, 31, 0.52)',
     borderRadius: 999,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   connectedDot: {
     width: 6,
@@ -660,41 +693,52 @@ const styles = StyleSheet.create({
   },
   briefSummary: {
     color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
   },
-  contextGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  contextScroller: {
+    marginHorizontal: -15,
+  },
+  contextRail: {
+    paddingHorizontal: 15,
     gap: 8,
   },
   contextTile: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minHeight: 68,
-    backgroundColor: colors.surface,
+    width: 126,
+    minHeight: 58,
+    backgroundColor: 'rgba(15, 11, 31, 0.58)',
     borderColor: colors.borderSoft,
     borderWidth: 1,
-    borderRadius: 13,
-    padding: 10,
-    gap: 6,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 4,
   },
   contextTileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
+  },
+  contextIcon: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+    backgroundColor: 'rgba(121, 87, 217, 0.16)',
   },
   contextTileLabel: {
     flex: 1,
     color: colors.textSecondary,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.35,
   },
   contextTileValue: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
   },
@@ -722,14 +766,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 14,
-    gap: 12,
+    borderRadius: 17,
+    padding: 13,
+    gap: 5,
   },
   nextActionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 11,
+    gap: 10,
   },
   nextActionIcon: {
     width: 34,
@@ -751,27 +795,27 @@ const styles = StyleSheet.create({
   },
   nextActionTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
   nextActionBody: {
     color: colors.textSecondary,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 16,
   },
-  nextActionButton: {
-    flexDirection: 'row',
+  nextActionAccessory: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: 16,
   },
-  nextActionButtonText: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: '800',
+  nextActionLink: {
+    color: colors.primaryLight,
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 44,
   },
   card: {
     backgroundColor: colors.surface,
@@ -786,9 +830,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: colors.primary,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 17,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
   },
   decideCtaText: {
     flex: 1,
@@ -833,25 +877,33 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 5,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   quickRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 9,
+    paddingRight: 20,
   },
   quickAction: {
-    flexBasis: '30%',
-    flexGrow: 1,
+    width: 96,
+    minHeight: 76,
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderColor: colors.borderSoft,
     borderWidth: 1,
     borderRadius: 16,
-    paddingVertical: 14,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 5,
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    backgroundColor: colors.surfaceElevated,
   },
   quickLabel: {
     color: colors.text,
