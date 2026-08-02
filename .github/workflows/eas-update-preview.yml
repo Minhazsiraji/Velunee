@@ -1,0 +1,63 @@
+name: Publish Velunee preview OTA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/eas-update-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velunee-preview-ota
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Android preview update
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://hzumacmyzxdaqcrelobn.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_sEOnqDJ_7nySDFC-Nh2Wow_ca85ewKC
+      EXPO_PUBLIC_API_URL: https://velunee-api.onrender.com/api/v1
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.11.0 --activate
+
+      - name: Set up EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: pnpm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify mobile types
+        run: pnpm --filter @velunee/mobile typecheck
+
+      - name: Publish Life Engine Home to preview
+        working-directory: apps/mobile
+        run: >-
+          eas update
+          --channel preview
+          --environment preview
+          --platform android
+          --message "Life Engine Home (${GITHUB_SHA::7})"
+          --non-interactive
