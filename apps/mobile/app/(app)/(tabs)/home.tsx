@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -117,6 +118,9 @@ function Dashboard({
   const router = useRouter();
   const planner = usePlannerDay();
   const [briefExplained, setBriefExplained] = useState(false);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
+  const isNarrow = width < 340;
 
   const nextTask = planner.data
     ? ([...planner.data.overdue, ...planner.data.tasks].find((task) => task.status === 'todo') ??
@@ -130,7 +134,7 @@ function Dashboard({
 
   return (
     <ScrollView
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, isCompact ? styles.listCompact : null]}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -149,33 +153,35 @@ function Dashboard({
         </Text>
       ) : null}
 
-      <View style={styles.briefCard}>
+      <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
         <View style={styles.briefAccent} />
         <View style={styles.briefHeader}>
           <View style={styles.briefIcon}>
             <Ionicons name="sparkles" size={18} color={colors.white} />
           </View>
           <View style={styles.briefHeaderCopy}>
-            <View style={styles.briefEyebrowRow}>
-              <Text style={styles.briefEyebrow}>VELUNEE DAILY BRIEF</Text>
-              {connectedCount > 0 ? (
-                <View style={styles.connectedPill}>
-                  <View style={styles.connectedDot} />
-                  <Text style={styles.connectedText}>{connectedCount} connected</Text>
-                </View>
-              ) : null}
-            </View>
+            <Text style={styles.briefEyebrow} numberOfLines={1} ellipsizeMode="tail">
+              VELUNEE DAILY BRIEF
+            </Text>
             <Text style={styles.briefTitle} numberOfLines={1} ellipsizeMode="tail">
               What matters today
             </Text>
           </View>
+          {connectedCount > 0 ? (
+            <View style={styles.connectedPill}>
+              <View style={styles.connectedDot} />
+              <Text style={styles.connectedText} numberOfLines={1}>
+                {connectedCount} connected
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <Text style={styles.briefSummary} numberOfLines={3} ellipsizeMode="tail">
           {brief}
         </Text>
 
-        <View style={styles.contextGrid}>
+        <View style={[styles.contextGrid, isNarrow ? styles.contextGridNarrow : null]}>
           {data.weather ? (
             <ContextTile
               icon="rainy-outline"
@@ -183,6 +189,7 @@ function Dashboard({
               value={`${data.weather.temperatureC}°C${
                 data.weather.condition ? ` · ${data.weather.condition}` : ''
               }`}
+              fullWidth={isNarrow}
             />
           ) : null}
           {nextTask ? (
@@ -191,6 +198,7 @@ function Dashboard({
               label={nextTask.scheduledTime ? taskTime(nextTask) : 'Today'}
               value={nextTask.title}
               onPress={() => router.push('/planner')}
+              fullWidth={isNarrow}
             />
           ) : null}
         </View>
@@ -210,9 +218,17 @@ function Dashboard({
                   data.upcomingBill.currency,
                   data.upcomingBill.amountMinor,
                 )}`}
+                stacked={isNarrow}
               />
             ) : null}
-            {data.upcomingBill && data.balance ? <View style={styles.moneySignalDivider} /> : null}
+            {data.upcomingBill && data.balance ? (
+              <View
+                style={[
+                  styles.moneySignalDivider,
+                  isNarrow ? styles.moneySignalDividerNarrow : null,
+                ]}
+              />
+            ) : null}
             {data.balance ? (
               <MoneySignalLine
                 icon="wallet-outline"
@@ -222,6 +238,7 @@ function Dashboard({
                     ? formatMinor(data.balance.currency, data.balance.safeToSpendTodayMinor)
                     : 'Set up Balance'
                 }
+                stacked={isNarrow}
               />
             ) : null}
           </Pressable>
@@ -298,7 +315,9 @@ function Dashboard({
         >
           <View style={styles.cardHeader}>
             <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel}>Continue where you left off</Text>
+            <Text style={styles.cardLabel} numberOfLines={1} ellipsizeMode="tail">
+              Continue where you left off
+            </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </View>
           <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
@@ -459,18 +478,24 @@ function ContextTile({
   label,
   value,
   onPress,
+  fullWidth = false,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   value: string;
   onPress?: () => void;
+  fullWidth?: boolean;
 }): React.JSX.Element {
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
       disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [styles.contextTile, pressed && onPress ? styles.pressed : null]}
+      style={({ pressed }) => [
+        styles.contextTile,
+        fullWidth ? styles.contextTileFullWidth : null,
+        pressed && onPress ? styles.pressed : null,
+      ]}
     >
       <View style={styles.contextTileHeader}>
         <View style={styles.contextIcon}>
@@ -491,20 +516,26 @@ function MoneySignalLine({
   icon,
   label,
   value,
+  stacked = false,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
   value: string;
+  stacked?: boolean;
 }): React.JSX.Element {
   return (
-    <View style={styles.moneySignalLine}>
-      <View style={styles.moneySignalLabel}>
+    <View style={[styles.moneySignalLine, stacked ? styles.moneySignalLineStacked : null]}>
+      <View style={[styles.moneySignalLabel, stacked ? styles.moneySignalLabelStacked : null]}>
         <Ionicons name={icon} size={14} color={colors.primaryLight} />
         <Text style={styles.moneySignalLabelText} numberOfLines={1} ellipsizeMode="tail">
           {label}
         </Text>
       </View>
-      <Text style={styles.moneySignalValue} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={[styles.moneySignalValue, stacked ? styles.moneySignalValueStacked : null]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {value}
       </Text>
     </View>
@@ -643,6 +674,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 10,
   },
+  listCompact: {
+    paddingHorizontal: 14,
+  },
   greeting: {
     color: colors.text,
     fontSize: 25,
@@ -668,6 +702,9 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 4,
   },
+  briefCardCompact: {
+    paddingHorizontal: 12,
+  },
   briefAccent: {
     position: 'absolute',
     top: 0,
@@ -689,12 +726,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: 2,
   },
-  briefEyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
   briefIcon: {
     width: 34,
     height: 34,
@@ -704,7 +735,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   briefEyebrow: {
-    flexShrink: 1,
+    minWidth: 0,
     color: colors.primaryLight,
     fontSize: 10,
     fontWeight: '800',
@@ -717,6 +748,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   connectedPill: {
+    maxWidth: 86,
     flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
@@ -733,6 +765,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   connectedText: {
+    flexShrink: 1,
     color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '700',
@@ -747,6 +780,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  contextGridNarrow: {
+    flexDirection: 'column',
+  },
   contextTile: {
     flex: 1,
     minWidth: 0,
@@ -758,6 +794,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 4,
+  },
+  contextTileFullWidth: {
+    width: '100%',
+    flex: 0,
+    minHeight: 54,
   },
   contextTileHeader: {
     flexDirection: 'row',
@@ -802,12 +843,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  moneySignalLineStacked: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    gap: 4,
+  },
   moneySignalLabel: {
     width: 104,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+  },
+  moneySignalLabelStacked: {
+    width: '100%',
   },
   moneySignalLabelText: {
     flex: 1,
@@ -826,10 +875,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'right',
   },
+  moneySignalValueStacked: {
+    width: '100%',
+    textAlign: 'left',
+    paddingLeft: 20,
+  },
   moneySignalDivider: {
     height: 1,
     marginLeft: 104,
     backgroundColor: colors.borderSoft,
+  },
+  moneySignalDividerNarrow: {
+    marginLeft: 0,
   },
   pressed: {
     opacity: 0.72,
@@ -874,6 +931,7 @@ const styles = StyleSheet.create({
   },
   nextActionCopy: {
     flex: 1,
+    minWidth: 0,
     gap: 3,
   },
   nextActionEyebrow: {
@@ -925,6 +983,7 @@ const styles = StyleSheet.create({
   },
   decideCtaText: {
     flex: 1,
+    minWidth: 0,
     gap: 2,
   },
   decideCtaTitle: {
