@@ -224,229 +224,234 @@ function Dashboard({
   return (
     <>
       <ScrollView
-      contentContainerStyle={[styles.list, isCompact ? styles.listCompact : null]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            onRefresh();
-            void planner.refetch();
-          }}
-          tintColor={colors.primaryLight}
-        />
-      }
-    >
-      <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
-        {homeGreeting(now, greetingName)}
-      </Text>
-      <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
-        {data.greeting.subtitle ?? formatHomeDate(now)}
-      </Text>
-
-      <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
-        <View pointerEvents="none" style={styles.briefGlow} />
-        <View style={styles.briefAccent} />
-        <View style={styles.briefHeader}>
-          <View style={styles.briefIcon}>
-            <Ionicons name="sparkles" size={18} color={colors.white} />
-          </View>
-          <View style={styles.briefHeaderCopy}>
-            <Text style={styles.briefEyebrow} numberOfLines={1} ellipsizeMode="tail">
-              VELUNEE DAILY BRIEF
-            </Text>
-            <Text style={styles.briefTitle} numberOfLines={1} ellipsizeMode="tail">
-              What matters today
-            </Text>
-          </View>
-          {connectedCount > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${connectedCount} live signals. Show how this brief was created.`}
-              accessibilityState={{ expanded: briefExplained }}
-              hitSlop={6}
-              onPress={() => setBriefExplained((current) => !current)}
-              style={({ pressed }) => [styles.connectedPill, pressed ? styles.pressed : null]}
-            >
-              <View style={styles.connectedDot} />
-              <Text style={styles.connectedText} numberOfLines={1}>
-                {connectedCount} live signals
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
-
-        <Text style={styles.briefSummary} numberOfLines={3} ellipsizeMode="tail">
-          {brief}
+        contentContainerStyle={[styles.list, isCompact ? styles.listCompact : null]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              onRefresh();
+              void planner.refetch();
+            }}
+            tintColor={colors.primaryLight}
+          />
+        }
+      >
+        <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
+          {homeGreeting(now, greetingName)}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={1} ellipsizeMode="tail">
+          {data.greeting.subtitle ?? formatHomeDate(now)}
         </Text>
 
-        <View style={[styles.contextGrid, isNarrow ? styles.contextGridNarrow : null]}>
-          {data.weather ? (
-            <ContextTile
-              icon="rainy-outline"
-              label="Weather"
-              value={`${data.weather.temperatureC}°C${
-                data.weather.condition ? ` · ${data.weather.condition}` : ''
-              }`}
-              fullWidth={isNarrow}
-            />
-          ) : null}
-          {plannerSignal ? (
-            <ContextTile
-              icon={
-                plannerSignal.state.includes('overdue') ? 'alert-circle-outline' : 'time-outline'
-              }
-              label={taskSignalLabel(plannerSignal, staleOverdue.length)}
-              value={plannerSignal.task.title}
-              onPress={() => router.push('/planner')}
-              fullWidth={isNarrow}
-            />
-          ) : null}
-        </View>
+        <View style={[styles.briefCard, isCompact ? styles.briefCardCompact : null]}>
+          <View pointerEvents="none" style={styles.briefGlow} />
+          <View style={styles.briefAccent} />
+          <View style={styles.briefHeader}>
+            <View style={styles.briefIcon}>
+              <Ionicons name="sparkles" size={18} color={colors.white} />
+            </View>
+            <View style={styles.briefHeaderCopy}>
+              <Text style={styles.briefEyebrow} numberOfLines={1} ellipsizeMode="tail">
+                VELUNEE DAILY BRIEF
+              </Text>
+              <Text style={styles.briefTitle} numberOfLines={1} ellipsizeMode="tail">
+                What matters today
+              </Text>
+            </View>
+            {connectedCount > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${connectedCount} live signals. Show how this brief was created.`}
+                accessibilityState={{ expanded: briefExplained }}
+                hitSlop={6}
+                onPress={() => setBriefExplained((current) => !current)}
+                style={({ pressed }) => [styles.connectedPill, pressed ? styles.pressed : null]}
+              >
+                <View style={styles.connectedDot} />
+                <Text style={styles.connectedText} numberOfLines={1}>
+                  {connectedCount} live signals
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
 
-        {data.upcomingBill || data.balance ? (
+          <Text style={styles.briefSummary} numberOfLines={3} ellipsizeMode="tail">
+            {brief}
+          </Text>
+
+          <View style={[styles.contextGrid, isNarrow ? styles.contextGridNarrow : null]}>
+            {data.weather ? (
+              <ContextTile
+                icon="rainy-outline"
+                label="Weather"
+                value={`${data.weather.temperatureC}°C${
+                  data.weather.condition ? ` · ${data.weather.condition}` : ''
+                }`}
+                fullWidth={isNarrow}
+              />
+            ) : null}
+            {plannerSignal ? (
+              <ContextTile
+                icon={
+                  plannerSignal.state.includes('overdue') ? 'alert-circle-outline' : 'time-outline'
+                }
+                label={taskSignalLabel(plannerSignal, staleOverdue.length)}
+                value={plannerSignal.task.title}
+                onPress={() => router.push('/planner')}
+                fullWidth={isNarrow}
+              />
+            ) : null}
+          </View>
+
+          {data.upcomingBill || data.balance ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Review upcoming bill and safe-to-spend amount"
+              onPress={() => router.push('./balance')}
+              style={({ pressed }) => [styles.moneySignal, pressed ? styles.pressed : null]}
+            >
+              {data.upcomingBill ? (
+                <MoneySignalLine
+                  icon="receipt-outline"
+                  label={billDueLabel(data.upcomingBill.dueInDays)}
+                  value={`${data.upcomingBill.name} · ${formatHomeMoney(
+                    data.upcomingBill.currency,
+                    data.upcomingBill.amountMinor,
+                  )}`}
+                  stacked={isNarrow}
+                />
+              ) : null}
+              {data.upcomingBill && data.balance ? (
+                <View
+                  style={[
+                    styles.moneySignalDivider,
+                    isNarrow ? styles.moneySignalDividerNarrow : null,
+                  ]}
+                />
+              ) : null}
+              {data.balance ? (
+                <MoneySignalLine
+                  icon="wallet-outline"
+                  label="Safe to spend today"
+                  value={
+                    data.balance.isConfigured
+                      ? formatHomeMoney(data.balance.currency, data.balance.safeToSpendTodayMinor)
+                      : 'Set up Balance'
+                  }
+                  stacked={isNarrow}
+                />
+              ) : null}
+            </Pressable>
+          ) : null}
+
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Review upcoming bill and safe-to-spend amount"
-            onPress={() => router.push('./balance')}
-            style={({ pressed }) => [styles.moneySignal, pressed ? styles.pressed : null]}
+            accessibilityState={{ expanded: briefExplained }}
+            onPress={() => setBriefExplained((current) => !current)}
+            style={styles.whyButton}
           >
-            {data.upcomingBill ? (
-              <MoneySignalLine
-                icon="receipt-outline"
-                label={billDueLabel(data.upcomingBill.dueInDays)}
-                value={`${data.upcomingBill.name} · ${formatHomeMoney(
-                  data.upcomingBill.currency,
-                  data.upcomingBill.amountMinor,
-                )}`}
-                stacked={isNarrow}
-              />
-            ) : null}
-            {data.upcomingBill && data.balance ? (
-              <View
-                style={[
-                  styles.moneySignalDivider,
-                  isNarrow ? styles.moneySignalDividerNarrow : null,
-                ]}
-              />
-            ) : null}
-            {data.balance ? (
-              <MoneySignalLine
-                icon="wallet-outline"
-                label="Safe to spend today"
-                value={
-                  data.balance.isConfigured
-                    ? formatHomeMoney(data.balance.currency, data.balance.safeToSpendTodayMinor)
-                    : 'Set up Balance'
-                }
-                stacked={isNarrow}
-              />
-            ) : null}
+            <Ionicons name="information-circle-outline" size={17} color={colors.primaryLight} />
+            <Text style={styles.whyText}>Why this brief?</Text>
+            <Ionicons
+              name={briefExplained ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={colors.textMuted}
+            />
+          </Pressable>
+          {briefExplained ? (
+            <Text style={styles.whyAnswer}>
+              Using {liveSignals.join(', ')} · Updated {formatUpdatedTime(updatedAt)}. These signals
+              stay private to your account and are used only to prepare your brief. Control them
+              from Home options.
+            </Text>
+          ) : null}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
+          onPress={openBestAction}
+          style={({ pressed }) => [styles.nextActionCard, pressed ? styles.pressed : null]}
+        >
+          <View style={styles.nextActionHeader}>
+            <View style={styles.nextActionIcon}>
+              <Ionicons name="navigate" size={18} color={colors.primaryLight} />
+            </View>
+            <View style={styles.nextActionCopy}>
+              <Text style={styles.nextActionEyebrow}>BEST NEXT ACTION</Text>
+              <Text style={styles.nextActionTitle} numberOfLines={1} ellipsizeMode="tail">
+                {bestAction.title}
+              </Text>
+              <Text style={styles.nextActionBody} numberOfLines={2} ellipsizeMode="tail">
+                {bestAction.body}
+              </Text>
+            </View>
+            <View style={styles.nextActionAccessory}>
+              <Ionicons name="arrow-forward" size={17} color={colors.white} />
+            </View>
+          </View>
+          <Text style={styles.nextActionLink}>{bestAction.label}</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ask Velunee to help you decide"
+          onPress={() => router.push('/decide')}
+          style={styles.decideCta}
+        >
+          <Ionicons name="git-compare-outline" size={20} color={colors.white} />
+          <View style={styles.decideCtaText}>
+            <Text style={styles.decideCtaTitle}>Help me decide</Text>
+            <Text style={styles.decideCtaBody}>Compare a choice using today&apos;s context.</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.white} />
+        </Pressable>
+
+        <Text style={styles.quickTitle}>Quick actions</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickRow}
+        >
+          <QuickAction
+            icon="chatbubble-ellipses"
+            label="Ask Velunee"
+            onPress={() => router.push('./chat')}
+          />
+          <QuickAction icon="wallet" label="Add expense" onPress={() => router.push('./balance')} />
+          <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
+          <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
+          <QuickAction
+            icon="calendar"
+            label="Plan my day"
+            onPress={() => router.push('/planner')}
+          />
+        </ScrollView>
+
+        {data.recentConversation ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Continue recent conversation: ${data.recentConversation.title}`}
+            onPress={() => router.push('./chat')}
+            style={styles.card}
+          >
+            <View style={styles.cardHeader}>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
+              <Text style={styles.cardLabel} numberOfLines={1} ellipsizeMode="tail">
+                Recent conversation
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+            <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
+              {data.recentConversation.title}
+            </Text>
+            <Text style={styles.cardMeta} numberOfLines={1} ellipsizeMode="tail">
+              Continue your conversation ·{' '}
+              {formatConversationAge(data.recentConversation.updatedAt)}
+            </Text>
           </Pressable>
         ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: briefExplained }}
-          onPress={() => setBriefExplained((current) => !current)}
-          style={styles.whyButton}
-        >
-          <Ionicons name="information-circle-outline" size={17} color={colors.primaryLight} />
-          <Text style={styles.whyText}>Why this brief?</Text>
-          <Ionicons
-            name={briefExplained ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={colors.textMuted}
-          />
-        </Pressable>
-        {briefExplained ? (
-          <Text style={styles.whyAnswer}>
-            Using {liveSignals.join(', ')} · Updated {formatUpdatedTime(updatedAt)}. These signals
-            stay private to your account and are used only to prepare your brief. Control them from
-            Home options.
-          </Text>
-        ) : null}
-      </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${bestAction.title}. ${bestAction.label}`}
-        onPress={openBestAction}
-        style={({ pressed }) => [styles.nextActionCard, pressed ? styles.pressed : null]}
-      >
-        <View style={styles.nextActionHeader}>
-          <View style={styles.nextActionIcon}>
-            <Ionicons name="navigate" size={18} color={colors.primaryLight} />
-          </View>
-          <View style={styles.nextActionCopy}>
-            <Text style={styles.nextActionEyebrow}>BEST NEXT ACTION</Text>
-            <Text style={styles.nextActionTitle} numberOfLines={1} ellipsizeMode="tail">
-              {bestAction.title}
-            </Text>
-            <Text style={styles.nextActionBody} numberOfLines={2} ellipsizeMode="tail">
-              {bestAction.body}
-            </Text>
-          </View>
-          <View style={styles.nextActionAccessory}>
-            <Ionicons name="arrow-forward" size={17} color={colors.white} />
-          </View>
-        </View>
-        <Text style={styles.nextActionLink}>{bestAction.label}</Text>
-      </Pressable>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Ask Velunee to help you decide"
-        onPress={() => router.push('/decide')}
-        style={styles.decideCta}
-      >
-        <Ionicons name="git-compare-outline" size={20} color={colors.white} />
-        <View style={styles.decideCtaText}>
-          <Text style={styles.decideCtaTitle}>Help me decide</Text>
-          <Text style={styles.decideCtaBody}>Compare a choice using today&apos;s context.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.white} />
-      </Pressable>
-
-      <Text style={styles.quickTitle}>Quick actions</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.quickRow}
-      >
-        <QuickAction
-          icon="chatbubble-ellipses"
-          label="Ask Velunee"
-          onPress={() => router.push('./chat')}
-        />
-        <QuickAction icon="wallet" label="Add expense" onPress={() => router.push('./balance')} />
-        <QuickAction icon="shirt" label="What to wear" onPress={() => router.push('/style')} />
-        <QuickAction icon="school" label="Study help" onPress={() => router.push('/learn')} />
-        <QuickAction icon="calendar" label="Plan my day" onPress={() => router.push('/planner')} />
-      </ScrollView>
-
-      {data.recentConversation ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Continue recent conversation: ${data.recentConversation.title}`}
-          onPress={() => router.push('./chat')}
-          style={styles.card}
-        >
-          <View style={styles.cardHeader}>
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
-            <Text style={styles.cardLabel} numberOfLines={1} ellipsizeMode="tail">
-              Recent conversation
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </View>
-          <Text style={styles.cardValue} numberOfLines={1} ellipsizeMode="tail">
-            {data.recentConversation.title}
-          </Text>
-          <Text style={styles.cardMeta} numberOfLines={1} ellipsizeMode="tail">
-            Continue your conversation · {formatConversationAge(data.recentConversation.updatedAt)}
-          </Text>
-        </Pressable>
-      ) : null}
       </ScrollView>
       <OverdueTaskModal
         task={overdueTask}
