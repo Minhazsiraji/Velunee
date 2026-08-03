@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-03 remove redundant Home action arrow
+# Release trigger: 2026-08-03 preserve skipped Planner tasks
 name: Publish Velunee preview OTA
 
 on:
