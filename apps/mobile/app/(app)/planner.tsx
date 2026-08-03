@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -52,14 +52,31 @@ function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function isValidIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 export default function PlannerScreen(): React.JSX.Element {
   const router = useRouter();
+  const { editTaskId } = useLocalSearchParams<{ editTaskId?: string }>();
   const [day, setDay] = useState(todayIso());
   const planner = usePlannerDay(day);
   const updateTask = useUpdateTask();
   const [addVisible, setAddVisible] = useState(false);
+  const [editingTask, setEditingTask] = useState<PlannerTask | null>(null);
+  const [handledEditTaskId, setHandledEditTaskId] = useState<string | null>(null);
 
   const data = planner.data;
+
+  useEffect(() => {
+    if (!editTaskId || editTaskId === handledEditTaskId || !data) return;
+    const task = [...data.tasks, ...data.overdue].find((item) => item.id === editTaskId);
+    if (!task || task.status === 'done') return;
+    setEditingTask(task);
+    setHandledEditTaskId(editTaskId);
+  }, [data, editTaskId, handledEditTaskId]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -139,15 +156,29 @@ export default function PlannerScreen(): React.JSX.Element {
                     <Text style={styles.overdueTitle} numberOfLines={1}>
                       {task.title}
                     </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() =>
-                        updateTask.mutate({ taskId: task.id, patch: { dueOn: todayIso() } })
-                      }
-                      style={styles.moveButton}
-                    >
-                      <Text style={styles.moveButtonText}>Move to today</Text>
-                    </Pressable>
+                    <View style={styles.overdueRowActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${task.title}`}
+                        hitSlop={8}
+                        onPress={() => setEditingTask(task)}
+                        style={styles.taskIconButton}
+                      >
+                        <Ionicons name="create-outline" size={18} color={colors.primaryLight} />
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() =>
+                          updateTask.mutate({
+                            taskId: task.id,
+                            patch: { dueOn: todayIso() },
+                          })
+                        }
+                        style={styles.moveButton}
+                      >
+                        <Text style={styles.moveButtonText}>Move to today</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -158,30 +189,40 @@ export default function PlannerScreen(): React.JSX.Element {
                 Nothing here yet. Add a task to shape {dayLabel(day).toLowerCase()}.
               </Text>
             ) : (
-              data.tasks.map((task) => <TaskRow key={task.id} task={task} />)
+              data.tasks.map((task) => (
+                <TaskRow key={task.id} task={task} onEdit={() => setEditingTask(task)} />
+              ))
             )}
           </>
         )}
       </ScrollView>
 
       <AddTaskModal visible={addVisible} day={day} onClose={() => setAddVisible(false)} />
+      <EditTaskModal task={editingTask} onClose={() => setEditingTask(null)} />
     </SafeAreaView>
   );
 }
 
-function TaskRow({ task }: { task: PlannerTask }): React.JSX.Element {
+function TaskRow({ task, onEdit }: { task: PlannerTask; onEdit: () => void }): React.JSX.Element {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const done = task.status === 'done';
 
   function toggle(): void {
-    updateTask.mutate({ taskId: task.id, patch: { status: done ? 'todo' : 'done' } });
+    updateTask.mutate({
+      taskId: task.id,
+      patch: { status: done ? 'todo' : 'done' },
+    });
   }
 
   function confirmDelete(): void {
     Alert.alert('Remove task', `Remove “${task.title}”?`, [
       { text: 'Keep', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => deleteTask.mutate(task.id) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => deleteTask.mutate(task.id),
+      },
     ]);
   }
 
@@ -214,15 +255,216 @@ function TaskRow({ task }: { task: PlannerTask }): React.JSX.Element {
         </Text>
         {meta ? <Text style={styles.taskMeta}>{meta}</Text> : null}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${task.title}`}
-        hitSlop={8}
-        onPress={confirmDelete}
-      >
-        <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
-      </Pressable>
+      <View style={styles.taskActions}>
+        {!done ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${task.title}`}
+            hitSlop={8}
+            onPress={onEdit}
+            style={styles.taskIconButton}
+          >
+            <Ionicons name="create-outline" size={18} color={colors.primaryLight} />
+          </Pressable>
+        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${task.title}`}
+          hitSlop={8}
+          onPress={confirmDelete}
+          style={styles.taskIconButton}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
     </View>
+  );
+}
+
+function EditTaskModal({
+  task,
+  onClose,
+}: {
+  task: PlannerTask | null;
+  onClose: () => void;
+}): React.JSX.Element {
+  const update = useUpdateTask();
+  const [title, setTitle] = useState('');
+  const [dueOn, setDueOn] = useState('');
+  const [time, setTime] = useState('');
+  const [estimate, setEstimate] = useState('');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (!task) return;
+    setTitle(task.title);
+    setDueOn(task.dueOn);
+    setTime(task.scheduledTime ?? '');
+    setEstimate(task.estimateMinutes ? String(task.estimateMinutes) : '');
+    setPriority(task.priority);
+  }, [task]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  async function save(): Promise<void> {
+    if (!task) return;
+    const trimmedTitle = title.trim();
+    const trimmedDate = dueOn.trim();
+    const trimmedTime = time.trim();
+    if (!trimmedTitle) {
+      Alert.alert('Add task text', 'The task cannot be empty.');
+      return;
+    }
+    if (!isValidIsoDate(trimmedDate)) {
+      Alert.alert('Check the date', 'Use a real date in YYYY-MM-DD format, e.g. 2026-08-03.');
+      return;
+    }
+    if (trimmedTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(trimmedTime)) {
+      Alert.alert('Check the time', 'Use 24-hour HH:MM, e.g. 09:00 or 18:30.');
+      return;
+    }
+    const estimateMinutes = estimate.trim() ? Number(estimate.trim()) : null;
+    if (
+      estimateMinutes !== null &&
+      (!Number.isInteger(estimateMinutes) || estimateMinutes < 1 || estimateMinutes > 1440)
+    ) {
+      Alert.alert('Check the estimate', 'Enter whole minutes from 1 to 1440.');
+      return;
+    }
+
+    try {
+      await update.mutateAsync({
+        taskId: task.id,
+        patch: {
+          title: trimmedTitle,
+          dueOn: trimmedDate,
+          scheduledTime: trimmedTime || null,
+          estimateMinutes,
+          priority,
+        },
+      });
+      onClose();
+    } catch (error) {
+      Alert.alert('Could not update task', error instanceof Error ? error.message : 'Try again.');
+    }
+  }
+
+  return (
+    <Modal
+      visible={task !== null}
+      transparent
+      statusBarTranslucent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView style={[styles.modalRoot, { paddingBottom: keyboardHeight }]}>
+        <ScrollView
+          style={styles.modalScroll}
+          contentContainerStyle={styles.modalCard}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit task</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close task editor"
+              disabled={update.isPending}
+              hitSlop={10}
+              onPress={onClose}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.fieldLabel}>TASK</Text>
+          <TextInput
+            autoFocus
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Task"
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="next"
+            selectionColor={colors.primaryLight}
+            style={styles.input}
+          />
+
+          <Text style={styles.fieldLabel}>DATE</Text>
+          <TextInput
+            value={dueOn}
+            onChangeText={setDueOn}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numbers-and-punctuation"
+            style={styles.input}
+          />
+
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldHalf}>
+              <Text style={styles.fieldLabel}>TIME (OPTIONAL)</Text>
+              <TextInput
+                value={time}
+                onChangeText={setTime}
+                placeholder="18:00"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numbers-and-punctuation"
+                style={styles.input}
+              />
+            </View>
+            <View style={styles.fieldHalf}>
+              <Text style={styles.fieldLabel}>MINUTES (OPTIONAL)</Text>
+              <TextInput
+                value={estimate}
+                onChangeText={setEstimate}
+                placeholder="30"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                style={styles.input}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.fieldLabel}>PRIORITY</Text>
+          <View style={styles.chipRow}>
+            {PRIORITIES.map((value) => (
+              <Pressable
+                key={value}
+                accessibilityRole="button"
+                onPress={() => setPriority(value)}
+                style={[styles.chip, priority === value && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, priority === value && styles.chipTextActive]}>
+                  {capitalize(value)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <PrimaryButton
+            label="Save changes"
+            onPress={() => void save()}
+            isLoading={update.isPending}
+            style={styles.modalSave}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -419,7 +661,12 @@ const styles = StyleSheet.create({
   },
   content: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
   loader: { marginVertical: 40 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 10 },
+  center: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 10,
+  },
   stateBody: { color: colors.textSecondary, fontSize: 14, textAlign: 'center' },
   retry: { marginTop: 8 },
   loadCard: {
@@ -432,7 +679,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
   },
-  loadCardBusy: { backgroundColor: colors.dangerBackground, borderColor: colors.dangerBorder },
+  loadCardBusy: {
+    backgroundColor: colors.dangerBackground,
+    borderColor: colors.dangerBorder,
+  },
   loadText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
   section: { gap: 8 },
   sectionTitle: {
@@ -454,6 +704,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   overdueTitle: { flex: 1, color: colors.textSecondary, fontSize: 14 },
+  overdueRowActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   moveButton: {
     borderWidth: 1,
     borderColor: colors.primary,
@@ -461,8 +712,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  moveButtonText: { color: colors.primaryLight, fontSize: 12, fontWeight: '700' },
-  emptyText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  moveButtonText: {
+    color: colors.primaryLight,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
+  },
   taskRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -474,10 +734,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   taskInfo: { flex: 1, gap: 2 },
+  taskActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  taskIconButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
   taskTitle: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  taskTitleDone: { color: colors.textMuted, textDecorationLine: 'line-through' },
+  taskTitleDone: {
+    color: colors.textMuted,
+    textDecorationLine: 'line-through',
+  },
   taskMeta: { color: colors.textSecondary, fontSize: 12 },
-  modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(9, 6, 20, 0.7)' },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(9, 6, 20, 0.7)',
+  },
   modalScroll: { flexGrow: 0, maxHeight: '100%' },
   modalCard: {
     backgroundColor: colors.surfaceElevated,

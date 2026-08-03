@@ -9,11 +9,18 @@ const plannerKey = ['planner'] as const;
 
 function useRefreshPlanner(): () => Promise<void> {
   const queryClient = useQueryClient();
-  return () =>
-    queryClient.invalidateQueries({
-      queryKey: plannerKey,
-      refetchType: 'all',
-    });
+  return async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: plannerKey,
+        refetchType: 'all',
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['reminders', 'planner-day'],
+        refetchType: 'all',
+      }),
+    ]);
+  };
 }
 
 export function usePlannerDay(day?: string) {
