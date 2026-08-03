@@ -1196,7 +1196,7 @@ export type LearnDeletedResponse = z.infer<typeof learnDeletedResponseSchema>;
 // ---------------------------------------------------------------------------
 
 export const taskPrioritySchema = z.enum(['low', 'medium', 'high']);
-export const taskStatusSchema = z.enum(['todo', 'done']);
+export const taskStatusSchema = z.enum(['todo', 'done', 'skipped']);
 export const dayTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM (24-hour)');
 
 export const plannerTaskSchema = z.object({
@@ -1208,6 +1208,8 @@ export const plannerTaskSchema = z.object({
   priority: taskPrioritySchema,
   estimateMinutes: z.number().int().positive().nullable(),
   status: taskStatusSchema,
+  completedAt: z.string().datetime().nullable(),
+  skippedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 });
 

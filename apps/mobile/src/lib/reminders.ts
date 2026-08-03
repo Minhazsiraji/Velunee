@@ -27,7 +27,7 @@ export interface ReminderTask {
   title: string;
   dueOn: string;
   scheduledTime: string | null;
-  status: 'todo' | 'done';
+  status: 'todo' | 'done' | 'skipped';
 }
 
 export interface ReminderPrefs {
@@ -138,7 +138,7 @@ export async function syncReminders(input: {
   // Today's scheduled tasks: remind at their time.
   if (input.prefs.tasks) {
     for (const task of input.tasks) {
-      if (task.status === 'done' || !task.scheduledTime) continue;
+      if (task.status !== 'todo' || !task.scheduledTime) continue;
       const [hour, minute] = task.scheduledTime.split(':').map(Number) as [number, number];
       const [year, month, day] = task.dueOn.split('-').map(Number) as [number, number, number];
       const when = new Date(year, month - 1, day, hour, minute, 0, 0);

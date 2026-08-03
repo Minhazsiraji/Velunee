@@ -29,6 +29,7 @@ export class PlannerService {
   }
 
   private toContract(row: TaskRow): PlannerTask {
+    const skipped = row.status === 'todo' && row.completedAt !== null;
     return {
       id: row.id,
       title: row.title,
@@ -37,7 +38,9 @@ export class PlannerService {
       scheduledTime: row.scheduledTime,
       priority: row.priority,
       estimateMinutes: row.estimateMinutes,
-      status: row.status,
+      status: skipped ? 'skipped' : row.status,
+      completedAt: row.status === 'done' && row.completedAt ? row.completedAt.toISOString() : null,
+      skippedAt: skipped && row.completedAt ? row.completedAt.toISOString() : null,
       createdAt: row.createdAt.toISOString(),
     };
   }
@@ -91,8 +94,16 @@ export class PlannerService {
     if (input.priority !== undefined) patch.priority = input.priority;
     if (input.estimateMinutes !== undefined) patch.estimateMinutes = input.estimateMinutes ?? null;
     if (input.status !== undefined) {
-      patch.status = input.status;
-      patch.completedAt = input.status === 'done' ? new Date() : null;
+      if (input.status === 'skipped') {
+        // Keep the existing database enum migration-free: a todo row with a
+        // terminal timestamp represents a skipped task. toContract exposes the
+        // truthful public status, and active queries exclude this combination.
+        patch.status = 'todo';
+        patch.completedAt = new Date();
+      } else {
+        patch.status = input.status;
+        patch.completedAt = input.status === 'done' ? new Date() : null;
+      }
     }
 
     const row = await this.repository.update(userId, taskId, patch);
