@@ -73,7 +73,7 @@ export default function PlannerScreen(): React.JSX.Element {
   useEffect(() => {
     if (!editTaskId || editTaskId === handledEditTaskId || !data) return;
     const task = [...data.tasks, ...data.overdue].find((item) => item.id === editTaskId);
-    if (!task || task.status === 'done') return;
+    if (!task || task.status !== 'todo') return;
     setEditingTask(task);
     setHandledEditTaskId(editTaskId);
   }, [data, editTaskId, handledEditTaskId]);
@@ -207,11 +207,13 @@ function TaskRow({ task, onEdit }: { task: PlannerTask; onEdit: () => void }): R
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const done = task.status === 'done';
+  const skipped = task.status === 'skipped';
+  const active = task.status === 'todo';
 
   function toggle(): void {
     updateTask.mutate({
       taskId: task.id,
-      patch: { status: done ? 'todo' : 'done' },
+      patch: { status: active ? 'done' : 'todo' },
     });
   }
 
@@ -227,6 +229,7 @@ function TaskRow({ task, onEdit }: { task: PlannerTask; onEdit: () => void }): R
   }
 
   const meta = [
+    skipped ? 'Skipped' : null,
     task.scheduledTime,
     capitalize(task.priority),
     task.estimateMinutes ? `${task.estimateMinutes} min` : null,
@@ -237,26 +240,43 @@ function TaskRow({ task, onEdit }: { task: PlannerTask; onEdit: () => void }): R
   return (
     <View style={styles.taskRow}>
       <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: done }}
-        accessibilityLabel={`Mark ${task.title} ${done ? 'not done' : 'done'}`}
+        accessibilityRole={skipped ? 'button' : 'checkbox'}
+        accessibilityState={skipped ? undefined : { checked: done }}
+        accessibilityLabel={
+          skipped
+            ? `Restore skipped task ${task.title}`
+            : `Mark ${task.title} ${done ? 'not done' : 'done'}`
+        }
         hitSlop={8}
         onPress={toggle}
       >
         <Ionicons
-          name={done ? 'checkmark-circle' : 'ellipse-outline'}
+          name={
+            skipped
+              ? 'play-skip-forward-circle-outline'
+              : done
+                ? 'checkmark-circle'
+                : 'ellipse-outline'
+          }
           size={24}
           color={done ? colors.primaryLight : colors.textMuted}
         />
       </Pressable>
       <View style={styles.taskInfo}>
-        <Text style={[styles.taskTitle, done && styles.taskTitleDone]} numberOfLines={2}>
+        <Text
+          style={[
+            styles.taskTitle,
+            done && styles.taskTitleDone,
+            skipped && styles.taskTitleSkipped,
+          ]}
+          numberOfLines={2}
+        >
           {task.title}
         </Text>
         {meta ? <Text style={styles.taskMeta}>{meta}</Text> : null}
       </View>
       <View style={styles.taskActions}>
-        {!done ? (
+        {active ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Edit ${task.title}`}
@@ -747,6 +767,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
+  taskTitleSkipped: { color: colors.textMuted },
   taskMeta: { color: colors.textSecondary, fontSize: 12 },
   modalRoot: {
     flex: 1,

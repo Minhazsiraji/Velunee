@@ -33,7 +33,7 @@ import {
   isLikelyOfflineError,
   type HomeTrustStatus,
 } from '@/features/home/trust-state';
-import { useDeleteTask, usePlannerDay, useUpdateTask } from '@/features/planner/use-planner';
+import { usePlannerDay, useUpdateTask } from '@/features/planner/use-planner';
 import { useAuth } from '@/providers/auth-provider';
 import { colors } from '@/theme/colors';
 
@@ -173,7 +173,6 @@ function Dashboard({
   const router = useRouter();
   const planner = usePlannerDay();
   const updateTask = useUpdateTask();
-  const deleteTask = useDeleteTask();
   const [briefExplained, setBriefExplained] = useState(false);
   const [overdueTask, setOverdueTask] = useState<PlannerTask | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<PlannerTask | null>(null);
@@ -241,7 +240,10 @@ function Dashboard({
           patch: { dueOn: tomorrowIso(now) },
         });
       } else {
-        await deleteTask.mutateAsync(overdueTask.id);
+        await updateTask.mutateAsync({
+          taskId: overdueTask.id,
+          patch: { status: 'skipped' },
+        });
       }
       setOverdueTask(null);
     } catch (error) {
@@ -295,7 +297,10 @@ function Dashboard({
 
   async function skipBestTask(task: PlannerTask): Promise<void> {
     try {
-      await deleteTask.mutateAsync(task.id);
+      await updateTask.mutateAsync({
+        taskId: task.id,
+        patch: { status: 'skipped' },
+      });
     } catch (error) {
       Alert.alert(
         'Could not skip task',
@@ -305,10 +310,10 @@ function Dashboard({
   }
 
   function confirmSkipBestTask(): void {
-    if (!bestAction.timing || deleteTask.isPending) return;
+    if (!bestAction.timing || updateTask.isPending) return;
     const task = bestAction.timing.task;
 
-    Alert.alert('Skip task', `Skip “${task.title}”? It will leave your active plan.`, [
+    Alert.alert('Skip task', `Skip “${task.title}”? It will stay in Planner as skipped.`, [
       { text: 'Keep', style: 'cancel' },
       {
         text: 'Skip',
@@ -515,7 +520,7 @@ function Dashboard({
                 icon="play-skip-forward-outline"
                 label="Skip"
                 accessibilityLabel={`Skip ${bestAction.timing.task.title}`}
-                disabled={updateTask.isPending || deleteTask.isPending}
+                disabled={updateTask.isPending}
                 onPress={confirmSkipBestTask}
               />
             </View>
@@ -595,7 +600,7 @@ function Dashboard({
       </ScrollView>
       <OverdueTaskModal
         task={overdueTask}
-        pending={updateTask.isPending || deleteTask.isPending}
+        pending={updateTask.isPending}
         onClose={() => setOverdueTask(null)}
         onResolve={(action) => void resolveOverdue(action)}
       />

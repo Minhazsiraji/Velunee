@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { TaskPriority, TaskStatus } from '@velunee/contracts';
+import type { TaskPriority } from '@velunee/contracts';
 import { tasks, users, type DatabaseConnection } from '@velunee/database';
 import { and, eq, gte, isNull, lt, lte } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '../database/database.constants';
@@ -12,7 +12,8 @@ export interface TaskRow {
   scheduledTime: string | null;
   priority: TaskPriority;
   estimateMinutes: number | null;
-  status: TaskStatus;
+  status: 'todo' | 'done';
+  completedAt: Date | null;
   createdAt: Date;
 }
 
@@ -27,6 +28,7 @@ const TASK_COLUMNS = {
   priority: tasks.priority,
   estimateMinutes: tasks.estimateMinutes,
   status: tasks.status,
+  completedAt: tasks.completedAt,
   createdAt: tasks.createdAt,
 } as const;
 
@@ -54,12 +56,13 @@ export class PlannerRepository {
     priority: string;
     estimateMinutes: number | null;
     status: string;
+    completedAt: Date | null;
     createdAt: Date;
   }): TaskRow {
     return {
       ...row,
       priority: row.priority as TaskPriority,
-      status: row.status as TaskStatus,
+      status: row.status as 'todo' | 'done',
     };
   }
 
@@ -82,6 +85,7 @@ export class PlannerRepository {
           eq(tasks.userId, userId),
           isNull(tasks.deletedAt),
           eq(tasks.status, 'todo'),
+          isNull(tasks.completedAt),
           lt(tasks.dueOn, today),
         ),
       );
@@ -135,7 +139,7 @@ export class PlannerRepository {
       scheduledTime: string | null;
       priority: TaskPriority;
       estimateMinutes: number | null;
-      status: TaskStatus;
+      status: 'todo' | 'done';
       completedAt: Date | null;
     }>,
   ): Promise<TaskRow | null> {

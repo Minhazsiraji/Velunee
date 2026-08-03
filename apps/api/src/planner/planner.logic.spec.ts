@@ -13,6 +13,8 @@ function task(overrides: Partial<PlannerTask>): PlannerTask {
     priority: 'medium',
     estimateMinutes: null,
     status: 'todo',
+    completedAt: null,
+    skippedAt: null,
     createdAt: '2026-07-16T08:00:00.000Z',
     ...overrides,
   };
@@ -66,10 +68,11 @@ describe('computeDayLoad', () => {
     expect(load.message).toMatch(/moving one lower-priority task/i);
   });
 
-  it('uses a default estimate for tasks without one, and ignores done tasks', () => {
+  it('uses a default estimate for tasks without one, and ignores terminal tasks', () => {
     const load = computeDayLoad([
       task({ estimateMinutes: null }),
       task({ status: 'done', estimateMinutes: 300 }),
+      task({ status: 'skipped', estimateMinutes: 300 }),
     ]);
     expect(load.taskCount).toBe(1);
     expect(load.totalMinutes).toBe(30);
