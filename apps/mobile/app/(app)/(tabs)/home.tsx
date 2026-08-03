@@ -493,9 +493,6 @@ function Dashboard({
                 {bestAction.body}
               </Text>
             </View>
-            <View style={styles.nextActionAccessory}>
-              <Ionicons name="arrow-forward" size={17} color={colors.white} />
-            </View>
           </Pressable>
           {bestAction.timing ? (
             <View style={styles.nextActionControls}>
@@ -1848,16 +1845,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 16,
-  },
-  nextActionAccessory: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 16,
   },
   nextActionControls: {
     flexDirection: 'row',
