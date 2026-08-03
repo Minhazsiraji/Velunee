@@ -293,6 +293,31 @@ function Dashboard({
     }
   }
 
+  async function skipBestTask(task: PlannerTask): Promise<void> {
+    try {
+      await deleteTask.mutateAsync(task.id);
+    } catch (error) {
+      Alert.alert(
+        'Could not skip task',
+        error instanceof Error ? error.message : 'Please try again.',
+      );
+    }
+  }
+
+  function confirmSkipBestTask(): void {
+    if (!bestAction.timing || deleteTask.isPending) return;
+    const task = bestAction.timing.task;
+
+    Alert.alert('Skip task', `Skip “${task.title}”? It will leave your active plan.`, [
+      { text: 'Keep', style: 'cancel' },
+      {
+        text: 'Skip',
+        style: 'destructive',
+        onPress: () => void skipBestTask(task),
+      },
+    ]);
+  }
+
   return (
     <>
       <ScrollView
@@ -490,11 +515,11 @@ function Dashboard({
                 onPress={() => setRescheduleTask(bestAction.timing?.task ?? null)}
               />
               <BestActionControl
-                icon="open-outline"
-                label="Planner"
-                accessibilityLabel={`Open Planner for ${bestAction.timing.task.title}`}
-                disabled={updateTask.isPending}
-                onPress={() => router.push('/planner')}
+                icon="play-skip-forward-outline"
+                label="Skip"
+                accessibilityLabel={`Skip ${bestAction.timing.task.title}`}
+                disabled={updateTask.isPending || deleteTask.isPending}
+                onPress={confirmSkipBestTask}
               />
             </View>
           ) : (
@@ -582,9 +607,15 @@ function Dashboard({
         pending={updateTask.isPending}
         onClose={() => setRescheduleTask(null)}
         onTomorrow={() => void rescheduleForTomorrow()}
-        onOpenPlanner={() => {
+        onEditDateTime={() => {
+          const taskId = rescheduleTask?.id;
           setRescheduleTask(null);
-          router.push('/planner');
+          if (taskId) {
+            router.push({
+              pathname: '/planner',
+              params: { editTaskId: taskId },
+            });
+          }
         }}
       />
     </>
@@ -1111,13 +1142,13 @@ function RescheduleTaskModal({
   pending,
   onClose,
   onTomorrow,
-  onOpenPlanner,
+  onEditDateTime,
 }: {
   task: PlannerTask | null;
   pending: boolean;
   onClose: () => void;
   onTomorrow: () => void;
-  onOpenPlanner: () => void;
+  onEditDateTime: () => void;
 }): React.JSX.Element {
   return (
     <Modal
@@ -1149,7 +1180,7 @@ function RescheduleTaskModal({
             {task?.title}
           </Text>
           <Text style={styles.modalHint}>
-            Move it to tomorrow at the same time, or open Planner to choose another date and time.
+            Move it to tomorrow at the same time, or edit its date and time precisely.
           </Text>
 
           <View style={styles.overdueActions}>
@@ -1169,13 +1200,13 @@ function RescheduleTaskModal({
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Open Planner to choose another date and time"
+              accessibilityLabel="Edit task date and time"
               disabled={pending}
-              onPress={onOpenPlanner}
+              onPress={onEditDateTime}
               style={({ pressed }) => [styles.overdueAction, pressed ? styles.pressed : null]}
             >
-              <Ionicons name="calendar-number-outline" size={19} color={colors.primaryLight} />
-              <Text style={styles.overdueActionText}>Choose in Planner</Text>
+              <Ionicons name="create-outline" size={19} color={colors.primaryLight} />
+              <Text style={styles.overdueActionText}>Edit date & time</Text>
             </Pressable>
           </View>
 
