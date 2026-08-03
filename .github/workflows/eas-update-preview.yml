@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-02 Home next-action controls
+# Release trigger: 2026-08-03 Stage 2 task actions and editing
 name: Publish Velunee preview OTA
 
 on:
