@@ -1,4 +1,4 @@
-# Release trigger: 2026-08-03 Stage 2 task actions and editing
+# Release trigger: 2026-08-03 remove redundant Home action arrow
 name: Publish Velunee preview OTA
 
 on:
